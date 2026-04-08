@@ -1,0 +1,3082 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOT DE PASSE - Le Jeu</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Russo+One&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --red-deep: #8b0000;
+    --red-main: #c41e1e;
+    --red-bright: #ff1a1a;
+    --red-glow: #ff4444;
+    --dark-bg: #0a0a0a;
+    --dark-panel: #1a1010;
+    --silver: #c0c0c0;
+    --silver-light: #e0e0e0;
+    --gold: #d4a843;
+  }
+
+  body {
+    background: var(--dark-bg);
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+  }
+
+  /* ===== ANIMATED BACKGROUND ===== */
+  .bg-layer { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+  .bg-layer::before {
+    content: ''; position: absolute; inset: -50%;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(139,0,0,0.4) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 30%, rgba(196,30,30,0.2) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(100,0,0,0.3) 0%, transparent 50%);
+    animation: bgPulse 8s ease-in-out infinite alternate;
+  }
+  @keyframes bgPulse {
+    0% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+    100% { transform: scale(1.1) rotate(3deg); opacity: 1; }
+  }
+
+  .dot-matrix { position: fixed; inset: 0; z-index: 1; background-image: radial-gradient(circle, rgba(255,50,50,0.08) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; }
+
+  .circle-deco { position: fixed; border: 2px solid rgba(196,30,30,0.15); border-radius: 50%; z-index: 1; pointer-events: none; }
+  .circle-deco.c1 { width: 600px; height: 600px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateSlow 30s linear infinite; }
+  .circle-deco.c2 { width: 450px; height: 450px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateSlow 20s linear infinite reverse; border-style: dashed; }
+  .circle-deco.c3 { width: 800px; height: 800px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateSlow 40s linear infinite; border-color: rgba(196,30,30,0.08); }
+  @keyframes rotateSlow { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+  /* ===== SCREENS ===== */
+  .screen { position: relative; z-index: 10; width: 900px; max-width: 95vw; display: none; }
+  .screen.active { display: block; }
+
+  /* Écran de jeu : occupe presque tout le viewport à 100 % zoom (marges fines + safe area) */
+  #screenManche {
+    max-width: none;
+  }
+
+  #screenManche.active {
+    position: fixed;
+    z-index: 15;
+    margin: 0;
+    inset: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+    width: auto;
+    height: auto;
+    max-width: none;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    background: #060204;
+  }
+
+  #screenManche .manche-bg-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 0;
+  }
+
+  /* ===== MAIN CONTAINER ===== */
+  .game-container {
+    background: linear-gradient(180deg, #1a0808 0%, #0d0505 40%, #1a0808 100%);
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3), 0 0 80px rgba(139,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.5);
+    padding: 0; overflow: hidden;
+    animation: containerAppear 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.9);
+  }
+  @keyframes containerAppear { to { opacity: 1; transform: scale(1); } }
+
+  .top-bar { height: 50px; background: linear-gradient(180deg, #3a1515 0%, #1a0808 100%); border-bottom: 2px solid var(--red-main); display: flex; align-items: center; justify-content: center; position: relative; }
+  .top-bar::before, .top-bar::after { content: ''; position: absolute; top: 5px; width: 30px; height: 30px; background: linear-gradient(135deg, #666, #333); border-radius: 4px; border: 1px solid #555; }
+  .top-bar::before { left: 12px; }
+  .top-bar::after { right: 12px; }
+  .top-bar-text { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 1.1rem; color: var(--silver-light); letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,100,100,0.5); animation: textGlow 3s ease-in-out infinite alternate; }
+  @keyframes textGlow { 0% { text-shadow: 0 0 10px rgba(255,100,100,0.3); } 100% { text-shadow: 0 0 20px rgba(255,100,100,0.6), 0 0 40px rgba(255,50,50,0.2); } }
+
+  .content { padding: 40px 50px; display: flex; flex-direction: column; align-items: center; gap: 30px; }
+
+  .logo-container { position: relative; width: 100%; max-width: 550px; animation: logoSlide 1s 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(-30px); }
+  @keyframes logoSlide { to { opacity: 1; transform: translateY(0); } }
+  .logo-frame { background: linear-gradient(180deg, #0a0202 0%, #150505 50%, #0a0202 100%); border: 3px solid var(--red-main); border-radius: 12px; padding: 25px 40px; text-align: center; position: relative; box-shadow: inset 0 0 30px rgba(139,0,0,0.3), 0 0 20px rgba(196,30,30,0.2); }
+  .logo-frame::before { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(196,30,30,0.3); border-radius: 8px; pointer-events: none; }
+  .logo-title { font-family: 'Russo One', sans-serif; font-size: 3.5rem; color: var(--red-bright); text-shadow: 0 0 10px rgba(255,26,26,0.8), 0 0 30px rgba(255,26,26,0.4), 0 0 60px rgba(255,26,26,0.2), 2px 2px 0 #400; letter-spacing: 6px; line-height: 1.1; animation: titlePulse 4s ease-in-out infinite alternate; }
+  @keyframes titlePulse { 0% { filter: brightness(1); } 50% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+  .logo-subtitle { font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: var(--gold); letter-spacing: 4px; margin-top: 5px; text-transform: uppercase; }
+
+  .prize-banner { position: relative; width: 100%; max-width: 480px; text-align: center; animation: prizeAppear 0.8s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.8); }
+  @keyframes prizeAppear { to { opacity: 1; transform: scale(1); } }
+  .prize-ribbon { background: linear-gradient(90deg, transparent 0%, var(--red-deep) 15%, var(--red-main) 50%, var(--red-deep) 85%, transparent 100%); padding: 10px 40px; clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); }
+  .prize-text { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5); letter-spacing: 3px; }
+
+  .word-count { position: absolute; top: 20px; right: 20px; background: linear-gradient(135deg, #222, #111); border: 2px solid #555; border-radius: 8px; padding: 8px 14px; text-align: center; animation: badgePop 0.6s 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; transform: scale(0.5); z-index: 20; }
+  @keyframes badgePop { to { opacity: 1; transform: scale(1); } }
+  .word-count .number { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; color: white; line-height: 1; }
+  .word-count .plus { color: var(--red-bright); font-size: 0.9rem; vertical-align: super; }
+  .word-count .label { font-family: 'Rajdhani', sans-serif; font-size: 0.65rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+  .word-count .dot { display: inline-block; width: 8px; height: 8px; background: #00ff44; border-radius: 50%; margin-right: 4px; box-shadow: 0 0 6px #00ff44; animation: dotBlink 2s ease-in-out infinite; }
+  .word-count .setting { font-size: 0.55rem; color: #888; margin-top: 4px; }
+  @keyframes dotBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .team-row { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 700px; animation: fadeIn 0.8s 1s forwards; opacity: 0; }
+  @keyframes fadeIn { to { opacity: 1; } }
+  .team-info { text-align: center; color: var(--silver); }
+  .team-info .team-label { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--red-bright); text-shadow: 0 0 8px rgba(255,26,26,0.4); }
+  .team-info .team-detail { font-size: 0.9rem; color: #999; letter-spacing: 1px; }
+
+  .search-btn {
+    width: 100%; max-width: 600px; padding: 20px 40px;
+    background: linear-gradient(180deg, #2a1212 0%, #1a0808 50%, #2a1212 100%);
+    border: 2px solid var(--red-main); border-radius: 12px; color: white;
+    font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; letter-spacing: 5px;
+    text-transform: uppercase; cursor: pointer; position: relative; overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 15px rgba(196,30,30,0.2);
+  }
+  .search-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,50,50,0.1), transparent); transform: translateX(-100%); transition: transform 0.6s; }
+  .search-btn:hover { transform: scale(1.05); border-color: var(--red-bright); box-shadow: 0 0 30px rgba(255,26,26,0.4), 0 0 60px rgba(255,26,26,0.2), inset 0 0 20px rgba(255,26,26,0.1); text-shadow: 0 0 15px rgba(255,255,255,0.5); }
+  .search-btn:hover::before { transform: translateX(100%); }
+  .search-btn:active { transform: scale(0.98); }
+  .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  .secondary-btn {
+    padding: 12px 35px; background: linear-gradient(180deg, #1e0a0a 0%, #120505 100%);
+    border: 2px solid var(--red-deep); border-radius: 8px; color: var(--silver);
+    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 3px;
+    text-transform: uppercase; cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden;
+  }
+  .secondary-btn::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 2px; background: var(--red-bright); transition: all 0.3s; transform: translateX(-50%); box-shadow: 0 0 8px var(--red-bright); }
+  .secondary-btn:hover { transform: scale(1.08); border-color: var(--red-main); color: white; box-shadow: 0 0 20px rgba(196,30,30,0.3); }
+  .secondary-btn:hover::after { width: 80%; }
+
+  .bottom-buttons { display: flex; gap: 30px; animation: fadeIn 0.8s 1.2s forwards; opacity: 0; }
+  .main-action { width: 100%; max-width: 600px; animation: fadeIn 0.8s 0.8s forwards; opacity: 0; }
+  .footer { text-align: center; padding: 12px 20px; font-size: 0.65rem; color: #555; letter-spacing: 1px; line-height: 1.6; animation: fadeIn 1s 1.5s forwards; opacity: 0; }
+
+  .pseudo-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 5px; animation: fadeIn 0.6s 0.5s forwards; opacity: 0; }
+  .pseudo-input {
+    padding: 10px 18px; border: 2px solid #555; border-radius: 10px; font-size: 1rem;
+    text-align: center; background: rgba(255,255,255,0.06); color: #fff; outline: none; width: 240px;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; transition: border-color 0.3s;
+  }
+  .pseudo-input::placeholder { color: rgba(255,255,255,0.25); }
+  .pseudo-input:focus { border-color: var(--red-main); box-shadow: 0 0 12px rgba(196,30,30,0.2); }
+
+  /* ===== LOBBY ===== */
+  .lobby-container {
+    background: linear-gradient(180deg, #1a0808 0%, #0d0505 40%, #1a0808 100%);
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3), 0 0 80px rgba(139,0,0,0.2);
+    padding: 0; overflow: hidden;
+    animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.9);
+  }
+  .lobby-content { padding: 30px 40px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .lobby-title { font-family: 'Russo One', sans-serif; font-size: 1.4rem; color: var(--red-bright); text-shadow: 0 0 15px rgba(255,26,26,0.4); letter-spacing: 4px; text-transform: uppercase; }
+  .lobby-status { font-family: 'Rajdhani', sans-serif; font-size: 1rem; color: #aaa; letter-spacing: 2px; min-height: 24px; text-align: center; }
+
+  .player-list { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
+  .player-slot {
+    display: flex; align-items: center; gap: 14px;
+    background: linear-gradient(135deg, rgba(30,10,10,0.8), rgba(15,5,5,0.9));
+    border: 2px solid #333; border-radius: 12px; padding: 12px 18px;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); position: relative;
+  }
+  .player-slot.filled { border-color: var(--red-deep); animation: slotAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  .player-slot.filled.host-slot { border-color: var(--gold); }
+  .player-slot.empty { border-style: dashed; opacity: 0.4; }
+  @keyframes slotAppear { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .player-avatar { width: 44px; height: 44px; border-radius: 50%; background: #000; border: 2px solid #555; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+  .player-avatar img { width: 36px; height: 36px; object-fit: contain; }
+  .player-slot.filled .player-avatar { border-color: var(--red-main); }
+  .player-slot.filled.host-slot .player-avatar { border-color: var(--gold); box-shadow: 0 0 10px rgba(212,168,67,0.4); }
+
+  .player-name { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--silver-light); letter-spacing: 1px; flex: 1; }
+  .player-slot.empty .player-name { color: #444; font-weight: 400; }
+
+  .player-badge { font-family: 'Orbitron', sans-serif; font-size: 0.6rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 1px; }
+  .badge-host { background: var(--gold); color: #1a0808; }
+  .badge-you { background: var(--red-main); color: white; }
+  .badge-searching { background: transparent; border: 1px solid #444; color: #555; }
+
+  .searching-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+  .lobby-spinner { width: 30px; height: 30px; border: 3px solid #333; border-top-color: var(--red-bright); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .back-btn { padding: 8px 20px; background: transparent; border: 1px solid #444; border-radius: 6px; color: #777; font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.3s; margin-top: 5px; }
+  .back-btn:hover { border-color: var(--red-main); color: var(--silver); }
+
+  .sound-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; width: 50px; height: 50px; border-radius: 50%; background: rgba(30,10,10,0.9); border: 2px solid var(--red-deep); color: var(--silver); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; backdrop-filter: blur(10px); }
+  .sound-toggle:hover { transform: scale(1.1); border-color: var(--red-main); box-shadow: 0 0 15px rgba(196,30,30,0.3); }
+  .sound-toggle.muted { opacity: 0.5; }
+
+  .particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+  .particle { position: absolute; width: 3px; height: 3px; background: var(--red-bright); border-radius: 50%; opacity: 0; animation: particleFloat linear infinite; }
+  @keyframes particleFloat { 0% { opacity: 0; transform: translateY(100vh) scale(0); } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { opacity: 0; transform: translateY(-10vh) scale(1); } }
+
+  .modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+  .modal-overlay.active { display: flex; }
+  .modal { background: linear-gradient(180deg, #1a0808, #0d0505); border: 2px solid var(--red-main); border-radius: 16px; padding: 40px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; color: var(--silver-light); position: relative; box-shadow: 0 0 60px rgba(196,30,30,0.3); animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal h2 { font-family: 'Russo One', sans-serif; font-size: 1.6rem; color: var(--red-bright); text-shadow: 0 0 15px rgba(255,26,26,0.4); margin-bottom: 20px; text-align: center; letter-spacing: 3px; }
+  .modal p, .modal li { font-size: 0.95rem; line-height: 1.7; color: #ccc; margin-bottom: 10px; }
+  .modal ul { list-style: none; padding-left: 0; }
+  .modal li::before { content: '▸ '; color: var(--red-bright); }
+  .modal-close { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; transition: color 0.3s; }
+  .modal-close:hover { color: var(--red-bright); }
+
+  /* ===== SCREEN: INTERDITS ===== */
+  .interdits-container {
+    background: linear-gradient(180deg, #1a0808 0%, #0d0505 30%, #1a0808 100%);
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3), 0 0 80px rgba(139,0,0,0.2);
+    padding: 0; overflow: hidden;
+    animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.9);
+    position: relative;
+  }
+
+  /* Spotlights */
+  .interdits-container::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 200px; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 25% 0%, rgba(255,220,150,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 0%, rgba(255,220,150,0.15) 0%, transparent 45%),
+      radial-gradient(ellipse at 75% 0%, rgba(255,220,150,0.12) 0%, transparent 50%);
+    z-index: 1;
+  }
+
+  .interdits-header {
+    position: relative; z-index: 2;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 20px 25px 0; gap: 15px;
+  }
+
+  /* Score boxes */
+  .score-box {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    min-width: 110px;
+    animation: scoreSlide 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+  }
+  .score-box.left { animation-delay: 0.3s; }
+  .score-box.right { animation-delay: 0.5s; }
+  @keyframes scoreSlide { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .score-display {
+    width: 90px; height: 70px;
+    background: linear-gradient(180deg, #0a0202 0%, #1a0505 100%);
+    border: 3px solid var(--red-main); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 10px rgba(196,30,30,0.2);
+    position: relative;
+  }
+  .score-display::before {
+    content: ''; position: absolute; inset: 3px; border: 1px solid rgba(196,30,30,0.2); border-radius: 6px;
+  }
+  .score-num {
+    font-family: 'Orbitron', sans-serif; font-size: 2.6rem; font-weight: 900; color: white;
+    text-shadow: 0 0 15px rgba(255,255,255,0.3);
+  }
+  .score-team {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; font-weight: 700;
+    letter-spacing: 3px; text-transform: uppercase;
+  }
+  .score-team.team-a { color: #ff6666; }
+  .score-team.team-b { color: #6699ff; }
+
+  .score-members {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.7rem; color: #888; letter-spacing: 1px;
+    text-align: center; max-width: 120px; line-height: 1.3;
+  }
+
+  /* Center logo mini */
+  .header-logo {
+    flex: 1; text-align: center;
+    animation: logoFadeIn 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0;
+  }
+  @keyframes logoFadeIn { to { opacity: 1; } }
+
+  .header-logo-frame {
+    display: inline-block;
+    background: linear-gradient(180deg, #0a0202 0%, #150505 50%, #0a0202 100%);
+    border: 2px solid var(--red-main); border-radius: 10px;
+    padding: 10px 30px; position: relative;
+    box-shadow: inset 0 0 20px rgba(139,0,0,0.3), 0 0 15px rgba(196,30,30,0.2);
+  }
+  .header-logo-frame::before {
+    content: ''; position: absolute; inset: 3px; border: 1px solid rgba(196,30,30,0.2); border-radius: 7px; pointer-events: none;
+  }
+  .header-logo-title {
+    font-family: 'Russo One', sans-serif; font-size: 2rem; color: var(--red-bright);
+    text-shadow: 0 0 8px rgba(255,26,26,0.8), 0 0 25px rgba(255,26,26,0.3), 2px 2px 0 #400;
+    letter-spacing: 4px; line-height: 1.1;
+  }
+
+  /* Manche ribbon */
+  .manche-ribbon {
+    position: relative; z-index: 2;
+    margin: 15px auto 0; width: fit-content;
+    background: linear-gradient(90deg, transparent 0%, var(--red-deep) 10%, var(--red-main) 50%, var(--red-deep) 90%, transparent 100%);
+    padding: 8px 60px;
+    clip-path: polygon(3% 0%, 97% 0%, 100% 50%, 97% 100%, 3% 100%, 0% 50%);
+    animation: mancheAppear 0.6s 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0; transform: scale(0.7);
+  }
+  @keyframes mancheAppear { to { opacity: 1; transform: scale(1); } }
+  .manche-text {
+    font-family: 'Orbitron', sans-serif; font-size: 1.1rem; font-weight: 700; color: white;
+    text-shadow: 0 0 10px rgba(255,255,255,0.4); letter-spacing: 5px;
+  }
+
+  /* Interdits panel */
+  .interdits-panel {
+    position: relative; z-index: 2;
+    margin: 20px 30px 25px; padding: 0;
+    background: linear-gradient(180deg, rgba(40,15,15,0.9) 0%, rgba(20,8,8,0.95) 100%);
+    border: 2px solid rgba(100,30,30,0.4); border-radius: 14px;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+    overflow: hidden;
+    animation: panelRise 0.8s 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0; transform: translateY(30px);
+  }
+  @keyframes panelRise { to { opacity: 1; transform: translateY(0); } }
+
+  .interdits-title-bar {
+    background: linear-gradient(180deg, rgba(50,20,20,0.8), rgba(30,10,10,0.9));
+    padding: 12px 20px; text-align: center;
+    border-bottom: 1px solid rgba(196,30,30,0.2);
+  }
+  .interdits-title-text {
+    font-family: 'Russo One', sans-serif; font-size: 1.3rem; color: var(--red-bright);
+    text-shadow: 0 0 12px rgba(255,26,26,0.5); letter-spacing: 5px;
+  }
+
+  .interdits-list { padding: 15px 30px 20px; display: flex; flex-direction: column; gap: 0; }
+
+  .interdit-item {
+    text-align: center; padding: 10px 0;
+    font-family: 'Rajdhani', sans-serif; font-size: 1.05rem; font-weight: 700;
+    color: rgba(255,255,255,0.85); letter-spacing: 2px; text-transform: uppercase;
+    border-bottom: 1px solid rgba(100,30,30,0.15);
+    opacity: 0; transform: translateX(-30px);
+    animation: interditSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .interdit-item:last-child { border-bottom: none; }
+  .interdit-item:nth-child(1) { animation-delay: 1.2s; }
+  .interdit-item:nth-child(2) { animation-delay: 1.5s; }
+  .interdit-item:nth-child(3) { animation-delay: 1.8s; }
+  .interdit-item:nth-child(4) { animation-delay: 2.1s; }
+  .interdit-item:nth-child(5) { animation-delay: 2.4s; }
+  @keyframes interditSlide { to { opacity: 1; transform: translateX(0); } }
+
+  /* Checkmark button */
+  .interdits-wait {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: var(--silver);
+    text-align: center;
+    padding: 12px 20px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .interdits-confirm {
+    position: relative; z-index: 2;
+    display: flex; justify-content: center; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+    padding: 0 35px 20px;
+  }
+  .confirm-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    background: linear-gradient(135deg, #555, #333);
+    border: 3px solid #777; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; color: white;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    animation: confirmPop 0.5s 2.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0; transform: scale(0.5);
+  }
+  @keyframes confirmPop { to { opacity: 1; transform: scale(1); } }
+  .confirm-btn:hover {
+    transform: scale(1.15);
+    background: linear-gradient(135deg, #00aa44, #008833);
+    border-color: #00cc55;
+    box-shadow: 0 0 20px rgba(0,200,80,0.4);
+  }
+  .confirm-btn:active { transform: scale(0.95); }
+
+  /* ===== SCREEN: MANCHE (JEU) ===== */
+  .manche-container {
+    background: transparent;
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3);
+    padding: 0; overflow: hidden;
+    animation: containerAppear 0.8s cubic-bezier(0.16,1,0.3,1) forwards; opacity: 0; transform: scale(0.9);
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .manche-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(0,0,0,0.52) 0%, rgba(20,0,0,0.38) 42%, rgba(0,0,0,0.58) 100%);
+  }
+
+  /* Manche header bar with scores */
+  .manche-hud {
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; position: relative; z-index: 5;
+    background: linear-gradient(180deg, rgba(30,10,10,0.9), rgba(0,0,0,0.95));
+    border-bottom: 2px solid var(--red-main);
+  }
+  .manche-hud-score {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 90px;
+  }
+  .manche-hud-score .hud-pts {
+    font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; color: white;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3); line-height: 1;
+  }
+  .manche-hud-score .hud-team {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .hud-team.team-a { color: #ff6666; }
+  .hud-team.team-b { color: #6699ff; }
+
+  .manche-hud-center {
+    text-align: center; flex: 1;
+  }
+  .hud-sequence-info {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; color: #888;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .hud-roles {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; color: #666;
+    letter-spacing: 1px; margin-top: 2px;
+  }
+  .hud-roles .role-giver { color: var(--gold); font-weight: 700; }
+  .hud-roles .role-guesser { color: var(--silver); font-weight: 700; }
+
+  /* Chrono overlay */
+  .chrono-overlay {
+    position: absolute; inset: 0; z-index: 50;
+    background: rgba(0,0,0,0.92); display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
+  .chrono-overlay.visible { opacity: 1; pointer-events: auto; }
+  .chrono-big {
+    font-family: 'Orbitron', sans-serif; font-size: 6.5rem; font-weight: 900;
+    color: var(--red-bright); text-shadow: 0 0 30px rgba(255,26,26,0.6), 0 0 60px rgba(255,26,26,0.3);
+    animation: chronoPulse 1s ease-in-out infinite alternate;
+  }
+  @keyframes chronoPulse { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
+  .chrono-label {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; color: #888;
+    letter-spacing: 4px; text-transform: uppercase; margin-top: 10px;
+  }
+
+  /* Zone de jeu : chrono en haut à gauche, bloc mot+boutons en bas au centre (grille) */
+  .game-area {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 10px 32px;
+    padding: 12px 28px 10px;
+    position: relative;
+    z-index: 2;
+    align-items: start;
+  }
+
+  .game-timer-aside {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    align-self: start;
+  }
+
+  .timer-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 132px;
+    padding: 16px 22px 18px;
+    border-radius: 16px;
+    background: linear-gradient(165deg, #2a2a2e 0%, #0c0c0e 45%, #18181c 100%);
+    border: 3px solid #9a9da4;
+    box-shadow:
+      inset 0 2px 12px rgba(0,0,0,0.65),
+      inset 0 -1px 0 rgba(255,255,255,0.06),
+      0 4px 18px rgba(0,0,0,0.5),
+      0 0 0 1px rgba(0,0,0,0.4);
+  }
+
+  .timer-colon {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.45);
+    line-height: 1;
+    padding-right: 2px;
+  }
+
+  .timer-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.35rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-shadow: 0 0 12px rgba(255,255,255,0.25);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .timer-box.urgent .timer-value {
+    color: var(--red-bright);
+    animation: urgentPulse 0.5s ease-in-out infinite alternate;
+  }
+
+  .timer-box.urgent {
+    border-color: #c43333;
+    box-shadow:
+      inset 0 2px 12px rgba(0,0,0,0.65),
+      0 0 22px rgba(196,30,30,0.45);
+  }
+
+  @keyframes urgentPulse { 0% { transform: scale(1); } 100% { transform: scale(1.06); text-shadow: 0 0 20px rgba(255,26,26,0.6); } }
+
+  .game-play-column {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: end;
+    justify-self: center;
+    width: 100%;
+    max-width: 920px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+  }
+
+  /* Podiums : indices / propositions au-dessus des bonhommes */
+  .players-stage {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+    gap: clamp(20px, 5vw, 56px);
+    width: 100%;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .player-podium {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(300px, 48vw);
+  }
+  .player-bubble {
+    min-height: 2.8em;
+    width: 100%;
+    max-width: 420px;
+    padding: 12px 18px;
+    margin-bottom: 6px;
+    border-radius: 16px;
+    background: linear-gradient(
+      168deg,
+      rgba(58, 32, 34, 0.97) 0%,
+      rgba(24, 10, 12, 0.98) 42%,
+      rgba(38, 18, 22, 0.97) 100%
+    );
+    border: 2px solid rgba(210, 70, 70, 0.55);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 -2px 8px rgba(0, 0, 0, 0.4),
+      0 6px 28px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(0, 0, 0, 0.25),
+      0 0 32px rgba(196, 30, 30, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-font-smoothing: antialiased;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(1.52rem, 3.2vw, 2.12rem);
+    font-weight: 700;
+    letter-spacing: 0.035em;
+    color: #fffef9;
+    text-align: center;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.38;
+    text-shadow:
+      0 0 1px rgba(0, 0, 0, 0.95),
+      0 2px 6px rgba(0, 0, 0, 0.75),
+      0 0 22px rgba(255, 255, 255, 0.1);
+    transition: transform 0.15s ease, box-shadow 0.25s ease;
+  }
+  .player-podium.giver .player-bubble {
+    border-color: rgba(212, 168, 67, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      inset 0 -2px 8px rgba(0, 0, 0, 0.4),
+      0 6px 28px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(0, 0, 0, 0.2),
+      0 0 36px rgba(212, 168, 67, 0.14);
+  }
+  .player-podium.guesser .player-bubble {
+    border-color: rgba(130, 170, 240, 0.48);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      inset 0 -2px 8px rgba(0, 0, 0, 0.4),
+      0 6px 28px rgba(0, 0, 0, 0.5),
+      0 0 0 1px rgba(0, 0, 0, 0.2),
+      0 0 36px rgba(100, 150, 255, 0.12);
+  }
+  .player-bubble.bubble-pop {
+    animation: bubblePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes bubblePop {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.12); }
+    70%  { transform: scale(0.97); }
+    100% { transform: scale(1); }
+  }
+  .player-pseudo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .player-podium.giver .player-pseudo { color: var(--gold); }
+  .player-podium.guesser .player-pseudo { color: #9ec8ff; }
+  .player-podium img {
+    width: min(160px, 32vw);
+    height: auto;
+    display: block;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+  }
+
+  .dire-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: clamp(12px, 3vw, 28px);
+    width: 100%;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .dire-field {
+    flex: 1;
+    min-width: 200px;
+    max-width: 360px;
+  }
+  .dire-field label {
+    display: block;
+    font-size: 0.72rem;
+    color: #777;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .dire-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid #444;
+    background: linear-gradient(180deg, #141414, #0a0a0a);
+    color: #eee;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-sizing: border-box;
+  }
+  .dire-input:focus {
+    outline: none;
+    border-color: var(--red-main);
+    box-shadow: 0 0 16px rgba(196,30,30,0.25);
+  }
+  .dire-input:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* Word frame (Cadre_indice.png) — un peu remonté pour laisser la place aux podiums + Dire */
+  .word-frame {
+    position: relative; width: 100%; max-width: 640px;
+    margin-top: 4px;
+    opacity: 0; transform: scale(0.8) translateY(20px);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .word-frame.visible { opacity: 1; transform: scale(1) translateY(0); }
+
+  .word-frame-img {
+    width: 100%; display: block;
+  }
+
+  /* Pastilles vertes superposées aux 5 sphères du PNG (positions % sur Cadre_indice.png 1511×653) */
+  .sphere-overlays {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .sphere-glow {
+    position: absolute;
+    /* Largeur relative au cadre (= à l’image) : ~5 % remplit bien le creux gris (réduire si ça chevauche les voisins) */
+    width: 5%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    /* Décalage horizontal fin (un peu à droite du -5px précédent) */
+    transform: translate(calc(-50% - 2px), -50%);
+    /* Centre vertical des 5 sphères sur le PNG (ajusté fin : un poil plus bas) */
+    top: 50.9%;
+    opacity: 0;
+    transition: opacity 0.45s ease, box-shadow 0.45s ease;
+    background: radial-gradient(circle at 32% 28%, #a8ffaa 0%, #1ecb3e 45%, #0a6 85%, #042 100%);
+    box-shadow:
+      inset 0 -2px 6px rgba(0,0,0,0.45),
+      0 0 10px rgba(0,255,120,0.35);
+  }
+  .sphere-glow.lit {
+    opacity: 1;
+    box-shadow:
+      inset 0 -2px 6px rgba(0,0,0,0.35),
+      0 0 18px rgba(0,255,140,0.95),
+      0 0 32px rgba(0,220,80,0.55);
+  }
+  /* 5 pics sur la barre grise (on ignore le 1er pic parasite à ~23 %) */
+  .sphere-glow:nth-child(1) { left: 34.75%; }
+  .sphere-glow:nth-child(2) { left: 42.62%; }
+  .sphere-glow:nth-child(3) { left: 50.56%; }
+  .sphere-glow:nth-child(4) { left: 58.5%; }
+  .sphere-glow:nth-child(5) { left: 66.31%; }
+
+  /* Pastille rouge pour mot perdu (passé) */
+  .sphere-glow.lost {
+    opacity: 1;
+    background: radial-gradient(circle at 32% 28%, #ffaaaa 0%, #e03030 45%, #a00 85%, #500 100%);
+    box-shadow:
+      inset 0 -2px 6px rgba(0,0,0,0.35),
+      0 0 14px rgba(255,50,50,0.7),
+      0 0 28px rgba(255,30,30,0.35);
+    animation: sphereLost 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes sphereLost {
+    0% { transform: translate(calc(-50% - 2px), -50%) scale(0.5); opacity: 0; }
+    60% { transform: translate(calc(-50% - 2px), -50%) scale(1.15); }
+    100% { transform: translate(calc(-50% - 2px), -50%) scale(1); opacity: 1; }
+  }
+
+  /* Cadre rouge : overflow masque l’indice ; animation en top/% (translateY(%) = hauteur du texte → invisible) */
+  .word-frame-clip {
+    position: absolute;
+    inset: 62% 12.2% 11.4% 12.1%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .word-display {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 92%;
+    margin: 0;
+    padding: 0 0.5ch;
+    box-sizing: border-box;
+    text-align: center;
+    font-family: 'Russo One', sans-serif; font-size: 2.65rem; color: white;
+    text-shadow: 0 0 15px rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .word-split {
+    display: inline-block;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+
+  .word-half {
+    display: inline-block;
+    vertical-align: baseline;
+    will-change: transform, opacity;
+  }
+
+  /* Disparition : moitié gauche vers la droite, moitié droite vers la gauche */
+  @keyframes wordExitLeft {
+    to {
+      transform: translateX(125%);
+      opacity: 0;
+    }
+  }
+  @keyframes wordExitRight {
+    to {
+      transform: translateX(-125%);
+      opacity: 0;
+    }
+  }
+  .word-display.word-exit-anim .word-half-left {
+    animation: wordExitLeft 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  .word-display.word-exit-anim .word-half-right {
+    animation: wordExitRight 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  /* Apparition : symétrique, les deux moitiés arrivent en même temps */
+  @keyframes wordEnterLeft {
+    from {
+      transform: translateX(-125%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  @keyframes wordEnterRight {
+    from {
+      transform: translateX(125%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  .word-display.word-enter-anim .word-half-left {
+    animation: wordEnterLeft 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .word-display.word-enter-anim .word-half-right {
+    animation: wordEnterRight 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* ===== FLÈCHES ROUGES (mode duo) — alignées sur la barre mot, de part et d’autre du cadre ===== */
+  .arrows-wrap {
+    position: absolute;
+    /* Même bande verticale que .word-frame-clip (zone du mot sous les sphères) */
+    top: 62%;
+    bottom: 11.4%;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    pointer-events: none;
+    display: none;
+    grid-template-columns: auto 1fr auto;
+    align-items: stretch;
+    /* Plus d’air entre les flèches et la zone du mot (évite le chevauchement du cadre rouge) */
+    column-gap: clamp(32px, 6.5vw, 60px);
+    box-sizing: border-box;
+  }
+  .arrows-wrap.active { display: grid; }
+  .arrows-cluster {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-height: 0;
+    flex-shrink: 0;
+    gap: clamp(2px, 0.35vw, 5px);
+  }
+  /* Décale les triples flèches vers l’extérieur du cadre */
+  .arrows-cluster--left {
+    justify-content: flex-end;
+    transform: translateX(calc(-1 * clamp(32px, 9.5vw, 82px)));
+  }
+  .arrows-cluster--right {
+    justify-content: flex-start;
+    transform: translateX(clamp(32px, 9.5vw, 82px));
+  }
+  .arrow-indicator {
+    position: relative;
+    /* ~85 % de la hauteur de la barre (bande top/bottom), comme sur le mockup */
+    height: 85%;
+    max-height: 100%;
+    width: auto;
+    aspect-ratio: 44 / 56;
+    flex-shrink: 0;
+    background: url('images/flèche.png') center / contain no-repeat;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 1;
+  }
+  .arrow-indicator.right { transform: scaleX(-1); }
+  .arrow-indicator.used {
+    opacity: 0;
+    transform: scale(1.6);
+    filter: brightness(2);
+    transition: all 0.5s ease-out;
+  }
+  .arrow-indicator.right.used { transform: scaleX(-1) scale(1.6); }
+
+  @keyframes arrowFlash {
+    0% { filter: brightness(1); transform: scale(1); }
+    50% { filter: brightness(2.5); transform: scale(1.3); }
+    100% { filter: brightness(0); transform: scale(1.5); opacity: 0; }
+  }
+
+  /* Action buttons */
+  .game-actions {
+    display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; justify-content: center;
+  }
+  .game-btn {
+    padding: 10px 32px; border-radius: 12px; border: 2px solid;
+    font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .btn-pass {
+    background: linear-gradient(180deg, #3a2a1a, #1f150d);
+    border-color: #aa8822; color: #ddbb44;
+  }
+  .btn-pass:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(200,150,0,0.4); }
+  .game-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  /* Sequence transition overlay */
+  .seq-overlay {
+    position: absolute; inset: 0; z-index: 40;
+    background: rgba(0,0,0,0.9); display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.5s;
+  }
+  .seq-overlay.visible { opacity: 1; pointer-events: auto; }
+  .seq-title {
+    font-family: 'Russo One', sans-serif; font-size: 2.05rem; color: var(--red-bright);
+    text-shadow: 0 0 15px rgba(255,26,26,0.4); letter-spacing: 4px; margin-bottom: 10px;
+  }
+  .seq-detail {
+    font-family: 'Rajdhani', sans-serif; font-size: 1.2rem; color: #aaa;
+    letter-spacing: 2px; text-align: center; line-height: 1.8;
+  }
+  .seq-detail .name-highlight { color: var(--gold); font-weight: 700; }
+  .seq-detail .role-tag {
+    display: inline-block; padding: 2px 10px; border-radius: 4px;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; margin-left: 4px;
+  }
+  .role-tag.giver { background: rgba(212,168,67,0.2); color: var(--gold); border: 1px solid rgba(212,168,67,0.3); }
+  .role-tag.guesser { background: rgba(192,192,192,0.15); color: var(--silver); border: 1px solid rgba(192,192,192,0.2); }
+
+  @media (max-width: 768px) {
+    .content { padding: 25px 20px; gap: 20px; }
+    .logo-title { font-size: 2.2rem; letter-spacing: 3px; }
+    .prize-text { font-size: 1rem; }
+    .search-btn { font-size: 1.3rem; padding: 15px 25px; }
+    .word-count { top: 10px; right: 10px; }
+    .bottom-buttons { gap: 15px; }
+    .secondary-btn { padding: 10px 20px; font-size: 0.85rem; }
+    .lobby-content { padding: 20px; }
+    .interdits-header { padding: 15px 15px 0; }
+    .score-display { width: 65px; height: 50px; }
+    .score-num { font-size: 1.8rem; }
+    .header-logo-title { font-size: 1.3rem; letter-spacing: 2px; }
+    .header-logo-frame { padding: 8px 15px; }
+    .interdits-panel { margin: 15px 15px 20px; }
+    .interdit-item { font-size: 0.85rem; padding: 8px 0; }
+    .manche-ribbon { padding: 6px 35px; }
+    .manche-text { font-size: 0.9rem; }
+    .chrono-big { font-size: 4rem; }
+    .game-area {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      padding: 14px 12px 16px;
+      gap: 12px;
+    }
+    .game-timer-aside {
+      justify-self: start;
+    }
+    .timer-value { font-size: 1.7rem; }
+    .timer-colon { font-size: 1.35rem; }
+    .word-display { font-size: 1.65rem; letter-spacing: 0.1em; }
+    .players-stage { flex-direction: column; align-items: center; gap: 22px; }
+    .player-podium { width: 100%; max-width: 360px; }
+    .player-bubble {
+      font-size: clamp(1.34rem, 4.8vw, 1.78rem);
+      min-height: 3.05em;
+      padding: 14px 16px;
+      letter-spacing: 0.03em;
+    }
+    .player-podium img { width: min(185px, 58vw); }
+    .player-pseudo { font-size: 1.02rem; }
+    .dire-row { flex-direction: column; align-items: stretch; }
+  }
+
+  .mode-pick { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 600px; }
+  .mode-pick .search-btn.mode-duo {
+    font-size: 1.35rem; letter-spacing: 3px;
+    background: linear-gradient(180deg, #1a1520 0%, #120a18 50%, #1a1520 100%);
+    border-color: #8866aa;
+  }
+  .mode-pick .search-btn.mode-duo:hover { border-color: #aa88cc; box-shadow: 0 0 28px rgba(160,120,200,0.35); }
+  .results-duo-wrap { max-width: 640px; margin: 0 auto; }
+  .results-duo-title { font-family: 'Russo One', sans-serif; font-size: 1.6rem; color: var(--red-bright); text-align: center; margin-bottom: 8px; letter-spacing: 3px; }
+  .results-duo-sub { text-align: center; color: #888; font-size: 0.95rem; margin-bottom: 22px; }
+  .results-duo-table { width: 100%; border-collapse: collapse; font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; }
+  .results-duo-table th, .results-duo-table td { border: 1px solid #444; padding: 12px 14px; text-align: center; }
+  .results-duo-table th { background: rgba(196,30,30,0.25); color: var(--silver-light); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: 0.75rem; }
+  .results-duo-table td:first-child { text-align: left; font-weight: 600; color: var(--silver-light); }
+  .results-duo-winner { text-align: center; margin-top: 22px; font-size: 1.2rem; color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<div class="dot-matrix"></div>
+<div class="circle-deco c1"></div>
+<div class="circle-deco c2"></div>
+<div class="circle-deco c3"></div>
+<div class="particles" id="particles"></div>
+
+<!-- ══════ SCREEN: ACCUEIL ══════ -->
+<div class="screen active" id="screenAccueil">
+<div class="game-container">
+  <div class="top-bar"><span class="top-bar-text" id="accueilTopText">Choisissez un mode de jeu</span></div>
+  <div class="word-count">
+    <div><span class="plus">+</span> <span class="label">DE</span></div>
+    <div class="number">2.500</div>
+    <div class="label">MOTS</div>
+    <div class="setting"><span class="dot"></span> 1er mot visible avant chrono</div>
+  </div>
+  <div class="content">
+    <div class="logo-container">
+      <div class="logo-frame">
+        <div class="logo-title">MOT DE PASSE</div>
+        <div class="logo-subtitle">&#9733; Flash &#9733;</div>
+      </div>
+    </div>
+    <div class="prize-banner">
+      <div class="prize-ribbon"><span class="prize-text">50 000 &amp; 100 000 EUROS</span></div>
+    </div>
+    <div class="pseudo-row">
+      <input type="text" id="pseudoInput" class="pseudo-input" placeholder="Votre pseudo..." maxlength="16" />
+    </div>
+    <div class="main-action mode-pick">
+      <div class="team-row" style="margin-bottom:8px">
+        <div class="team-info"><div class="team-label">Qualifications</div><div class="team-detail">4 joueurs — 4 séquences</div></div>
+        <div></div>
+        <div class="team-info"><div class="team-label">Duel</div><div class="team-detail">2 joueurs — 2 tours</div></div>
+      </div>
+      <button type="button" class="search-btn" id="btnPlay">RECHERCHE RAPIDE — 4 JOUEURS</button>
+      <button type="button" class="search-btn mode-duo" id="btnPlayDuo">DEUX JOUEURS</button>
+    </div>
+    <div class="bottom-buttons">
+      <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
+      <button class="secondary-btn" onclick="showModal('about')">À propos</button>
+    </div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════ SCREEN: LOBBY ══════ -->
+<div class="screen" id="screenLobby">
+<div class="lobby-container">
+  <div class="top-bar"><span class="top-bar-text" id="lobbyTopText">Lobby — En attente de joueurs</span></div>
+  <div class="lobby-content">
+    <div class="lobby-title">RECHERCHE EN COURS</div>
+    <div class="lobby-spinner" id="lobbySpinner"></div>
+    <div class="lobby-status" id="lobbyStatus">Connexion au serveur...</div>
+    <div class="player-list" id="playerList">
+      <div class="player-slot empty" id="slot0"><div class="player-avatar"><img src="images/Bonhomme.png" alt=""></div><div class="player-name">En attente<span class="searching-dots"></span></div><span class="player-badge badge-searching">—</span></div>
+      <div class="player-slot empty" id="slot1"><div class="player-avatar"><img src="images/Bonhomme.png" alt=""></div><div class="player-name">En attente<span class="searching-dots"></span></div><span class="player-badge badge-searching">—</span></div>
+      <div class="player-slot empty" id="slot2"><div class="player-avatar"><img src="images/Bonhomme.png" alt=""></div><div class="player-name">En attente<span class="searching-dots"></span></div><span class="player-badge badge-searching">—</span></div>
+      <div class="player-slot empty" id="slot3"><div class="player-avatar"><img src="images/Bonhomme.png" alt=""></div><div class="player-name">En attente<span class="searching-dots"></span></div><span class="player-badge badge-searching">—</span></div>
+    </div>
+    <button class="back-btn" id="btnBackMenu">&#8592; Retour au menu</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════ SCREEN: INTERDITS ══════ -->
+<div class="screen" id="screenInterdits">
+<div class="interdits-container">
+  <!-- Header: Score A — Logo — Score B -->
+  <div class="interdits-header">
+    <!-- Equipe A -->
+    <div class="score-box left">
+      <div class="score-display"><span class="score-num" id="scoreA">0</span></div>
+      <div class="score-team team-a">EQUIPE A</div>
+      <div class="score-members" id="teamAMembers"></div>
+    </div>
+    <!-- Logo centre -->
+    <div class="header-logo">
+      <div class="header-logo-frame">
+        <div class="header-logo-title">MOT DE PASSE</div>
+      </div>
+    </div>
+    <!-- Equipe B -->
+    <div class="score-box right">
+      <div class="score-display"><span class="score-num" id="scoreB">0</span></div>
+      <div class="score-team team-b">EQUIPE B</div>
+      <div class="score-members" id="teamBMembers"></div>
+    </div>
+  </div>
+
+  <!-- Manche ribbon -->
+  <div class="manche-ribbon">
+    <span class="manche-text" id="mancheText">MANCHE 1</span>
+  </div>
+
+  <!-- Interdits panel -->
+  <div class="interdits-panel">
+    <div class="interdits-title-bar">
+      <div class="interdits-title-text">LES INTERDITS</div>
+    </div>
+    <div class="interdits-list">
+      <div class="interdit-item">Pas de mot composé</div>
+      <div class="interdit-item">Pas de mot de la même famille</div>
+      <div class="interdit-item">Pas de mot qui commence pareil</div>
+      <div class="interdit-item">Pas de découpage du mot</div>
+      <div class="interdit-item">Pas de mime</div>
+    </div>
+  </div>
+
+  <!-- Checkmark (hôte uniquement) / attente pour les autres -->
+  <div class="interdits-confirm" id="interditsConfirmWrap">
+    <p class="interdits-wait" id="interditsWaitHost" hidden>En attente de l'hôte…</p>
+    <button type="button" class="confirm-btn" id="btnConfirmInterdits" title="Compris !">&#10004;</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════ SCREEN: MANCHE JEU ══════ -->
+<div class="screen" id="screenManche">
+<video class="manche-bg-video" id="mancheBgVideo" src="images/motdepasse.mp4" autoplay muted loop playsinline preload="auto" aria-hidden="true"></video>
+<div class="manche-container">
+  <!-- HUD -->
+  <div class="manche-hud">
+    <div class="manche-hud-score">
+      <div class="hud-pts" id="mancheScoreA">0</div>
+      <div class="hud-team team-a">EQUIPE A</div>
+    </div>
+    <div class="manche-hud-center">
+      <div class="hud-sequence-info" id="seqInfo">Séquence 1/4</div>
+      <div class="hud-roles" id="seqRoles"></div>
+    </div>
+    <div class="manche-hud-score">
+      <div class="hud-pts" id="mancheScoreB">0</div>
+      <div class="hud-team team-b">EQUIPE B</div>
+    </div>
+  </div>
+
+  <!-- Game area -->
+  <div class="game-area">
+    <aside class="game-timer-aside" aria-label="Temps restant">
+      <div class="timer-box" id="timerBox">
+        <span class="timer-colon">:</span>
+        <span class="timer-value" id="timerDisplay">30</span>
+      </div>
+    </aside>
+
+    <div class="game-play-column">
+    <!-- Podiums : bulles + pseudo + bonhomme -->
+    <div class="players-stage" id="playersStage">
+      <div class="player-podium giver">
+        <div class="player-bubble" id="bubbleGiver" aria-live="polite"></div>
+        <div class="player-pseudo" id="podiumGiverPseudo">—</div>
+        <img src="images/Bonhomme.png" alt="" id="imgPodiumGiver">
+      </div>
+      <div class="player-podium guesser">
+        <div class="player-bubble" id="bubbleGuesser" aria-live="polite"></div>
+        <div class="player-pseudo" id="podiumGuesserPseudo">—</div>
+        <img src="images/Bonhomme.png" alt="" id="imgPodiumGuesser">
+      </div>
+    </div>
+
+    <!-- Word frame -->
+    <div class="word-frame" id="wordFrame">
+      <img class="word-frame-img" src="images/Cadre_indice.png" alt="Cadre">
+      <!-- 5 pastilles overlay sur le PNG -->
+      <div class="sphere-overlays" aria-hidden="true">
+        <div class="sphere-glow" id="sphere0"></div>
+        <div class="sphere-glow" id="sphere1"></div>
+        <div class="sphere-glow" id="sphere2"></div>
+        <div class="sphere-glow" id="sphere3"></div>
+        <div class="sphere-glow" id="sphere4"></div>
+      </div>
+      <!-- Flèches rouges (mode duo) : de chaque côté de la barre mot -->
+      <div class="arrows-wrap" id="arrowsWrap" aria-hidden="true">
+        <div class="arrows-cluster arrows-cluster--left">
+          <div class="arrow-indicator arrow-l2" id="arrowL2"></div>
+          <div class="arrow-indicator arrow-l1" id="arrowL1"></div>
+          <div class="arrow-indicator arrow-l0" id="arrowL0"></div>
+        </div>
+        <div></div>
+        <div class="arrows-cluster arrows-cluster--right">
+          <div class="arrow-indicator right arrow-r0" id="arrowR0"></div>
+          <div class="arrow-indicator right arrow-r1" id="arrowR1"></div>
+          <div class="arrow-indicator right arrow-r2" id="arrowR2"></div>
+        </div>
+      </div>
+      <div class="word-frame-clip">
+        <div class="word-display" id="wordDisplay" data-has-word="">
+          <span class="word-split" id="wordSplit"><span class="word-half word-half-left" id="wordHalfLeft"></span><span class="word-half word-half-right" id="wordHalfRight"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dire-row" id="direRow">
+      <div class="dire-field">
+        <label for="direGiver">Faire deviner</label>
+        <input type="text" class="dire-input" id="direGiver" autocomplete="off" maxlength="48" placeholder="Dire…" />
+      </div>
+      <div class="dire-field">
+        <label for="direGuesser">Deviner</label>
+        <input type="text" class="dire-input" id="direGuesser" autocomplete="off" maxlength="48" placeholder="Dire…" />
+      </div>
+    </div>
+
+    <!-- Actions : passer (donneur d'indices uniquement) -->
+    <div class="game-actions" id="gameActions">
+      <button type="button" class="game-btn btn-pass" id="btnPass">&#9654; Passer</button>
+    </div>
+    </div>
+  </div>
+
+  <!-- Chrono intro overlay -->
+  <div class="chrono-overlay" id="chronoOverlay">
+    <div class="chrono-big" id="chronoBig">30</div>
+    <div class="chrono-label" id="chronoLabel">secondes</div>
+  </div>
+
+  <!-- Sequence transition overlay -->
+  <div class="seq-overlay" id="seqOverlay">
+    <div class="seq-title" id="seqTitle">SÉQUENCE 1</div>
+    <div class="seq-detail" id="seqDetail"></div>
+  </div>
+</div>
+</div>
+
+<!-- ══════ SCREEN: RÉSULTATS 2 JOUEURS ══════ -->
+<div class="screen" id="screenResultsDuo">
+<div class="game-container results-duo-wrap">
+  <div class="top-bar"><span class="top-bar-text">Fin de partie</span></div>
+  <div class="content" style="padding:32px 36px;">
+    <h2 class="results-duo-title">Tableau des scores</h2>
+    <p class="results-duo-sub" id="resultsDuoSubtitle">Chaque tour : 30 secondes pour trouver un maximum de mots</p>
+    <table class="results-duo-table">
+      <thead>
+        <tr><th>Joueur</th><th>1<sup>er</sup> tour (deviner)</th><th>2<sup>e</sup> tour (deviner)</th><th>Total</th></tr>
+      </thead>
+      <tbody id="resultsDuoBody"></tbody>
+    </table>
+    <p class="results-duo-winner" id="resultsDuoWinner"></p>
+    <div style="text-align:center">
+      <button type="button" class="search-btn" id="btnResultsDuoMenu" style="max-width:420px;margin-top:8px;">Retour au menu</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<button class="sound-toggle" id="soundToggle" title="Son on/off">&#128266;</button>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modalRules">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('rules')">&#10005;</button>
+    <h2>Règles du jeu</h2>
+    <p>Mot de Passe est un jeu de devinettes par mots-indices :</p>
+    <ul>
+      <li>Deux équipes de 2 joueurs s'affrontent</li>
+      <li>Un joueur donne des indices (un seul mot à la fois) pour faire deviner un mot mystère à son partenaire</li>
+      <li>Les équipes alternent, chaque mot-indice compte</li>
+      <li>Le premier mot-indice ne peut pas être un synonyme direct</li>
+      <li>L'équipe qui trouve le mot marque des points</li>
+      <li>La manche se joue en temps limité</li>
+    </ul>
+    <p style="color:var(--red-bright);text-align:center;margin-top:15px">Prêt à jouer ? Lancez une Recherche Rapide !</p>
+  </div>
+</div>
+<div class="modal-overlay" id="modalAbout">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('about')">&#10005;</button>
+    <h2>À propos</h2>
+    <p>Ce jeu est une adaptation web gratuite et non officielle inspirée de l'émission "Mot de passe" diffusée sur France 2.</p>
+    <p>Version multijoueur — jouable à 4 joueurs en ligne via PeerJS.</p>
+    <p style="color:#888;margin-top:20px;font-size:0.8rem">Développé avec passion — 2026 Edition</p>
+  </div>
+</div>
+
+<audio id="bgMusic" loop preload="auto"><source src="son/accueil.mp3" type="audio/mpeg"></audio>
+
+<script>
+// ══════════════════════════════════════════
+// PARTICLES
+// ══════════════════════════════════════════
+const particlesEl = document.getElementById('particles');
+for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDuration=(6+Math.random()*10)+'s';p.style.animationDelay=Math.random()*8+'s';p.style.width=p.style.height=(2+Math.random()*3)+'px';particlesEl.appendChild(p);}
+
+// ══════════════════════════════════════════
+// AUDIO
+// ══════════════════════════════════════════
+const bgMusic=document.getElementById('bgMusic');
+const soundToggle=document.getElementById('soundToggle');
+let isMuted=false;
+bgMusic.volume=0.5;
+let musicStarted=false;
+function tryPlayMusic(){if(!musicStarted){bgMusic.play().then(()=>{musicStarted=true}).catch(()=>{})}}
+document.addEventListener('click',tryPlayMusic);
+document.addEventListener('keydown',tryPlayMusic);
+soundToggle.addEventListener('click',()=>{isMuted=!isMuted;bgMusic.muted=isMuted;soundToggle.textContent=isMuted?'\u{1F507}':'\u{1F50A}';soundToggle.classList.toggle('muted',isMuted)});
+
+function stopAccueilMusic(){
+  try{
+    bgMusic.pause();
+    bgMusic.currentTime=0;
+  }catch(e){}
+}
+function resumeAccueilMusic(){
+  if(isMuted)return;
+  try{
+    bgMusic.play().catch(()=>{});
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const bgv=document.getElementById('mancheBgVideo');
+  if(bgv){
+    if(id==='screenManche'){
+      bgv.play().catch(function(){});
+    }else{
+      try{ bgv.pause(); }catch(e){}
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════
+function showModal(t){document.getElementById(t==='rules'?'modalRules':'modalAbout').classList.add('active')}
+function closeModal(t){document.getElementById(t==='rules'?'modalRules':'modalAbout').classList.remove('active')}
+document.querySelectorAll('.modal-overlay').forEach(ov=>{ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('active')})});
+
+// ══════════════════════════════════════════
+// NETWORKING — PeerJS Matchmaking
+// (Inspired by multi.html Doodle Jump technique)
+// ══════════════════════════════════════════
+const LOBBY_PREFIX='motdepasse-';
+const NUM_ROOMS=10;
+const MAX_PLAYERS=4;
+
+let gameMode='qualif';
+function maxPlayersForMode(){
+  return gameMode==='duo'?2:MAX_PLAYERS;
+}
+
+let myPseudo='Joueur';
+let peer=null;
+let conns=[]; // [{conn, id, pseudo, isRoomHost, _listenersAttached}]
+let isHost=false;
+let connected=false;
+let lobbyPlayers=[]; // [{id, pseudo, isHost, isMe}]
+let clientAwaitingSequenceStart=false;
+
+function sendData(data){for(const p of conns){if(p.conn&&p.conn.open)try{p.conn.send(data)}catch(e){}}}
+function sendTo(p,data){if(p.conn&&p.conn.open)try{p.conn.send(data)}catch(e){}}
+
+function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ── Lobby UI ──
+function updateLobbyUI(){
+  const need=maxPlayersForMode();
+  for(let i=0;i<4;i++){
+    const slot=document.getElementById('slot'+i);
+    // Masquer les slots au-delà du besoin
+    if(i>=need){
+      slot.style.display='none';
+      continue;
+    }
+    slot.style.display='';
+    const pl=lobbyPlayers[i];
+    if(pl){
+      const isHostSlot=pl.isHost;
+      slot.className='player-slot filled'+(isHostSlot?' host-slot':'');
+      const badges=[];
+      if(pl.isHost)badges.push('<span class="player-badge badge-host">HÔTE</span>');
+      if(pl.isMe)badges.push('<span class="player-badge badge-you">VOUS</span>');
+      slot.innerHTML='<div class="player-avatar"><img src="images/Bonhomme.png" alt=""></div><div class="player-name">'+escapeHtml(pl.pseudo)+'</div>'+badges.join(' ');
+    }else{
+      slot.className='player-slot empty';
+      slot.innerHTML='<div class="player-avatar"><img src="images/Bonhomme.png" alt="" style="opacity:0.2"></div><div class="player-name">En attente<span class="searching-dots"></span></div><span class="player-badge badge-searching">\u2014</span>';
+    }
+  }
+  const count=lobbyPlayers.length;
+  const statusEl=document.getElementById('lobbyStatus');
+  const spinnerEl=document.getElementById('lobbySpinner');
+  if(count>=need){
+    statusEl.textContent=need+' joueur'+(need>1?'s':'')+' connecté'+(need>1?'s':'')+' \u2014 Lancement imminent !';
+    statusEl.style.color='#00ff44';
+    spinnerEl.style.display='none';
+  }else{
+    statusEl.style.color='#aaa';
+    spinnerEl.style.display='';
+  }
+  // Adapter le titre du lobby
+  document.getElementById('lobbyTopText').textContent=gameMode==='duo'?'Duel \u2014 En attente d\u2019un adversaire':'Lobby \u2014 En attente de joueurs';
+}
+
+function rebuildLobbyList(){
+  lobbyPlayers=[];
+  if(isHost){
+    lobbyPlayers.push({id:peer?peer.id:'me',pseudo:myPseudo,isHost:true,isMe:true});
+    for(const p of conns)lobbyPlayers.push({id:p.id,pseudo:p.pseudo,isHost:false,isMe:false});
+  }else{
+    const hostConn=conns.find(p=>p.isRoomHost);
+    if(hostConn)lobbyPlayers.push({id:hostConn.id,pseudo:hostConn.pseudo,isHost:true,isMe:false});
+    lobbyPlayers.push({id:peer?peer.id:'me',pseudo:myPseudo,isHost:false,isMe:true});
+    for(const p of conns){if(p===hostConn)continue;lobbyPlayers.push({id:p.id,pseudo:p.pseudo,isHost:false,isMe:false})}
+  }
+  updateLobbyUI();
+}
+
+// ── Host: broadcast roster ──
+function broadcastRoster(){
+  if(!isHost)return;
+  const players=[{id:peer.id,pseudo:myPseudo,isHost:true},...conns.map(p=>({id:p.id,pseudo:p.pseudo,isHost:false}))];
+  sendData({type:'roster',players,mode:gameMode});
+  const need=maxPlayersForMode();
+  if(players.length>=need){
+    setTimeout(()=>{
+      if(conns.length>=need-1){
+        let tA=[], tB=[];
+        if(gameMode==='duo'){
+          tA=[players[0].pseudo];
+          tB=[players[1].pseudo];
+        }else{
+          players.forEach((p,i)=>{(i%2===0?tA:tB).push(p.pseudo)});
+        }
+        sendData({type:'gameStart',teamA:tA,teamB:tB,mode:gameMode});
+        teamA=tA; teamB=tB;
+        onGameStart();
+      }
+    },2500);
+  }
+}
+
+// ── Handle data ──
+function onData(data,fromConn){
+  const rp=conns.find(p=>p.conn===fromConn);
+  if(data.type==='pseudo'){
+    if(rp){rp.pseudo=data.pseudo;if(data.id)rp.id=data.id}
+    rebuildLobbyList();
+    if(isHost)broadcastRoster();
+  }
+  else if(data.type==='roster'){
+    if(data.mode) gameMode=data.mode;
+    lobbyPlayers=data.players.map(p=>({id:p.id,pseudo:p.pseudo,isHost:p.isHost,isMe:(peer&&p.id===peer.id)}));
+    for(const p of data.players){if(peer&&p.id===peer.id)continue;const ex=conns.find(c=>c.id===p.id);if(ex)ex.pseudo=p.pseudo}
+    updateLobbyUI();
+  }
+  else if(data.type==='playerJoined'){
+    if(peer&&data.id!==peer.id&&!conns.find(c=>c.id===data.id)){
+      conns.push({id:data.id,conn:null,pseudo:data.pseudo,isRoomHost:false,_listenersAttached:true});
+    }
+    rebuildLobbyList();
+  }
+  else if(data.type==='playerLeft'){
+    conns=conns.filter(c=>c.id!==data.id);
+    rebuildLobbyList();
+  }
+  else if(data.type==='gameStart'){
+    if(data.teamA) teamA=data.teamA;
+    if(data.teamB) teamB=data.teamB;
+    if(data.mode) gameMode=data.mode;
+    onGameStart();
+  }
+  else if(data.type==='syncSequences'){
+    if(data.mode) gameMode=data.mode;
+    mancheState.sequences=data.sequences;
+    if(!isHost && clientAwaitingSequenceStart){
+      clientAwaitingSequenceStart=false;
+      startSequence(0);
+    }
+  }
+  else if(data.type==='direBubble'){
+    applyDireBubble(data.role,data.text,!!data.pop);
+    // Ne PAS démarrer le timer ici — seul le message 'timerStart' le fait
+    if(isHost && fromConn){
+      for(const p of conns){
+        if(p.conn!==fromConn) sendTo(p,data);
+      }
+    }
+  }
+  else if(data.type==='timerStart'){
+    if(mancheState.wordsPhase && !mancheState.started) startTimer();
+    refreshDireInputState();
+    if(isHost && fromConn){
+      for(const p of conns){
+        if(p.conn!==fromConn) sendTo(p,data);
+      }
+    }
+  }
+  else if(data.type==='syncCorrect'){
+    if(data.seqIdx!==mancheState.currentSeq) return;
+    const seq=mancheState.sequences[data.seqIdx];
+    if(!seq || seq.found[data.wordIdx]) return;
+    seq.currentWordIdx=data.wordIdx;
+    onCorrectAnswer(true);
+    if(isHost && fromConn){
+      for(const p of conns){
+        if(p.conn!==fromConn) sendTo(p,data);
+      }
+    }
+  }
+  else if(data.type==='interditsConfirmed'){
+    applyInterditsTransition();
+  }
+  else if(data.type==='syncPass'){
+    if(data.seqIdx===mancheState.currentSeq){
+      const seq=mancheState.sequences[data.seqIdx];
+      if(seq){
+        seq.currentWordIdx=data.newWordIdx;
+        clearDireFields();
+        mancheState.cluesGiven=0;
+        if(gameMode==='duo') resetArrows();
+        playGameSound('son/passer.wav',0.7);
+        refreshDireInputState();
+        updateWordDisplay(seq,{animate:true});
+      }
+    }
+    if(isHost && fromConn){
+      for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); }
+    }
+  }
+  else if(data.type==='turnChange'){
+    mancheState.turn=data.turn;
+    refreshDireInputState();
+    if(isHost && fromConn){
+      for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); }
+    }
+  }
+  else if(data.type==='duoArrow'){
+    consumeArrow(data.clueNum);
+    mancheState.cluesGiven=data.clueNum+1;
+    if(isHost && fromConn){
+      for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); }
+    }
+  }
+  else if(data.type==='duoSkip'){
+    if(data.seqIdx===mancheState.currentSeq){
+      const seq=mancheState.sequences[data.seqIdx];
+      if(seq) { seq.currentWordIdx=data.wordIdx; duoSkipWord(); }
+    }
+    if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
+  }
+  else if(data.type==='duoFault'){
+    applyFault(data.reason||'FAUTE',true);
+    if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
+  }
+}
+
+// ── Start search ──
+function startSearch(){
+  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  document.getElementById('btnPlay').disabled=true;
+  document.getElementById('btnPlayDuo').disabled=true;
+  showScreen('screenLobby');
+  document.getElementById('lobbyStatus').textContent='Connexion...';
+  connected=false;conns=[];lobbyPlayers=[];
+  tryMatchmaking();
+}
+
+function tryMatchmaking(){
+  const prefix=gameMode==='duo'?LOBBY_PREFIX+'duo-':LOBBY_PREFIX;
+  const myId=prefix+'p-'+Math.random().toString(36).substr(2,8);
+  peer=new Peer(myId);
+
+  peer.on('error',err=>{
+    console.warn('Peer error:',err);
+    if(err.type==='peer-unavailable')return;
+  });
+
+  peer.on('open',()=>{
+    console.log('My peer ID:',peer.id);
+    let joined=false;
+
+    for(let i=0;i<NUM_ROOMS;i++){
+      const roomId=prefix+'room-'+i;
+      const c=peer.connect(roomId,{reliable:true});
+
+      c.on('open',()=>{
+        if(joined||connected){try{c.close()}catch(e){}return}
+        joined=true;connected=true;isHost=false;
+
+        const rp={id:c.peer,conn:c,pseudo:'Hôte',isRoomHost:true,_listenersAttached:true};
+        conns.push(rp);
+        console.log('Joined room:',roomId);
+
+        c.on('data',d=>onData(d,c));
+        c.on('close',()=>{
+          conns=conns.filter(p=>p.conn!==c);
+          if(!connected)return;
+          connected=false;
+          document.getElementById('lobbyStatus').textContent='Hôte déconnecté...';
+          setTimeout(backToMenu,2000);
+        });
+
+        c.send({type:'pseudo',id:peer.id,pseudo:myPseudo});
+        rebuildLobbyList();
+        document.getElementById('lobbyStatus').textContent='Connecté ! En attente de joueurs...';
+      });
+
+      c.on('error',()=>{});
+      setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},1500);
+    }
+
+    setTimeout(()=>{if(joined||connected)return;becomeHost()},2500);
+  });
+}
+
+function becomeHost(){
+  if(connected)return;
+  const prefix=gameMode==='duo'?LOBBY_PREFIX+'duo-':LOBBY_PREFIX;
+  const roomIndex=Math.floor(Math.random()*NUM_ROOMS);
+  const roomId=prefix+'room-'+roomIndex;
+
+  peer.destroy();
+  peer=new Peer(roomId);
+
+  peer.on('open',()=>{
+    console.log('Hosting room:',roomId);
+    isHost=true;connected=true;
+    rebuildLobbyList();
+    document.getElementById('lobbyStatus').textContent='Partie créée ! En attente de joueurs...';
+  });
+
+  peer.on('connection',c=>{
+    const need=maxPlayersForMode();
+    if(conns.length>=need-1){try{c.close()}catch(e){}return}
+
+    const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
+    conns.push(rp);
+
+    const setup=()=>{
+      if(rp._listenersAttached)return;
+      rp._listenersAttached=true;
+
+      c.on('data',d=>onData(d,c));
+      c.on('close',()=>{
+        const idx=conns.indexOf(rp);
+        if(idx>=0)conns.splice(idx,1);
+        for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
+        rebuildLobbyList();
+        broadcastRoster();
+      });
+
+      sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
+      for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
+      rebuildLobbyList();
+      broadcastRoster();
+    };
+
+    c.on('open',setup);
+    if(c.open)setup();
+  });
+
+  peer.on('error',err=>{
+    console.warn('Host error:',err);
+    if(err.type==='unavailable-id'){
+      setTimeout(()=>{if(connected)return;peer.destroy();becomeHost()},1500);
+    }
+  });
+}
+
+// ── Game start ──
+let teamA=[], teamB=[];
+function onGameStart(){
+  stopAccueilMusic();
+
+  const s=document.getElementById('lobbyStatus');
+  s.textContent='\u{1F3AE} La partie va commencer !';
+  s.style.color='#00ff44';
+  document.getElementById('lobbySpinner').style.display='none';
+  document.getElementById('lobbyTopText').textContent='PARTIE TROUVÉE !';
+  document.querySelector('.lobby-title').textContent='LANCEMENT...';
+
+  document.body.style.transition='filter 0.3s';
+  document.body.style.filter='brightness(1.5)';
+  setTimeout(()=>{document.body.style.filter='brightness(1)'},300);
+
+  if(!teamA.length || !teamB.length){
+    teamA=[]; teamB=[];
+    if(gameMode==='duo' && lobbyPlayers.length>=2){
+      teamA=[lobbyPlayers[0].pseudo];
+      teamB=[lobbyPlayers[1].pseudo];
+    }else{
+      lobbyPlayers.forEach((p,i)=>{(i%2===0?teamA:teamB).push(p.pseudo)});
+    }
+  }
+
+  // Transition to interdits screen
+  setTimeout(()=>{
+    showInterditsScreen(1);
+  },1800);
+}
+
+function showInterditsScreen(manche){
+  if(gameMode==='duo'){
+    document.getElementById('teamAMembers').textContent=teamA[0]||'';
+    document.getElementById('teamBMembers').textContent=teamB[0]||'';
+    document.getElementById('mancheText').textContent='DUEL';
+    // Changer les labels
+    document.querySelector('.score-team.team-a').textContent=teamA[0]||'JOUEUR 1';
+    document.querySelector('.score-team.team-b').textContent=teamB[0]||'JOUEUR 2';
+    document.querySelector('.score-members#teamAMembers').textContent='';
+    document.querySelector('.score-members#teamBMembers').textContent='';
+  }else{
+    document.getElementById('teamAMembers').textContent=teamA.join(' & ');
+    document.getElementById('teamBMembers').textContent=teamB.join(' & ');
+    document.getElementById('mancheText').textContent='MANCHE '+manche;
+    document.querySelector('.score-team.team-a').textContent='EQUIPE A';
+    document.querySelector('.score-team.team-b').textContent='EQUIPE B';
+  }
+  document.getElementById('scoreA').textContent='0';
+  document.getElementById('scoreB').textContent='0';
+
+  showScreen('screenInterdits');
+
+  // Re-trigger animations by cloning interdit items
+  const list=document.querySelector('.interdits-list');
+  const items=list.querySelectorAll('.interdit-item');
+  items.forEach(item=>{
+    const clone=item.cloneNode(true);
+    item.parentNode.replaceChild(clone,item);
+  });
+  const btn=document.getElementById('btnConfirmInterdits');
+  const btnClone=btn.cloneNode(true);
+  btn.parentNode.replaceChild(btnClone,btn);
+  btnClone.id='btnConfirmInterdits';
+  btnClone.type='button';
+  updateInterditsHostUi();
+}
+
+function updateInterditsHostUi(){
+  const btn=document.getElementById('btnConfirmInterdits');
+  const wait=document.getElementById('interditsWaitHost');
+  if(!btn||!wait) return;
+  if(isHost){
+    wait.hidden=true;
+    btn.hidden=false;
+    btn.disabled=false;
+  }else{
+    wait.hidden=false;
+    btn.hidden=true;
+  }
+}
+
+function applyInterditsTransition(){
+  document.body.style.transition='filter 0.3s';
+  document.body.style.filter='brightness(1.5)';
+  setTimeout(()=>{document.body.style.filter='brightness(1)'},300);
+  setTimeout(()=>{ startManche(); },500);
+}
+
+function onConfirmInterdits(){
+  if(!isHost) return;
+  sendData({type:'interditsConfirmed'});
+  applyInterditsTransition();
+}
+
+// ══════════════════════════════════════════
+// MANCHE DE QUALIFICATION
+// ══════════════════════════════════════════
+// Roles: 4 players — Candidat A, Invité A, Candidat B, Invité B
+// teamA[0]=Candidat A, teamA[1]=Invité A; teamB[0]=Candidat B, teamB[1]=Invité B
+// 4 sequences of 30s:
+// Seq1: Invité A fait deviner → Candidat A
+// Seq2: Invité B fait deviner → Candidat B
+// Seq3: Invité B fait deviner → Candidat A (partenaires croisés)
+// Seq4: Invité A fait deviner → Candidat B
+
+// DICTIONNAIRE MOT DE PASSE — 3009 mots
+// Facile: 1626 | Moyen: 908 | Difficile: 475
+
+const WORDS_EASY = [
+  'ABEILLE','ABRICOT','ACCIDENT','ACCORDÉON','ACCOUDOIR','ACHAT','ACROBATE','ACRYLIQUE','ACTUALITÉ','ADDITION','ADRESSE','ADULTE',
+  'AFFAIRE','AFFICHE','AFFOLEMENT','AGACEMENT','AGENCE','AGENDA','AGRAFEUSE','AIGLE','AIGUILLAGE','AIGUILLE','AILE','AIMANT',
+  'AJUSTEMENT','ALARME','ALBUM','ALIEN','ALIGNEMENT','ALLUMETTE','ALPINISTE','AMANDE','AMAZONE','AMBULANCE','AMBULANCIER','AMITIÉ',
+  'AMOUR','AMPOULE','ANANAS','ANCHOIS','ANCRE','ANCÊTRE','ANGUILLE','ANIMATEUR','ANNIVERSAIRE','ANNONCE','ANNÉE','APPAREIL',
+  'APPARTEMENT','APPLAUDISSEMENT','APPRENTI','APPÉTIT','AQUATIQUE','ARAIGNÉE','ARBALÈTE','ARBITRE','ARBRE','ARCADE','ARCHET','ARMOIRE',
+  'ARMURE','ARROSAGE','ARROSOIR','ARTICHAUT','ARÈNE','ASCENSEUR','ASPERGE','ASPIRATEUR','ASPIRINE','ASSEMBLAGE','ASSIETTE','ASSURANCE',
+  'ATELIER','ATERMOIEMENT','ATHLÈTE','ATHLÉTISME','ATTRACTION','ATTRAPE','AUBERGE','AUBERGINE','AUDACE','AURORE','AUTOBUS','AUTOMATE',
+  'AUTOMNE','AUTORITÉ','AUTOROUTE','AVENTURE','AVENUE','AVERTISSEMENT','AVION','AVOCAT','AVOINE','AZALÉE','AÉROPORT','BABOUCHE',
+  'BADGE','BADMINTON','BAGAGISTE','BAGARRE','BAGUE','BAGUETTE','BAGUIER','BAIGNADE','BAIGNOIRE','BAISER','BALADIN','BALAFRE',
+  'BALAI','BALANCE','BALANÇOIRE','BALCON','BALEINE','BALLET','BALLON','BALLOTTAGE','BAMBOCHE','BANANE','BANC','BANDAGE',
+  'BANDEAU','BANDERILLE','BANDIT','BANDONÉON','BANJO','BANQUE','BANQUETTE','BAPTÊME','BAR','BARATIN','BARBE','BARBECUE',
+  'BARBITURIQUES','BARDEAU','BARILLET','BAROMÈTRE','BARQUE','BARRIÈRE','BASEBALL','BASILIC','BASKET','BASKETTEUR','BASSIN','BASSON',
+  'BASTINGAGE','BASTRINGUE','BATEAU','BATELIER','BATTERIE','BAUDRUCHE','BAVARDAGE','BAVETTE','BAZAR','BELETTE','BERCEAU','BERLINGOT',
+  'BERMUDA','BESOGNE','BESOIN','BETTERAVE','BEURRE','BIBLIOTHÈQUE','BICORNE','BIDONVILLE','BIENFAITEUR','BIJOU','BILBOQUET','BILLE',
+  'BILLET','BISAÏEUL','BISCUIT','BISTOURI','BIVOUAC','BIÈRE','BLAGUE','BLANC','BLANCHISSERIE','BLASPHÈME','BLESSURE','BLEU',
+  'BLIZZARD','BLOCKHAUS','BOBINE','BOBSLEIGH','BOCAL','BOEUF','BOHÈME','BONBON','BONHEUR','BONHOMME','BONIMENTEUR','BOTANISTE',
+  'BOTTE','BOUCANIER','BOUCHE','BOUCHER','BOUCHON','BOUCLE','BOUCLIER','BOUDDHISME','BOUFFON','BOUFFONNERIE','BOUGEOIR','BOUGIE',
+  'BOUILLOIRE','BOULANGER','BOULANGERIE','BOULETTE','BOULEVARD','BOUQUET','BOURDON','BOURDONNEMENT','BOURRASQUE','BOURREAU','BOURSIER','BOUTEILLE',
+  'BOUTIQUE','BOUTON','BOXE','BOÎTE','BRACELET','BRANCARDIER','BRAS','BRASSERIE','BRAVADE','BRAVOURE','BRETELLE','BRIGADIER',
+  'BRIMADE','BRIOCHE','BROCANNEUR','BROCHE','BROCHET','BROCHETTE','BROCHURE','BROCOLI','BROSSE','BROUETTE','BROUILLAGE','BROUILLARD',
+  'BRÛLOT','BRÛLURE','BUCHERONNAGE','BUCOLIQUE','BUFFET','BUISSON','BUREAU','BURLESQUE','BUS','BUSARD','BUT','BUTINAGE',
+  'BÂTIMENT','BÉARNAISE','BÉBÉ','BÉCASSE','BÉNÉVOLE','BÊCHE','BÊLEMENT','BÊTISE','CABALISTE','CABANE','CABILLAUD','CABINE',
+  'CABOTAGE','CACAHUÈTE','CACHALOT','CACHET','CACHOTTERIE','CADASTRE','CADEAU','CADRE','CAFARD','CAFETIÈRE','CAFÉ','CAGE',
+  'CAGOUILLE','CAHIER','CAILLASSE','CAILLE','CAISSE','CALAMITÉ','CALCULATEUR','CALCULETTE','CALENDRIER','CALEÇON','CALISSON','CALÈCHE',
+  'CAMBRIOLAGE','CAMION','CAMOUFLAGE','CAMPAGNARD','CAMPING','CAMÉRA','CANAILLE','CANAPÉ','CANARD','CANDÉLABRE','CANELLE','CANETON',
+  'CANICHE','CANOË','CANTINE','CAPITAINE','CAPORAL','CAPOT','CAPRICE','CAPUCHON','CARAMBOLE','CARAMEL','CARBONNADE','CARDAMOME',
+  'CARILLON','CARNAVAL','CARNIVORE','CAROTTE','CARPE','CARPETTE','CARREFOUR','CARROUSEL','CARRÉ','CARTABLE','CARTE','CARTOMANCIEN',
+  'CARTON','CASCADE','CASEMATE','CASIER','CASQUETTE','CASSEROLE','CATALOGUE','CATAMARAN','CAUCHEMAR','CAVALCADE','CAVALIER','CEINTURE',
+  'CENDRE','CENDRIER','CENTAINE','CENTIÈME','CERCLE','CERF','CERF-VOLANT','CERISE','CERVEAU','CERVELLE','CHAISE','CHAMBRE',
+  'CHAMOIS','CHAMPION','CHANCE','CHANSON','CHANT','CHANTERELLE','CHANTIER','CHAPEAU','CHAPELLE','CHAPITRE','CHARADE','CHARANÇON',
+  'CHARBON','CHARCUTERIE','CHARCUTIER','CHARIOT','CHARRETIER','CHARTREUSE','CHASSE','CHAT','CHATON','CHAUDIÈRE','CHAUFFEUR','CHAUSSETTE',
+  'CHAUSSON','CHAUSSURE','CHAÎNE','CHEMIN','CHEMINÉE','CHEMISE','CHENAPAN','CHENIL','CHENILLE','CHENILLETTE','CHEVAL','CHEVALERIE',
+  'CHEVALET','CHEVEUX','CHEVREUIL','CHIEN','CHIFFON','CHIFFRAGE','CHINOISERIE','CHIPOLATA','CHIRURGIE','CHLORE','CHOCOLAT','CHORALE',
+  'CHOU','CHRONIQUE','CHRONOMÈTRE','CHÂTAIGNE','CHÂTEAU','CIBOULE','CIEL','CIGALE','CIGARE','CIGARETTE','CIGOGNE','CIMETERRE',
+  'CINTRE','CINÉMA','CIRCONSTANCE','CIRQUE','CISEAUX','CITADELLE','CITADIN','CITRON','CITROUILLE','CLARINETTE','CLARINETTISTE','CLASSEMENT',
+  'CLASSEUR','CLAVECIN','CLEF','CLERGÉ','CLIENTÈLE','CLIGNOTANT','CLOISONNEMENT','CLOPINETTES','CLOU','CLOWN','COAGULER','COBALT',
+  'COCCINELLE','COCHON','COCOTIER','COCOTTE','COEUR','COFFRE','COFFRET','COHABITATION','COIFFEUR','COIFFURE','COLLATION','COLLIER',
+  'COLLINE','COLLÈGE','COLONEL','COLORANT','COLÈRE','COMBINAISON','COMBUSTIBLE','COMMANDE','COMMANDO','COMMENTAIRE','COMMISSAIRE','COMMISSARIAT',
+  'COMMODE','COMMODITÉ','COMMUNAUTÉ','COMPAGNON','COMPAS','COMPENSATION','COMPLEXITÉ','COMPLICATION','COMPOSITION','COMPOST','COMPROMIS','COMPTOIR',
+  'COMPÉTITION','COMÉDIEN','CONCEPTION','CONCERT','CONCIERGE','CONCOMBRE','CONCORDANCE','CONDIMENT','CONFETTI','CONFIANCE','CONFIDENCE','CONFITURE',
+  'CONFRONTATION','CONFÉDÉRATION','CONFÉRENCE','CONNAISSANCE','CONQUÉRANT','CONQUÊTE','CONSCIENCE','CONSIGNE','CONSOMMATION','CONSULTATION','CONTEMPLATION','CONTESTATION',
+  'CONTRAINTE','CONTRAT','CONTREBANDE','CONTREBASSE','CONTRIBUTION','CONVERSATION','CONVICTION','CONVOCATION','COOPÉRATION','COORDINATION','COQUELICOT','COQUILLAGE',
+  'CORBEAU','CORDE','CORDILLÈRE','CORDON','CORNE','CORNEILLE','CORNER','CORNICHON','CORRESPONDANCE','CORTÈGE','COSMÉTIQUE','COTON',
+  'COUCHAGE','COUCHER','COUCHETTE','COULISSE','COULOIR','COUPABLE','COUPLE','COURAGE','COURANT','COURGETTE','COURONNE','COURONNEMENT',
+  'COURRIER','COURSE','COURTISANE','COURTOISIE','COUSINE','COUSSIN','COUTEAU','COUTURE','COUVERCLE','COUVERTURE','COUVREUR','COÉQUIPIER',
+  'CRABE','CRAIE','CRAMPON','CRAPAUD','CRAQUEMENT','CRAVACHE','CRAVATE','CRAYON','CREVETTE','CRIQUET','CROCHET','CROCODILE',
+  'CROISEMENT','CROISIÈRE','CROISSANT','CROÛTE','CRUCHE','CRÈCHE','CRÈME','CRÉDENCE','CRÉPITEMENT','CRÉPUSCULE','CRÊPE','CUBE',
+  'CUEILLETTE','CUILLÈRE','CUIR','CUISINE','CUISINIER','CUISSON','CUIVRE','CULOTTE','CYCLISME','CYGNE','CYLINDRE','CYMBALE',
+  'CÂBLE','CÈDRE','CÉLERI','CÉRÉMONIE','DAMES','DANSE','DANSEUR','DATTE','DAUPHIN','DELTAPLANE','DENT','DESSIN',
+  'DEVINETTE','DEVOIR','DIADÈME','DIAMANT','DICTIONNAIRE','DINOSAURE','DIRECTEUR','DISCOURS','DISPUTE','DOCTEUR','DOIGT','DOMINO',
+  'DOMPTEUR','DORADE','DOS','DOSSIER','DOUANIER','DOUCHE','DRAGON','DRAGÉE','DRAP','DRAPEAU','DRAPERIE','DRIBBLE',
+  'DRÔLERIE','DUEL','DUNE','DYNAMITE','DÉBARDEUR','DÉBRIS','DÉCAPSULEUR','DÉCIBEL','DÉCISION','DÉCOLLAGE','DÉCOR','DÉFENSE',
+  'DÉFILÉ','DÉGUISEMENT','DÉGÂT','DÉJEUNER','DÉMOLITION','DÉPÔT','DÉSERT','DÉTECTIVE','EAU','EFFONDREMENT','EMBOUTEILLAGE','EMPLOYÉ',
+  'EMPOISONNEMENT','ENCEINTE','ENCHANTEMENT','ENCLOS','ENCRE','ENDIVE','ENDROIT','ENFANT','ENQUÊTE','ENSEIGNE','ENTONNOIR','ENVAHISSEUR',
+  'ENVELOPPE','ERMITE','ERREUR','ESCALADE','ESCALIER','ESCARGOT','ESCRIME','ESPION','ESQUIMAU','ESSENCE','ESTOMAC','EXAMEN',
+  'EXCURSION','EXPLOIT','EXPLOSION','EXPOSITION','FACTEUR','FACTURE','FAISAN','FANFARE','FANTAISIE','FANTÔME','FARCE','FARINE',
+  'FAUTEUIL','FEMME','FENOUIL','FENÊTRE','FERMETURE','FERMIER','FEU','FEUILLAGE','FEUX','FIACRE','FICELLE','FIESTA',
+  'FIGUE','FIGURINE','FILATURE','FILET','FILLE','FLAMBEAU','FLAMME','FLANELLE','FLEUR','FLOCON','FLÈCHE','FLÉAU',
+  'FLÛTE','FOND','FONDATION','FOOTBALL','FORGERON','FORMULE','FORTUNE','FORÊT','FOSSÉ','FOUDRE','FOUINE','FOUR',
+  'FOURCHETTE','FOURMI','FOURNITURE','FRAGMENT','FRAISE','FRAMBOISE','FRANCHISE','FRAYEUR','FREINS','FRELON','FRIGO','FRITES',
+  'FRITURE','FROMAGE','FROMAGERIE','FRONTIÈRE','FRÈRE','FUGITIF','FUMÉE','FUSAIN','FUSILLADE','FUSÉE','FÉE','FÉVRIER',
+  'FÊTE','GALAXIE','GALERIE','GALETTE','GALOP','GANT','GARAGE','GARAGISTE','GARDIEN','GARE','GARNEMENT','GARÇON',
+  'GAULOIS','GELÉE','GENDARME','GENOU','GENTILLESSE','GERMAIN','GIBIER','GIGOT','GILET','GINGEMBRE','GIRAFE','GIROUETTE',
+  'GLACE','GLACIER','GLOUTON','GOBELET','GOLF','GOMME','GONG','GORGE','GOUACHE','GOURDE','GOUTTIÈRE','GOUVERNEUR',
+  'GOÉLAND','GRADIN','GRANIT','GRAVILLON','GRENADE','GRENIER','GRENOUILLE','GRIFFE','GRILLE','GRILLON','GRIMACE','GRINCEMENT',
+  'GRIS','GROGNEMENT','GROSEILLE','GRUE','GUETTEUR','GUILLOTINE','GUIRLANDE','GUITARE','GUÉRIDON','GUÉRISON','GUÊPE','GYMNASE',
+  'GÂTEAU','GÉNIE','HAILLON','HALLOWEEN','HALLUCINATION','HAMAC','HAMBURGER','HAMSTER','HANDBALL','HANGAR','HARENG','HARICOT',
+  'HARNAIS','HARPE','HARPON','HASARD','HAUTBOIS','HERBE','HEURE','HIBOU','HIRONDELLE','HIVER','HOCKEY','HOMARD',
+  'HOMME','HORLOGE','HOUBLON','HUMEUR','HURLEMENT','HUÎTRE','HÉBERGER','HÉLICOPTÈRE','HÉRISSON','HÉRON','HÔPITAL','HÔTESSE',
+  'ICÔNE','IGLOO','ILLUSION','IMMEUBLE','IMPASSE','IMPRESSION','INCENDIE','INCONNU','INDICE','INFIRMIER','INFIRMIÈRE','INFUSION',
+  'INGRÉDIENT','INJUSTICE','INSECTE','INSTITUTEUR','INTENTION','INTRIGUE','INVASION','INVENTAIRE','JACHÈRE','JACUZZI','JAILLISSEMENT','JAMBE',
+  'JAMBON','JANVIER','JARDIN','JARDINIER','JAUNE','JAVELOT','JOIE','JONCTION','JONGLEUR','JOUISSANCE','JOURNAL','JUDO',
+  'JUMEAU','JUPE','JUS','JUSTICIER','KAYAK','KERMESSE','KIDNAPPING','KIOSQUE','KIWI','KNACK','KOALA','LABEL',
+  'LABYRINTHE','LAC','LACET','LAINE','LAIT','LAITUE','LAMPE','LAMPION','LANCE','LANGOUSTE','LANGOUSTINE','LANGUE',
+  'LANTERNE','LAPIN','LAQUAIS','LARME','LAURIER','LAURÉAT','LECTURE','LENTILLE','LIAISON','LIBELLULE','LIBERTÉ','LIBRAIRIE',
+  'LIMACE','LIMONADE','LINGOT','LION','LIQUIDE','LIT','LITIGE','LIVRAISON','LIVRE','LIVREUR','LOCOMOTIVE','LOGEMENT',
+  'LOSANGE','LOTERIE','LOTO','LOUCHE','LOUP','LOUVETEAU','LUCIOLE','LUEUR','LUGE','LUNAIRE','LUNDI','LUNE',
+  'LUNETTES','LUSTRAGE','LUSTRE','LÉZARD','MACHINE','MAGASIN','MAGAZINE','MAGICIEN','MAGNIFIQUE','MAILLOT','MAIN','MAISON',
+  'MALÉDICTION','MAMMOUTH','MANDOLINE','MANGUE','MANOEUVRE','MANTE','MANTEAU','MANTILLE','MANÈGE','MAQUEREAU','MAQUIS','MARACAS',
+  'MARATHON','MARCHANDISE','MARDI','MARIAGE','MARINADE','MARMITE','MARMOTTE','MARTEAU','MARÉE','MASCARA','MASCARADE','MASQUE',
+  'MATELAS','MATIN','MATÉRIEL','MAÇON','MAÏS','MELON','MENDIANT','MENTHE','MENUISIER','MER','MERLE','MERVEILLE',
+  'MESSAGER','MIAULEMENT','MICRO','MIDI','MIEL','MIGRATEUR','MILLÉSIME','MINUIT','MINUTE','MINUTEUR','MIRABELLE','MIRACULEUX',
+  'MIROIR','MIXEUR','MOINEAU','MOIS','MOISISSURE','MONARQUE','MONITEUR','MONNAIE','MONOPOLY','MONSTRE','MONTAGNE','MONTGOLFIÈRE',
+  'MONTRE','MORCEAUX','MORTIER','MORUE','MOTEUR','MOTO','MOUCHE','MOUCHOIR','MOUETTE','MOUFLE','MOULE','MOUSTACHE',
+  'MOUSTIQUE','MOUTON','MOUVEMENT','MULTIPLE','MUR','MURMURE','MUSEAU','MUSIQUE','MUSÉE','MYSTÈRE','MÈRE','MÈTRE',
+  'MÉCANIQUE','MÉDAILLE','MÉDAILLON','MÉDUSE','MÉLANGE','MÉSANGE','MÉTRO','NATATION','NAUFRAGE','NAVET','NAVIGATEUR','NEIGE',
+  'NEZ','NICHE','NID','NIVEAU','NOBLESSE','NOEL','NOIR','NOISETTE','NOIX','NOMINATION','NOURRISSON','NUAGE',
+  'NUISANCE','NÉCESSAIRE','NÉGOCIATION','OBSESSION','OBSTACLE','OBÉISSANCE','OCCASION','OCÉAN','OEIL','OEUF','OIE','OIGNON',
+  'OISEAU','OLIVE','OMELETTE','ONGLE','OPÉRA','OPÉRATION','ORAGE','ORANGE','ORDINATEUR','OREILLE','OREILLER','ORGUE',
+  'ORIGAN','ORPHELIN','OSSATURE','OURS','OURSIN','OUTILLAGE','OVALE','OVATION','PAGAILLE','PAILLASSE','PAILLETTE','PAIN',
+  'PALAIS','PALETTE','PALISSADE','PALME','PALOURDE','PAMPLEMOUSSE','PANACHE','PANCARTE','PANDA','PANNEAU','PANORAMA','PANTALON',
+  'PAPETERIE','PAPILLON','PAPYRUS','PARACHUTE','PARADIS','PARAPLUIE','PARAVENT','PARC','PARDESSUS','PARFUM','PARFUMERIE','PARKING',
+  'PARRAIN','PASSAGE','PASSE','PASSEPORT','PASSOIRE','PASTEL','PASTÈQUE','PATIN','PATINAGE','PATRON','PATTE','PAVILLON',
+  'PEIGNE','PEINTRE','PEINTURE','PELAGE','PELLICULE','PELOTE','PELOTON','PELOUSE','PENALTY','PENDENTIF','PENDERIE','PENDULE',
+  'PENSION','PERCEUSE','PERCHE','PERDRIX','PERFECTION','PERGOLA','PERLE','PERMISSION','PERQUISITION','PERROQUET','PERSIL','PEUR',
+  'PHARE','PHARMACIE','PHILOSOPHE','PHOQUE','PHOTO','PHOTOCOPIE','PHOTOGRAPHIE','PHÉNOMÈNE','PIANO','PIE','PIED','PIEUVRE',
+  'PIGEON','PILASTRE','PILON','PILOTE','PINCE','PINCEAU','PINGOUIN','PINTADE','PIRATE','PIROUETTE','PISCINE','PISSENLIT',
+  'PISTACHE','PIZZA','PIÈCE','PLACEBO','PLAGE','PLAISANTERIE','PLANCHE','PLANEUR','PLANTATION','PLANÈTE','PLAQUETTE','PLASTIQUE',
+  'PLAT','PLOMBIER','PLONGEON','PLONGÉE','PLUIE','PLUMAGE','PLUME','PNEU','POCHETTE','POIGNARD','POIRE','POIREAU',
+  'POISSON','POISSONNERIE','POIVRE','POLICE','POLICIER','POLISSON','POMMADE','POMME','POMPIER','PONT','POPULAIRE','PORC',
+  'PORTAIL','PORTE','PORTEFEUILLE','PORTIÈRE','PORTRAIT','POSTE','POTION','POTIRON','POUBELLE','POULAILLER','POULE','POULET',
+  'POURPRE','POUSSIÈRE','POÊLE','POÊLON','PRESTIGE','PRIMEVÈRE','PRINTEMPS','PRISON','PROCESSION','PRODIGIEUX','PROFESSEUR','PROMENADE',
+  'PROMESSE','PROUESSE','PROVIDENCE','PROVISION','PRUNE','PRUNELLE','PRÉCIPICE','PRÉDATEUR','PRÉSIDENT','PRÉVENTION','PUBLICITÉ','PUCE',
+  'PUISSANCE','PULL','PUNITION','PURIFICATION','PUZZLE','PYJAMA','PYRAMIDE','PÂQUES','PÂTES','PÂTISSERIE','PÂTURAGE','PÈLERINAGE',
+  'PÈRE','PÉAGE','PÉDALE','PÉDALIER','PÉNOMBRE','PÉTITION','PÊCHE','QUADRILLAGE','QUARTIER','QUENELLE','QUERELLE','QUESTIONNAIRE',
+  'QUEUE','QUINCAILLERIE','QUITTANCE','QUOTIDIEN','RABOT','RACCOURCI','RADEAU','RADIS','RAFFINEMENT','RAGOUT','RAISIN','RAISONNABLE',
+  'RANDONNÉE','RANGEMENT','RAPPORTEUR','RAQUETTE','RASOIR','RASSEMBLEMENT','RAVISSEMENT','RAYONNEMENT','RECETTE','RECTANGLE','RELIGIEUX','REMBOURSEMENT',
+  'REMORQUE','RENARD','RENCONTRE','RENFORCEMENT','RENSEIGNEMENT','REPRÉSENTATION','REPTILE','REQUIN','RESPECT','RESTAURANT','RETRAITE','RETRAITÉ',
+  'RETROUVAILLE','RIDEAU','RIDICULE','RIGOLETTE','RIPOSTE','RIVAGE','RIVIÈRE','RIZ','ROBE','ROBINET','ROBOT','ROCHER',
+  'ROCHEUX','ROMARIN','RONDELLE','ROSE','ROSSIGNOL','ROTATION','ROUGE','ROUGET','ROULEAU','ROULEMENT','ROUTE','RUCHE',
+  'RUGBY','RUISSEAU','RUPTURE','RÂTEAU','RÈGLE','RÉCEPTION','RÉCOLTE','RÉCOMPENSE','RÉCRÉATION','RÉFLÉCHIR','RÉFRIGÉRATEUR','RÉGIMENT',
+  'RÉGLEMENTATION','RÉSIDENCE','RÉUNION','RÉVEIL','RÉVERBÈRE','RÊVE','SABLE','SABLIER','SABOTAGE','SABOTS','SAC','SACRIFICE',
+  'SAGESSE','SALADE','SALAIRE','SALON','SANDALE','SANDWICH','SANGLIER','SAPIN','SARCASME','SARDINE','SATIN','SATISFACTION',
+  'SAUCISSE','SAUMON','SAUTERELLE','SAVON','SAVONNETTE','SAXOPHONE','SCANDALE','SCARABÉE','SCIE','SCOOTER','SCRABBLE','SCULPTEUR',
+  'SCULPTURE','SCÉNARIO','SECONDE','SECRÉTAIRE','SEL','SEMAINE','SEMENCE','SENTIER','SENTINELLE','SERPENT','SERPENTIN','SERRE',
+  'SERRURIER','SERVEUR','SHAMPOOING','SHORT','SIFFLET','SIGNATURE','SILHOUETTE','SIMPLIFICATION','SINGE','SINISTRE','SITUATION','SIÈCLE',
+  'SKI','SNOWBOARD','SOEUR','SOIE','SOIR','SOLE','SOLEIL','SOMMEIL','SOMNAMBULE','SOMPTUEUX','SONDAGE','SORCELLERIE',
+  'SORCIÈRE','SOUBRESAUT','SOUCOUPE','SOUPE','SOUPIÈRE','SOUPÇON','SOURIRE','SOURIS','SOUS-MARIN','SOUVENIR','SPATULE','SPECTACLE',
+  'SPHÈRE','SPORT','SQUELETTE','STADE','STATION','STRATAGÈME','STYLO','SUCRE','SUGGESTION','SUPERSTITION','SUPPLÉMENT','SURF',
+  'SURVEILLANCE','SURVEILLANT','SUSPENSION','SYMPATHIE','SYNAGOGUE','SÉCATEUR','SÉCURITÉ','SÉDUCTION','SÉLECTION','TABERNACLE','TABLE','TABLEAU',
+  'TABLETTE','TABLIER','TABOURET','TACLE','TAMBOUR','TAMBOURIN','TAMIS','TANIÈRE','TAPIS','TARIFICATION','TARTE','TATOUÉ',
+  'TAXI','TEINTURE','TEMPÉRATURE','TEMPÊTE','TENDRESSE','TENNIS','TERMINUS','TERRAIN','TERRASSE','TERRE','TERREAU','TERRIER',
+  'TERRINE','TERRITOIRE','TEXTILES','THERMOMÈTRE','THON','THYM','THÉ','THÉIÈRE','THÉÂTRE','TIGRE','TIMBRE','TIR',
+  'TIRELIRE','TIROIR','TOBOGGAN','TOILE','TOILETTES','TOIT','TOMATE','TONDEUSE','TONNERRE','TOPOGRAPHIE','TORCHON','TORPILLE',
+  'TORTILLON','TORTUE','TOUCHE','TOURMENTE','TOURNAMENT','TOURNEVIS','TRACTEUR','TRAHISON','TRAIN','TRAJECTOIRE','TRAMPOLINE','TRAMWAY',
+  'TRANSMISSION','TRAPPEUR','TRAVERSÉE','TRIANGLE','TRIBUNAL','TRICOT','TRIOMPHE','TROMPETTE','TROPHÉE','TROTTINETTE','TROTTOIR','TROUBADOUR',
+  'TROUSSE','TROUSSEAU','TRUITE','TRÉSOR','TRÔNE','TUBA','TUNNEL','TURBOT','TURBULENCE','TUTEUR','TUYAU','TÉLÉPHONE',
+  'TÉLÉVISION','TÊTE','UKULÉLÉ','UNIFORME','URGENCE','USTENSILE','UTOPIE','VACANCES','VACHE','VAGABOND','VAGUE','VAISSEAU',
+  'VALISE','VALLÉE','VAMPIRE','VANILLE','VANTARDISE','VARIATION','VELOURS','VENDANGE','VENGEANCE','VENT','VENTRE','VERRE',
+  'VERT','VESTIAIRE','VIADUC','VIBRAPHONE','VICTOIRE','VIGNERON','VILLAGE','VIN','VINAIGRE','VIOLET','VIOLETTE','VIOLON',
+  'VIOLONCELLE','VIS','VISITEUR','VOCABULAIRE','VOILE','VOILIER','VOISINAGE','VOITURE','VOLANT','VOLCAN','VOLLEYBALL','VOLONTAIRE',
+  'VOLTIGE','VOYAGE','VOYAGEUR','VROMBISSEMENT','VÉLO','VÉRANDA','VÉRITABLE','VÉTÉRINAIRE','WAGON','XYLOPHONE','XÉRÈS','YACHT',
+  'YAOURT','ZÉBRURE','ÉBOULEMENT','ÉCHARPE','ÉCHECS','ÉCHELLE','ÉCLAT','ÉCLIPSE','ÉCOLE','ÉCONOMIE','ÉCREVISSE','ÉCRITURE',
+  'ÉCROULEMENT','ÉCUREUIL','ÉDIFICE','ÉGLISE','ÉLASTIQUE','ÉLECTRICIEN','ÉLÉPHANT','ÉMEUTE','ÉMISSION','ÉNERGIE','ÉPAISSEUR','ÉPAULE',
+  'ÉPERVIER','ÉPICERIE','ÉPINARD','ÉPINGLE','ÉPONGE','ÉPREUVE','ÉPÉE','ÉQUERRE','ÉQUIPE','ÉRUPTION','ÉTABLE','ÉTAGÈRE',
+  'ÉTINCELLE','ÉTOILE','ÉTÉ','ÉVIER','ÉVOLUTION','ÉVÉNEMENT'
+];
+
+const WORDS_MEDIUM = [
+  'ABERRATION','ABSCISSE','ABSTENTION','ABSTINENCE','ACAJOU','ACCORD','ACCRÉTION','ACOLYTE','ACOUSTIQUE','ACQUITTEMENT','ACROBATIE','ACROPOLE',
+  'ACÉTYLÈNE','ADMIRATION','ADMONITION','AFFIDAVIT','AFFRONTEMENT','AGGLOMÉRATION','AGNOSTIQUE','AGORA','AGRÉGATION','AGRÉMENT','AHURISSEMENT','ALBATROS',
+  'ALBÂTRE','ALCHIMIE','ALCHIMISTE','ALGORITHME','ALGUE','ALLIANCE','ALLÉGORIE','ALMANACH','ALTIMÈTRE','ALTITUDE','ALUMINIUM','AMALGAME',
+  'AMARRAGE','AMARRE','AMBASSADEUR','AMBROISIE','AMENDEMENT','AMEUBLEMENT','AMONCELLEMENT','AMPHIGOURIQUE','AMPHITHÉÂTRE','AMPHORE','AMPLIFICATION','AMÉNAGEMENT',
+  'AMÉNITÉ','ANACHRONISME','ANALPHABÈTE','ANESTHÉSISTE','ANGOISSE','ANNUAIRE','ANOMALIE','ANTENNE','ANTHRACITE','ANTHROPOLOGIE','ANTICYCLONE','ANTILOPE',
+  'ANTITHÈSE','ANTÉDILUVIEN','ANXIÉTÉ','ANÉANTISSEMENT','APANAGE','APITOIEMENT','APOLOGUE','APOLOGÉTIQUE','APOPHÉNIE','APOSTROPHE','APOTHICAIRE','APOTHÉOSE',
+  'APPARATCHIK','APPAREILLAGE','APPAUVRISSEMENT','APPEL','APPROVISIONNEMENT','APÉRITIF','AQUARELLE','AQUEDUC','ARBORESCENCE','ARCHAÏQUE','ARCHE','ARCHIPEL',
+  'ARCHITECTE','ARCHÉOLOGUE','ARGUMENTATION','ARISTOCRATIE','ARITHMÉTIQUE','ARMISTICE','ARPENTAGE','ARPENTEUR','ARTEFACT','ARTIFICE','ARÉOPAGE','ASEPTISATION',
+  'ASSAINISSEMENT','ASSIMILATION','ASSOMBRISSEMENT','ASSOUPLISSEMENT','ASSUJETTISSEMENT','ASTREINTE','ASTRONOME','ASTÉRISQUE','ASTÉROÏDE','ATHANOR','ATLAS','ATOLL',
+  'ATOME','ATTENDRISSEMENT','ATTERRISSAGE','ATTRITION','AUGMENTATION','AUSTÉRITÉ','AUTOCRATE','AUTODAFÉ','AUTOPSIE','AVALANCHE','AVARICE','AVERSE',
+  'AVÈNEMENT','AXIOLOGIE','AXOLOTL','AZOTE','AÉRONAUTIQUE','BACCALAURÉAT','BACTÉRIE','BALANCIER','BALBUTIEMENT','BALISTIQUE','BALLADE','BALLOTTEMENT',
+  'BALUSTRADE','BAMBOU','BANALISATION','BANNIÈRE','BANQUISE','BAOBAB','BAPTISTÈRE','BARCAROLLE','BARRACUDA','BARYTON','BARÈME','BASCULEMENT',
+  'BASILIQUE','BATELEUR','BATHOLITE','BELVÉDÈRE','BIBLIOPHILE','BIENFAISANCE','BIFURCATION','BILLETTERIE','BIMENSUEL','BIOLOGISTE','BIOSPHÈRE','BIOÉTHIQUE',
+  'BISON','BLAIREAU','BLANCHE','BLASON','BLASONNEMENT','BLOCUS','BOMBARDEMENT','BONIFICATION','BOTANIQUE','BOUILLABAISSE','BOUILLONNEMENT','BOULEVERSEMENT',
+  'BOURGEOISIE','BOURGEONNEMENT','BOUSSOLE','BOUÉE','BREUVAGE','BRIGANDAGE','BRUINE','BRUISSEMENT','BRÉVAIRE','BUFFLE','BÉATIFICATION','BÉCHAMEL',
+  'BÉLIER','BÉMOL','BÉNÉDICTION','CABALISTIQUE','CACOPHONIQUE','CACTUS','CADASTRAL','CADAVÉREUX','CADENCE','CADRAN','CADUCÉE','CAFOUILLAGE',
+  'CALEMBOUR','CALENDAIRE','CALLIGRAPHE','CALLIGRAPHIE','CAMPANILE','CAMPANULE','CAMÉLIA','CAMÉLÉON','CANAL','CANDIDATURE','CANICULAIRE','CANICULE',
+  'CANONIQUE','CANTONNEMENT','CANYON','CAPILLAIRE','CAPITULATION','CAPRICORNE','CARAVELLE','CARBONE','CARDIOLOGUE','CARMIN','CARTOGRAPHIE','CASSOULET',
+  'CASTOR','CATACLYSME','CATACOMBES','CATALYSEUR','CATHÉDRALE','CAUTÉRISATION','CELLULE','CENSURE','CENTRIFUGE','CENTURION','CHANCELLERIE','CHANSONNIER',
+  'CHARIVARI','CHARLATANISME','CHARTISTE','CHATOIEMENT','CHEMINEMENT','CHEVALIER','CHIMIOTHÉRAPIE','CHIMISTE','CHIMPANZÉ','CHIRURGIEN','CHORISTE','CHORÉGRAPHIE',
+  'CHOUETTE','CHRONOLOGIE','CHRONOMÉTRAGE','CHRYSANTHÈME','CHUCHOTEMENT','CHÈVREFEUILLE','CHÊNE','CIRCONCISION','CIRCUMNAVIGATION','CITRONNADE','CITRONNELLE','CLAFOUTIS',
+  'CLAMEUR','CLAQUEMENT','CLAUSTRATION','CLERGYMAN','CLOCHER','CLOÎTRE','CLÉMATITE','COADJUTEUR','COALITION','COCKTAIL','CODICILLE','CODIFICATION',
+  'COLIBRI','COLISÉE','COLLATÉRAL','COLONIE','COLONNE','COMMANDEMENT','COMMENCEMENT','COMMERCE','COMMISÉRATION','COMMÉMORATIF','COMMÉMORATION','COMPAGNONNAGE',
+  'COMPASSION','COMPATRIOTE','COMPENDIEUX','COMPENDIUM','COMPLAISANCE','COMPONCTION','COMPOSITEUR','COMPOTE','COMÈTE','COMÉDIE','CONCERTO','CONCESSION',
+  'CONCURRENCE','CONDAMNATION','CONDENSATION','CONDITIONNEMENT','CONDOR','CONGRÉGATION','CONJUGAISON','CONSENTEMENT','CONSTELLATION','CONSTITUTION','CONSÉCRATION','CONTE',
+  'CONTINENT','CONTREFAÇON','CONTREFORT','CORAIL','CORIANDRE','CORVETTE','COSMOGONIE','COSMOPOLITE','COUPERET','COUPOLE','COURTISAN','COUSCOUS',
+  'COÏNCIDENCE','CRACHIN','CROCHE','CROISADE','CROISSANCE','CRYPTE','CRÉDULITÉ','CRÉNEAUX','CUNÉIFORME','CURCUMA','CYCLONE','CÉDILLE',
+  'CÉLADON','CÉNOTAPHE','CÉRAMIQUE','CÉRÉMONIAIRE','DAHLIA','DELTA','DENTELLE','DERMATOLOGUE','DERVICHE','DESTINATION','DEVISE','DIALECTE',
+  'DIAPASON','DICTATURE','DIFFRACTION','DIGESTIF','DIGUE','DIPLOMATE','DIPLOMATIQUE','DISPARITION','DISSERTATION','DISSOLUTION','DISTINCTION','DISTRIBUTION',
+  'DITHYRAMBE','DIVERGENCE','DIVIDENDE','DIÈSE','DOGMATISME','DOLMEN','DOMINATION','DONJON','DOUANE','DOUVES','DRAMATIQUE','DYSCALCULIE',
+  'DYSPRAXIE','DÉBOISEMENT','DÉBORDEMENT','DÉCADENCE','DÉCHAINEMENT','DÉCHIFFREMENT','DÉCLAMATION','DÉCOURAGEMENT','DÉCRET','DÉDUCTION','DÉFERLANTE','DÉFERLEMENT',
+  'DÉFLATION','DÉFRICHEMENT','DÉGAGEMENT','DÉGORGEMENT','DÉGOÛT','DÉGRADATION','DÉGRINGOLADE','DÉLIBÉRATION','DÉLUGE','DÉMOCRATIE','DÉMONSTRATION','DÉNOUEMENT',
+  'DÉONTOLOGIE','DÉPRESSION','DÉRAPAGE','DÉSILLUSION','DÉTONATION','DÉTROIT','DÉTÉRIORATION','DÉVOUEMENT','EFFROI','EMBARGO','EMBARQUEMENT','EMBRASEMENT',
+  'EMBUSCADE','EMPAQUETAGE','EMPATHIE','EMPIRE','ENCHEVÊTREMENT','ENCRIER','ENCYCLOPÉDIE','ENGOURDISSEMENT','ENGRENAGE','ENLUMINURE','ENRICHISSEMENT','ENTHOUSIASME',
+  'ENTOMOLOGIE','ENVERGURE','ENVIE','ESCADRON','ESCARMOUCHE','ESPADON','ESPÉRANCE','ESTAMPE','ESTHÉTIQUE','ESTUAIRE','EUPHORIE','EUPHÉMISME',
+  'EXPATRIATION','EXPORTATION','EXÉGÈSE','FABLE','FALAISE','FASCINATION','FAUCON','FAÏENCE','FIBRE','FIERTÉ','FILIGRANE','FISCALITÉ',
+  'FJORD','FLAMANT','FLEGMATIQUE','FLORILÈGE','FOLKLORE','FONDUE','FORUM','FOSSILE','FOUGÈRE','FOURMILIER','FRESQUE','FRÉGATE',
+  'FRÉQUENCE','FRÊNE','FUGUE','FUNAMBULE','FÉODALITÉ','GALION','GALVANISATION','GALÈRE','GAMME','GASTRONOMIE','GAZELLE','GENTIANE',
+  'GEYSER','GIBOULÉE','GIVRE','GLADIATEUR','GLAÇURE','GLOSSAIRE','GLYCINE','GORILLE','GOUFFRE','GOUVERNAIL','GOUVERNANCE','GOÉLETTE',
+  'GRATIN','GRATITUDE','GRAVITÉ','GRAVURE','GREFFIER','GROTTE','GRÊLE','GUILLEMET','GUÉPARD','GUÉRILLA','GÉMEAUX','GÉNÉALOGIE',
+  'GÉOLOGUE','GÉOSTATIONNAIRE','HAÏKU','HIPPOCAMPE','HIPPOPOTAME','HISTRION','HIÉROGLYPHE','HOLOGRAMME','HOLOGRAPHIE','HORTENSIA','HUBLOT','HUISSIER',
+  'HUMILITÉ','HYDROGÈNE','HYDROMEL','HYPERBOLE','HYPERMNÉSIE','HYPOTHÈQUE','HÉGÉMONIE','HÉLIOGRAVURE','HÉLIUM','HÉRITAGE','HÊTRE','ICEBERG',
+  'ICONOCLASTE','IDÉOGRAMME','IDÉOLOGIE','IGUANE','IMPARTIALITÉ','IMPORTATION','IMPRIMERIE','IMPROVISATION','IMPUNITÉ','INCANTATION','INCUBATION','INDIGO',
+  'INDUSTRIE','INFLATION','INGÉNIEUR','INONDATION','INQUISITION','INSIGNE','INSURRECTION','INTENDANCE','INTERMITTENCE','INTERVALLE','IRIS','IRONIE',
+  'ISTHME','JAGUAR','JALOUSIE','JASMIN','JETÉE','JOAILLERIE','JONQUE','JUMELLES','JURISPRUDENCE','KETCHUP','LAGUNE','LASER',
+  'LATITUDE','LAVANDE','LAÏCITÉ','LEVIER','LEXICOGRAPHIE','LEXIQUE','LIBÉRALISME','LICHEN','LIQUEUR','LITHOGRAPHIE','LITOTE','LOGICIEL',
+  'LONGITUDE','LOUPE','LOUTRE','LÉGENDE','LÉMUR','LÉOPARD','MACARON','MADRIGAL','MAESTRO','MAGENTA','MAGISTRAT','MAGNOLIA',
+  'MAGNÉTISME','MAJORITÉ','MANDAT','MANGROVE','MANIVELLE','MANSUÉTUDE','MANUSCRIT','MARAIS','MARGUERITE','MARIONNETTE','MARMELADE','MARQUETERIE',
+  'MARÉCAGE','MAUSOLÉE','MAYONNAISE','MENHIR','MERCANTILISME','MERCURE','MERINGUE','MERISIER','MESURE','MICROSCOPE','MILLEFEUILLE','MIMOSA',
+  'MINARET','MINORITÉ','MOLÉCULE','MONARCHIE','MONARCHISTE','MONOGRAPHIE','MONOPOLE','MORTUAIRE','MOSAÏQUE','MOUSSE','MOUSSON','MOUTARDE',
+  'MULTIPLICITÉ','MURÈNE','MYTHOLOGIE','MÂT','MÉCÉNAT','MÉDIATEUR','MÉLANCOLIE','MÉLODIE','MÉMOIRE','MÉPRIS','MÉRIDIEN','MÉTAMORPHOSE',
+  'MÉTAPHORE','MÉTÉORE','NATURALISME','NECTAR','NEUROLOGUE','NEUTRALITÉ','NEUTRON','NOCTURNE','NOIRE','NOSTALGIE','NOTAIRE','NOTE',
+  'NOUVELLE','NOYER','NUMISMATIQUE','NÉCROPOLE','OASIS','OBLIGATION','OBSCURANTISME','OBÉLISQUE','OCRE','OCTAVE','OLIGARCHIE','ONDÉE',
+  'OPPOSITION','ORATOIRE','ORBITE','ORCHIDÉE','ORDONNANCE','ORFÈVRERIE','ORNITHOLOGIE','OUVERTURE','OXYGÈNE','OXYMORE','PAGODE','PALISSANDRE',
+  'PALÉONTOLOGIE','PAMPHLET','PANTHÉISME','PANTHÉON','PANTOMIME','PANÉGYRIQUE','PARADOXE','PARCHEMIN','PAREIDOLIE','PARENTHÈSE','PARESSEUX','PARLEMENT',
+  'PATRIARCHE','PATRIMOINE','PATRONAGE','PHARAON','PHILANTHROPIE','PHILOSOPHIE','PHONÉTIQUE','PHYSICIEN','PICTOGRAMME','PILIER','PIRANHA','PIROGUE',
+  'PIVOINE','PLAIDOIRIE','PLAIDOYER','PLAINE','PLANCTON','PLATEAU','PLATINE','PLÉNIPOTENTIAIRE','PLÉNITUDE','POLÉMIQUE','PONCTUATION','PONTIFICAL',
+  'PORCELAINE','PORTÉE','POSTÉRITÉ','POTERIE','POULIE','POUPE','PRESTIDIGITATION','PRIMORDIAL','PRISME','PROCESSEUR','PROCUREUR','PROFITEROLE',
+  'PROMULGATION','PROPHÉTIE','PROSOPAGNOSIE','PROSPÉRITÉ','PROTOCOLE','PROTON','PROUE','PROVENANCE','PRÉAMBULE','PRÉCEPTEUR','PRÉCIPITATION','PRÉDESTINATION',
+  'PRÉLUDE','PRÉROGATIVE','PSYCHANALYSE','PSYCHIATRE','PURGATOIRE','PÉDAGOGIE','PÉDIATRE','PÉLICAN','PÉNINSULE','PÉNITENCE','PÉRISCOPE','QUAI',
+  'QUICHE','QUILLE','RACLETTE','RADAR','RADIATION','RADIOLOGUE','RAIE','RATATOUILLE','RATIONALISATION','REDDITION','REFERENDUM','RELIEF',
+  'RELIQUAIRE','REMPART','RENAISSANCE','REQUIEM','RESSORT','RHAPSODIE','RHINOCÉROS','RHODODENDRON','RHÉTORIQUE','ROMAN','RONDE','ROSACE',
+  'ROSÉE','RYTHME','RÉCESSION','RÉCIF','RÉDEMPTION','RÉFUTATION','RÉGENCE','RÉPERTOIRE','RÉPUBLIQUE','RÉQUISITION','RÉQUISITOIRE','RÉSEAU',
+  'RÉSISTANCE','RÉVOLUTION','SACERDOCE','SAFRAN','SAGITTAIRE','SALAMANDRE','SAMOURAÏ','SANCTUAIRE','SARCOPHAGE','SATELLITE','SATIRE','SAVANE',
+  'SCEAU','SCEPTICISME','SCHISMATIQUE','SCOLASTIQUE','SCORPION','SCRUTIN','SEXTANT','SOLENNITÉ','SOLISTE','SOLVABILITÉ','SONAR','SONATE',
+  'SONNET','SOPRANO','SOUFFLÉ','SOURCE','SOUVERAINETÉ','SPÉCULATION','STALACTITE','STALAGMITE','STEPPE','STOÏCISME','STRATÉGIE','STUPEUR',
+  'STÈLE','STÉGANOGRAPHIE','SUBORDINATION','SUBSIDIARITÉ','SUBSTANTIEL','SUBTERFUGE','SUBVENTION','SUFFRAGE','SUPRÉMATIE','SYMPHONIE','SYNARCHIE','SÉCHERESSE',
+  'SÉCULAIRE','SÉISME','SÉMAPHORE','SÉNATEUR','SÉNESCENCE','SÉQUOIA','SÉRIGRAPHIE','SÉRÉNITÉ','TABASCO','TAPISSERIE','TARIF','TARTIFLETTE',
+  'TATOU','TAUREAU','TAÏGA','TECK','TEMPO','TEMPORALITÉ','THERMES','THÉOCRATIE','THÉSAURUS','TIRAMISU','TITANE','TONALITÉ',
+  'TORNADE','TORRENT','TOTALITARISME','TOUCAN','TOUNDRA','TOURBIÈRE','TOURELLE','TOURNESOL','TRADITION','TRAGÉDIE','TRAITÉ','TRANSEPT',
+  'TRANSHUMANCE','TRAPÈZE','TRIBULATION','TROPIQUE','TRÉMA','TSUNAMI','TULIPE','TURQUOISE','TYPHON','TYPOGRAPHIE','TÉLESCOPE','TÉNOR',
+  'UNANIMITÉ','URANIUM','URBANISATION','URBANISTE','VAUTOUR','VENTRILOQUIE','VERDICT','VERMILLON','VERSATILITÉ','VERSEAU','VIGILANCE','VIKING',
+  'VINAIGRETTE','VINDICATIF','VIRGULE','VIRTUOSE','VIRTUOSITÉ','VIRUS','VITRAIL','VOCIFÉRER','VÉLOCITÉ','VÉNÉRATION','WASABI','XYLOGRAPHIE',
+  'ZOOLOGIE','ZÈBRE','ÉBLOUISSEMENT','ÉBULLITION','ÉBÈNE','ÉCARLATE','ÉCLABOUSSURE','ÉCLUSE','ÉLECTRICITÉ','ÉLECTRON','ÉLIXIR','ÉLOQUENCE',
+  'ÉLÉGIE','ÉMANCIPATION','ÉMERAUDE','ÉMERVEILLEMENT','ÉMIGRATION','ÉPANOUISSEMENT','ÉPHÉMÉRIDE','ÉPIGRAPHE','ÉPISTOLAIRE','ÉPITAPHE','ÉPOPÉE','ÉPOUSTOUFLANT',
+  'ÉQUATEUR','ÉQUILIBRISTE','ÉRABLE','ÉRUDITION','ÉTABLISSEMENT','ÉTENDARD','ÉTONNEMENT','ÉVAPORATION'
+];
+
+const WORDS_HARD = [
+  'ABIOGÉNÈSE','ABSCONS','ABSIDE','ABSQUATULATION','ABSTRACTION','ACATALEPSIE','ACHILLE','ACHONDROPLASIE','ACRIMONIE','ACRONYME','ADAMANTIN','ADÉNOPATHIE',
+  'AGGLUTININE','ALEXANDRIN','ALLITÉRATION','ALLOPATRIQUE','ALLUVION','ALLÉGORÈSE','AMPHIARTHROSE','AMPHIGOURI','ANAGOGIE','ANAGRAMME','ANAMORPHOSE','ANAPHORE',
+  'ANATHÈME','ANEUPLOÏDIE','ANTHROPOMORPHISME','ANTILOGARITHME','ANTIMÉTABOLE','ANTINOMIE','ANÉMIE','ANÉVRISME','APOCATASTASE','APOCRYPHE','APODICTIQUE','APOGÉE',
+  'APORIE','APORÉTIQUE','APOSTASIE','ARCHAÏSME','ARCHIMANDRITE','ARCHITRAVE','ARDOISE','ARGILE','ARPÈGE','ARYTHMIE','ASSONANCE','ASTIGMATISME',
+  'ASYMPTOTE','ATAVISME','AUTOPOÏÈSE','AXIOME','AZIMUT','AÉRODYNAMIQUE','BALDAQUIN','BAROQUE','BASALTE','BATHYMÉTRIE','BATHYSCAPHE','BINÔME',
+  'BIOCÉNOSE','BIOLUMINESCENCE','BRACHYLOGIE','BRADYCARDIE','CACOPHONIE','CALCAIRE','CALCITONINE','CALICE','CANNELURE','CANONISATION','CARCINOME','CATALEPSIE',
+  'CATALYSE','CATAPHORE','CATAPLEXIE','CATHARSIS','CATÉCHISME','CELLULOSE','CENTAURE','CERBÈRE','CHAPITEAU','CHIASME','CHIMÈRE','CHIMÉRIQUE',
+  'CHIRALITÉ','CHLOROPHYLLE','CHOLANGIOGRAPHIE','CHROMATISME','CHROMATOPHORE','CHROMODYNAMIQUE','CHROMOSOME','CHRYSALIDE','CHÉLICÈRE','CIRCUMAMBULATION','CIRCUMPOLAIRE','COCON',
+  'COLLENCHYME','COMITOLOGIE','COMMENSURABLE','COMMUTATIVITÉ','CONCLAVE','CONFABULATION','CONGRUENCE','CONJECTURE','CONSONANCE','CONTREPOINT','COPROLOGIE','CORNICHE',
+  'COROLLAIRE','COROLLE','COSMOGONIQUE','CRESCENDO','CRISTALLOGRAPHIE','CRYOGÉNIE','CRYPTOGRAPHIE','CUBISME','CYANOBACTÉRIE','CYCLOPE','CYTOPLASME','CYTOSQUELETTE',
+  'CÉSURE','DADAÏSME','DIALECTIQUE','DIAPHANE','DICHOTOMIE','DIMORPHISME','DISCORDANCE','DISSONANCE','DIÉTHYLAMIDE','DUALISME','DYSMORPHIE','DYSPHASIE',
+  'DYSTOPIE','DÉAMBULATOIRE','DÉMIURGE','DÉONTIQUE','DÉRIVÉE','DÉTERMINISME','ECCHYMOSE','ECTOTHERMIE','EFFERVESCENCE','ELLIPSE','EMBOLIE','EMBOLISME',
+  'EMPIRISME','ENDOCYTOSE','ENDOGAMIE','ENJAMBEMENT','ENTABLEMENT','ENTHALPIE','ENTROPIE','ENTÉLÉCHIE','ENZYME','ERGODIQUE','ERGOTHÉRAPIE','ESCHATOLOGIE',
+  'ESCHATOLOGIQUE','ETHNOGÉNÈSE','EXISTENTIALISME','EXOCYTOSE','EXPRESSIONNISME','EXÉRÈSE','FACTORIELLE','FAUVISME','FERMENTATION','FIBRINOGÈNE','FIBRINOLYSE','FIBROMYALGIE',
+  'FLUCTUATION','FLUORESCENCE','FORTISSIMO','FRONTON','GALVANOPLASTIE','GERMINATION','GLISSANDO','GLUCIDE','GLUCONÉOGENÈSE','GLYCOLYSE','GNOSÉOLOGIE','GRANITE',
+  'GRÈS','GÉOMORPHOLOGIE','HADRONIQUE','HAGIOGRAPHIE','HALOPHYTE','HARMONIE','HERCULE','HERMÉNEUTIQUE','HEURISTIQUE','HISTOGENÈSE','HISTOLOGIE','HOLARCHIE',
+  'HOMÉOSTASIE','HUMUS','HYDRE','HYDRODYNAMIQUE','HYPERGLYCÉMIE','HYPOSTASE','HYPOTHÈSE','HÉLIOTROPISME','HÉMATOPOÏÈSE','HÉMISTICHE','HÉRÉSIE','HÉTÉROCHROMIE',
+  'IATROGENÈSE','ICARE','ICHTYOLOGIE','ICONOGRAPHIE','IDIOSYNCRASIE','IDÉALISME','IDÉOPLASTIE','IMMUNODÉFICIENCE','IMMUNOGLOBULINE','IMPRESSIONNISME','INCANDESCENCE','INDÉHISCENT',
+  'INDÉTERMINATION','INEFFABLE','INTERFÉROMÈTRE','INTUSSUSCEPTION','INTÉGRALE','IONOSPHÈRE','IRIDESCENCE','ISOCHRONE','ISOMORPHISME','ISOMÉRIE','ISOTOPE','ISOTROPIE',
+  'KABBALE','KALÉIDOSCOPE','KARYOTYPE','KINESTHÉSIE','KINÉSIOLOGIE','LAPAROSCOPIE','LARVE','LEGATO','LEUCÉMIE','LIGNINE','LIPIDE','LITHOGENÈSE',
+  'LITHOSPHÈRE','LITURGIE','LOGORRHÉE','LYCANTHROPIE','LYMPHOME','LÉPIDOPTÈRE','MACHIAVÉLISME','MACROÉVOLUTION','MAGMA','MAGNÉTOHYDRODYNAMIQUE','MANICHÉISME','MARNE',
+  'MATRICE','MATÉRIALISME','MAÏEUTIQUE','MICA','MICROFLUIDIQUE','MINIMALISME','MINOTAURE','MITOCHONDRIE','MNÉMONIQUE','MODULATION','MONISME','MORAINE',
+  'MORPHOGENÈSE','MORPHOSYNTAXE','MUTUALISME','MYCÉLIUM','MYRMÉCOLOGIE','MYÉLINISATION','MÉCATRONIQUE','MÉGALOMANIE','MÉLANOME','MÉNINGITE','MÉRISTÈME','MÉTABOLISME',
+  'MÉTAGENOMIQUE','MÉTAPHYSIQUE','MÉTONYMIE','NADIR','NANOTECHNOLOGIE','NARCISSE','NERVURE','NEUROPLASTICITÉ','NIHILISME','NOOSPHÈRE','NUCLÉOSYNTHÈSE','NUMÉRATION',
+  'NYCTALOPE','NYMPHE','NÉBULEUSE','NÉBULEUX','NÉMATOCYSTE','NÉOCLASSICISME','NÉOGLUCOGENÈSE','NÉOLOGISME','OBSIDIENNE','OBSOLESCENCE','OGIVE','OLIGODENDROCYTE',
+  'OLIGONUCLÉOTIDE','OLYMPE','OMNISCIENCE','ONIROMANCIE','ONTOGENÈSE','ONTOLOGIE','ORGANOGENÈSE','ORPHÉE','OSTINATO','OSTRACISME','OSTÉOPOROSE','OXYDORÉDUCTION',
+  'PALIMPSESTE','PALINDROME','PANACÉE','PANDORE','PANSPERMIE','PARACÉTAMOL','PARADIGME','PARALLAXE','PARALOGISME','PARASITISME','PARONOMASE','PAROXYSME',
+  'PATHOGENÈSE','PENTAGRAMME','PERMUTATION','PERSPECTIVE','PHAGOCYTOSE','PHOSPHORESCENCE','PHOTOSYNTHÈSE','PHOTOTROPISME','PHYLOGENÈSE','PHÉNOMÉNOLOGIE','PIANISSIMO','PISTIL',
+  'PIZZICATO','PLÉBISCITE','PLÉOCHROÏSME','PLÉONASME','PNEUMATIQUE','POLLINISATION','POLYANDRIE','POLYMÈRE','POLYNÔME','POLYSÉMIE','POSTULAT','POTENTIOMÈTRE',
+  'PRAGMATISME','PROBABILITÉ','PROCRASTINATION','PROMÉTHÉE','PROPRIOCEPTION','PROSODIE','PROTÉINE','PROTÉOMIQUE','PRÉVARICATION','PSYCHOSOMATIQUE','PTÉRODACTYLE','PULSAR',
+  'PYROTECHNIE','PÉGASE','PÉRIGÉE','PÉRIPHRASE','PÉRISTALTIQUE','PÉTALE','QUADRIVIUM','QUASAR','QUATRAIN','QUIDDITÉ','QUINTESSENCE','RATIONALISME',
+  'RECRUDESCENCE','RELATIVISME','RHIZOME','RHÉOLOGIE','ROCOCO','RUBATO','RÉCALCITRANT','RÉCURRENCE','RÉMINISCENCE','RÉSILIENCE','RÉSINE','RÉTICULOCYTE',
+  'SACCHAROSE','SCHISTE','SCLÉROSE','SCOLIOSE','SEPTICÉMIE','SFUMATO','SILEX','SISMOGRAPHE','SISYPHE','SOLIPSISME','SOMATOTROPE','SOPHISME',
+  'SPECTROMÉTRIE','SPHINX','STACCATO','STOCHASTIQUE','STRATIFICATION','STRATOSPHÈRE','STROPHE','STÉRÉOISOMÈRE','STŒCHIOMÉTRIE','SUBDUCTION','SUPERNOVA','SURRÉALISME',
+  'SYLLOGISME','SYMBIOSE','SYNAPSE','SYNAPTIQUE','SYNCRÉTISME','SYNESTHÉSIE','SYNESTHÉSIQUE','SÉDIMENT','SÉDIMENTOLOGIE','SÉMANTIQUE','SÉMIOLOGIE','SÉRENDIPITÉ',
+  'TACHYCARDIE','TANGENTE','TANNIN','TAPHONOMIE','TAUTOLOGIE','TAXINOMIE','TECTONIQUE','TERGIVERSATION','THERMODYNAMIQUE','THERMOGENÈSE','THROMBOCYTE','THROMBOSE',
+  'THÉORÈME','TRANSCENDANCE','TRANSMUTATION','TRANSPOSITION','TRIGONOMÉTRIE','TROPHOBLASTE','TRÉMOLO','TUBERCULE','TURBIDIMÉTRIE','TÉRATOLOGIE','UBIQUITÉ','ULYSSE',
+  'UTILITARISME','VASOCONSTRICTION','VECTEUR','VELLÉITAIRE','VERMICULITE','VERSIFICATION','VIBRATO','VICISSITUDE','VISCOPLASTICITÉ','VITRIFICATION','VOLCANOLOGIE','VOLUTE',
+  'VULCANISATION','VÉHÉMENCE','XYLÈME','XÉNOPHOBIE','ZEUGME','ZOOPLANCTON','ZÉNITH','ÉCLIPTIQUE','ÉCOUMÈNE','ÉLECTROLUMINESCENCE','ÉLECTROLYSE','ÉLECTROPHORÈSE',
+  'ÉPIPHANIE','ÉPISTAXIS','ÉPISTÉMOLOGIE','ÉTAMINE','ÉTHÉRÉ','ÉTIOPATHIE','ÉTYMOLOGIE'
+];
+
+function pickWords(level, n, seed) {
+  const pool = level === 'easy' ? WORDS_EASY : level === 'medium' ? WORDS_MEDIUM : WORDS_HARD;
+  _gameSeed = seed;
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(seededRandom() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+  return shuffled.slice(0, n);
+}
+
+
+let mancheState = {
+  scoreA: 0, scoreB: 0,
+  currentSeq: 0,
+  sequences: [],
+  timerInterval: null,
+  timeLeft: 30,
+  audio30s: null,
+  started: false,
+  wordsPhase: false,
+  turn: 'giver',
+  cluesGiven: 0, // nombre d'indices donnés pour le mot courant (duo: max 3)
+};
+
+// Seeded random for deterministic word generation
+let _gameSeed=1;
+function seededRandom(){
+  _gameSeed=(_gameSeed*16807+0)%2147483647;
+  return(_gameSeed-1)/2147483646;
+}
+function seededShuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(seededRandom()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function getSequences(seed){
+  _gameSeed=seed;
+  const cA=teamA[0], iA=teamA[1], cB=teamB[0], iB=teamB[1];
+  const allWords=pickWords('easy',20,seed);
+  return [
+    { giver:iA, guesser:cA, teamKey:'A', words:allWords.slice(0,5), found:Array(5).fill(false), currentWordIdx:0, lightsLit:0, points:0 },
+    { giver:iB, guesser:cB, teamKey:'B', words:allWords.slice(5,10), found:Array(5).fill(false), currentWordIdx:0, lightsLit:0, points:0 },
+    { giver:iB, guesser:cA, teamKey:'A', words:allWords.slice(10,15), found:Array(5).fill(false), currentWordIdx:0, lightsLit:0, points:0 },
+    { giver:iA, guesser:cB, teamKey:'B', words:allWords.slice(15,20), found:Array(5).fill(false), currentWordIdx:0, lightsLit:0, points:0 },
+  ];
+}
+
+function getSequencesTwoPlayers(seed){
+  _gameSeed=seed;
+  const p0=teamA[0], p1=teamB[0];
+  const allWords=pickWords('easy',10,seed);
+  return [
+    { giver:p0, guesser:p1, teamKey:'B', words:allWords.slice(0,5), found:Array(5).fill(false), skipped:Array(5).fill(false), currentWordIdx:0, lightsLit:0, skipsCount:0, points:0, cluesLeft:3 },
+    { giver:p1, guesser:p0, teamKey:'A', words:allWords.slice(5,10), found:Array(5).fill(false), skipped:Array(5).fill(false), currentWordIdx:0, lightsLit:0, skipsCount:0, points:0, cluesLeft:3 },
+  ];
+}
+
+function playGameSound(src, vol){
+  try{ const a=new Audio(src); a.volume=vol||0.6; a.play(); return a; }catch(e){ return null; }
+}
+
+function formatTimer(secs){
+  if(secs>=60){
+    const m=Math.floor(secs/60);
+    const s=secs%60;
+    return m+':'+(s<10?'0':'')+s;
+  }
+  return String(secs);
+}
+
+function startManche(){
+  mancheState.scoreA=0;
+  mancheState.scoreB=0;
+  mancheState.currentSeq=0;
+  mancheState.started=false;
+  mancheState.wordsPhase=false;
+
+  document.getElementById('mancheScoreA').textContent='0';
+  document.getElementById('mancheScoreB').textContent='0';
+
+  // Host generates seed and sequences, sends to all
+  // Clients also generate with same seed for perfect sync
+  if(isHost){
+    const seed=Date.now();
+    mancheState.sequences=gameMode==='duo'?getSequencesTwoPlayers(seed):getSequences(seed);
+    sendData({type:'syncSequences',seed:seed,sequences:mancheState.sequences,mode:gameMode});
+    clientAwaitingSequenceStart=false;
+    showScreen('screenManche');
+    startSequence(0);
+  }else{
+    clientAwaitingSequenceStart=true;
+    showScreen('screenManche');
+    if(Array.isArray(mancheState.sequences)&&mancheState.sequences.length){
+      clientAwaitingSequenceStart=false;
+      startSequence(0);
+    }
+  }
+}
+
+function startSequence(idx){
+  mancheState.currentSeq=idx;
+  mancheState.started=false;
+  mancheState.wordsPhase=false;
+  mancheState.timeLeft=30;
+  mancheState.turn='giver'; // giver commence toujours
+  const seq=mancheState.sequences[idx];
+
+  for(let i=0;i<5;i++){
+    const s=document.getElementById('sphere'+i);
+    if(s) s.classList.remove('lit');
+  }
+
+  const totalSeq=gameMode==='duo'?2:4;
+  document.getElementById('seqInfo').textContent=(gameMode==='duo'?'Tour ':'Séquence ')+(idx+1)+'/'+totalSeq;
+  document.getElementById('seqRoles').innerHTML=
+    renderPseudoOrVous(seq.giver,'role-giver')+' fait deviner \u00e0 '+
+    renderPseudoOrVous(seq.guesser,'role-guesser');
+
+  // Adapter les labels HUD scores en mode duo
+  const hudTeamA=document.querySelector('.manche-hud .hud-team.team-a');
+  const hudTeamB=document.querySelector('.manche-hud .hud-team.team-b');
+  if(gameMode==='duo'){
+    if(hudTeamA) hudTeamA.textContent=teamA[0]||'Joueur 1';
+    if(hudTeamB) hudTeamB.textContent=teamB[0]||'Joueur 2';
+  }else{
+    if(hudTeamA) hudTeamA.textContent='EQUIPE A';
+    if(hudTeamB) hudTeamB.textContent='EQUIPE B';
+  }
+
+  refreshPlayerPodium();
+  clearDireFields();
+  refreshDireInputState();
+
+  // Hide word frame initially + réinitialiser mot / animation
+  document.getElementById('wordFrame').classList.remove('visible');
+  const wdReset=document.getElementById('wordDisplay');
+  wdReset.classList.remove('word-exit-anim','word-enter-anim');
+  wdReset.dataset.hasWord='';
+  applyWordHalves('','');
+
+  const duration=gameMode==='duo'?90:30;
+  document.getElementById('timerDisplay').textContent=formatTimer(duration);
+  document.getElementById('timerBox').classList.remove('urgent');
+  if(mancheState.timerInterval){
+    clearInterval(mancheState.timerInterval);
+    mancheState.timerInterval=null;
+  }
+  if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+
+  // Show sequence overlay
+  const seqOv=document.getElementById('seqOverlay');
+  document.getElementById('seqTitle').textContent=(gameMode==='duo'?'TOUR ':'SÉQUENCE ')+(idx+1);
+  const seqDetailHTML=gameMode==='duo'
+    ? renderPseudoOrVous(seq.giver,'name-highlight')+' <span class="role-tag giver">FAIT DEVINER</span><br>'+
+      renderPseudoOrVous(seq.guesser,'name-highlight')+' <span class="role-tag guesser">DEVINE</span>'
+    : '\u00c9quipe '+seq.teamKey+'<br>'+
+      renderPseudoOrVous(seq.giver,'name-highlight')+' <span class="role-tag giver">FAIT DEVINER</span><br>'+
+      renderPseudoOrVous(seq.guesser,'name-highlight')+' <span class="role-tag guesser">DEVINE</span>';
+  document.getElementById('seqDetail').innerHTML=seqDetailHTML;
+  seqOv.classList.add('visible');
+
+  setTimeout(()=>{
+    seqOv.classList.remove('visible');
+    // Show chrono overlay
+    setTimeout(()=>{ showChronoIntro(); },400);
+  },2500);
+}
+
+function showChronoIntro(){
+  const ov=document.getElementById('chronoOverlay');
+  ov.classList.add('visible');
+  const dur=gameMode==='duo'?90:30;
+  const durLabel=gameMode==='duo'?'1:30':'30';
+  document.getElementById('chronoBig').textContent=durLabel;
+  document.getElementById('chronoLabel').textContent=gameMode==='duo'?'minute trente':'secondes';
+  playGameSound('son/ChronoDisplay.wav',0.7);
+
+  setTimeout(()=>{
+    document.getElementById('chronoBig').textContent=durLabel;
+    ov.classList.remove('visible');
+    setTimeout(()=>{ revealWordFrame(); },300);
+  },2000);
+}
+
+function revealWordFrame(){
+  const seq=mancheState.sequences[mancheState.currentSeq];
+  const frame=document.getElementById('wordFrame');
+
+  goToNextWord(seq);
+  clearDireFields();
+  refreshPlayerPodium();
+  mancheState.wordsPhase=true;
+  mancheState.cluesGiven=0;
+
+  // Reset pastilles
+  for(let i=0;i<5;i++){
+    const s=document.getElementById('sphere'+i);
+    if(s) s.classList.remove('lit','lost');
+  }
+
+  // Mode duo : flèches
+  if(gameMode==='duo'){
+    document.getElementById('arrowsWrap').classList.add('active');
+    resetArrows();
+  }else{
+    document.getElementById('arrowsWrap').classList.remove('active');
+  }
+
+  refreshDireInputState();
+  playGameSound('son/IndiceDisplay.wav',0.7);
+  frame.classList.add('visible');
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{ updateWordDisplay(seq,{animate:true}); });
+  });
+}
+
+function resetArrows(){
+  for(const id of ['arrowL0','arrowL1','arrowL2','arrowR0','arrowR1','arrowR2']){
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('used');
+  }
+}
+
+function consumeArrow(clueNum){
+  // Gauche : de l’extérieur vers le centre (L2 → L1 → L0). Droite : idem depuis la droite (R2 → R1 → R0).
+  const leftIds=['arrowL2','arrowL1','arrowL0'];
+  const rightIds=['arrowR2','arrowR1','arrowR0'];
+  const lEl=document.getElementById(leftIds[clueNum]);
+  const rEl=document.getElementById(rightIds[clueNum]);
+  if(lEl) lEl.classList.add('used');
+  if(rEl) rEl.classList.add('used');
+}
+
+function duoSkipWord(){
+  const seq=mancheState.sequences[mancheState.currentSeq];
+  const wi=seq.currentWordIdx;
+  if(seq.skipped) seq.skipped[wi]=true;
+  seq.found[wi]=true;
+  seq.skipsCount=(seq.skipsCount||0)+1;
+
+  playGameSound('son/passer.wav',0.7);
+
+  // Pastille rouge: la plus à droite non-utilisée
+  for(let i=4;i>=0;i--){
+    const s=document.getElementById('sphere'+i);
+    if(s && !s.classList.contains('lit') && !s.classList.contains('lost')){
+      s.classList.add('lost');
+      break;
+    }
+  }
+
+  mancheState.cluesGiven=0;
+  resetArrows();
+
+  // 3 pastilles rouges = manche perdue !
+  if(seq.skipsCount>=3){
+    playGameSound('son/perdu.wav',0.8);
+    setTimeout(()=>{ endSequence(); },1500);
+    return;
+  }
+
+  const totalHandled=seq.lightsLit+(seq.skipsCount||0);
+  if(totalHandled>=5){
+    setTimeout(()=>{ endSequence(); },1000);
+    return;
+  }
+
+  seq.currentWordIdx=(wi+1)%seq.words.length;
+  if(goToNextWord(seq)){
+    clearDireFields();
+    mancheState.turn='giver';
+    refreshDireInputState();
+    updateWordDisplay(seq,{animate:true});
+  }else{
+    endSequence();
+  }
+}
+
+function goToNextWord(seq){
+  const max=seq.words.length;
+  let startIdx=(seq.currentWordIdx)%max;
+  for(let i=0;i<max;i++){
+    const idx=(startIdx+i)%max;
+    if(!seq.found[idx]){
+      seq.currentWordIdx=idx;
+      return true;
+    }
+  }
+  return false;
+}
+
+const WORD_EXIT_MS=450;
+const WORD_ENTER_MS=550;
+
+function pseudoMatch(a,b){
+  return String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+}
+function getCurrentSeq(){
+  return mancheState.sequences[mancheState.currentSeq];
+}
+function isLocalGiver(){
+  const seq=getCurrentSeq();
+  return seq && pseudoMatch(myPseudo,seq.giver);
+}
+function isLocalGuesser(){
+  const seq=getCurrentSeq();
+  return seq && pseudoMatch(myPseudo,seq.guesser);
+}
+function maskSecretWord(w){
+  return w.replace(/./g,'*');
+}
+function normalizeAnswer(s){
+  return String(s||'')
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g,'');
+}
+
+function applyDireBubble(role,text,pop){
+  const id=role==='giver'?'bubbleGiver':'bubbleGuesser';
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=text||'';
+  if(pop){
+    el.classList.remove('bubble-pop');
+    void el.offsetWidth; // force reflow
+    el.classList.add('bubble-pop');
+  }
+}
+let _direSendTimer=null;
+let _skipNextGuesserInput=false;
+let _skipNextGiverInput=false;
+function emitDireBubble(role,text){
+  applyDireBubble(role,text);
+  clearTimeout(_direSendTimer);
+  _direSendTimer=setTimeout(()=>{
+    sendData({type:'direBubble',role,text:String(text||'')});
+  },100);
+}
+function sendDireBubbleNow(role,text,pop){
+  applyDireBubble(role,text,pop);
+  clearTimeout(_direSendTimer);
+  sendData({type:'direBubble',role,text:String(text||''),pop:!!pop});
+}
+
+function refreshPlayerPodium(){
+  const seq=getCurrentSeq();
+  if(!seq) return;
+  const gEl=document.getElementById('podiumGiverPseudo');
+  const uEl=document.getElementById('podiumGuesserPseudo');
+  if(isLocalGiver()){
+    gEl.textContent='Vous';
+    gEl.style.color='#ffe040';
+  }else{
+    gEl.textContent=seq.giver;
+    gEl.style.color='';
+  }
+  if(isLocalGuesser()){
+    uEl.textContent='Vous';
+    uEl.style.color='#ffe040';
+  }else{
+    uEl.textContent=seq.guesser;
+    uEl.style.color='';
+  }
+}
+
+// Helper: rendu d'un pseudo avec "Vous" en jaune si c'est le joueur local
+function renderPseudoOrVous(pseudo, cssClass){
+  if(pseudoMatch(myPseudo, pseudo)){
+    return '<span style="color:#ffe040;font-weight:900">Vous</span>';
+  }
+  return '<span class="'+cssClass+'">'+escapeHtml(pseudo)+'</span>';
+}
+function clearDireFields(){
+  const g=document.getElementById('direGiver');
+  const u=document.getElementById('direGuesser');
+  if(g) g.value='';
+  if(u) u.value='';
+  applyDireBubble('giver','');
+  applyDireBubble('guesser','');
+  clearTimeout(_direSendTimer);
+  sendData({type:'direBubble',role:'giver',text:''});
+  sendData({type:'direBubble',role:'guesser',text:''});
+}
+function isGiverIndicePhase(){
+  return mancheState.wordsPhase && !mancheState.started && isLocalGiver();
+}
+
+function refreshDireInputState(){
+  const g=document.getElementById('direGiver');
+  const u=document.getElementById('direGuesser');
+  const direRow=document.getElementById('direRow');
+  const actions=document.getElementById('gameActions');
+  if(!g||!u) return;
+
+  const roundOpen=mancheState.wordsPhase;
+  const chronoOn=mancheState.started;
+  const gOK=isLocalGiver();
+  const uOK=isLocalGuesser();
+  const isObserver=!gOK&&!uOK;
+  const turn=mancheState.turn; // 'giver' ou 'guesser'
+
+  // ── Observateurs : tout masquer ──
+  if(isObserver){
+    g.disabled=true;
+    u.disabled=true;
+    g.parentElement.style.display='none';
+    u.parentElement.style.display='none';
+    if(actions) actions.style.display='none';
+
+    let obs=document.getElementById('observerMsg');
+    if(!obs){
+      obs=document.createElement('div');
+      obs.id='observerMsg';
+      obs.style.cssText='text-align:center;padding:12px 20px;font-family:Rajdhani,sans-serif;font-size:1.05rem;font-weight:600;color:#666;letter-spacing:2px;text-transform:uppercase;';
+      direRow.parentElement.insertBefore(obs,direRow);
+    }
+    const seq=getCurrentSeq();
+    obs.style.display='';
+    obs.textContent=seq?'Observez \u2014 '+seq.giver+' fait deviner à '+seq.guesser:'En attente\u2026';
+    return;
+  }
+
+  // ── Joueur actif : masquer le message observateur ──
+  let obs=document.getElementById('observerMsg');
+  if(obs) obs.style.display='none';
+
+  // ── Giver ──
+  if(gOK){
+    g.parentElement.style.display='';
+    u.parentElement.style.display='none';
+    u.disabled=true;
+
+    let myTurn=roundOpen && turn==='giver';
+    // En duo : bloquer si 3 indices déjà donnés pour ce mot
+    if(gameMode==='duo' && mancheState.cluesGiven>=3) myTurn=false;
+
+    g.disabled=!myTurn;
+    if(gameMode==='duo'){
+      const remaining=3-mancheState.cluesGiven;
+      g.placeholder=myTurn?'Indice ('+remaining+' restant'+(remaining>1?'s':'')+')\u2026':'En attente\u2026';
+      if(actions) actions.style.display='';
+      const pass=document.getElementById('btnPass');
+      const seq=getCurrentSeq();
+      const skips=seq?(seq.skipsCount||0):0;
+      // Griser le bouton passer si déjà 2 passes (pour ne pas atteindre 3 rouges)
+      if(pass) pass.disabled=!(roundOpen && turn==='giver') || skips>=2;
+    }else{
+      g.placeholder=myTurn?'Indice \u2014 Entrée pour valider':'En attente de la réponse\u2026';
+      if(actions) actions.style.display='';
+      const pass=document.getElementById('btnPass');
+      if(pass) pass.disabled=!chronoOn||!myTurn;
+    }
+    if(myTurn) g.focus();
+  }
+
+  // ── Guesser ──
+  if(uOK){
+    u.parentElement.style.display='';
+    g.parentElement.style.display='none';
+    g.disabled=true;
+    if(actions) actions.style.display='none';
+
+    // Le guesser peut taper uniquement si c'est son tour ET le chrono tourne
+    const myTurn=roundOpen && chronoOn && turn==='guesser';
+    u.disabled=!myTurn;
+    if(!chronoOn){
+      u.placeholder='En attente du 1er indice\u2026';
+    }else if(turn==='guesser'){
+      u.placeholder='Devinez le mot\u2026';
+      u.focus();
+    }else{
+      u.placeholder='En attente de l\'indice\u2026';
+    }
+  }
+}
+
+function tryStartTimerAfterFirstClue(){
+  if(mancheState.started || !mancheState.wordsPhase) return;
+  startTimer();
+  sendData({type:'timerStart'});
+  refreshDireInputState();
+}
+
+function checkGuessAuto(){
+  if(!mancheState.started) return;
+  if(!isLocalGuesser()) return;
+  const seq=getCurrentSeq();
+  if(!seq || seq.found[seq.currentWordIdx]) return;
+  const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
+  const guess=normalizeAnswer(document.getElementById('direGuesser').value);
+  if(!target || !guess) return;
+  if(guess===target){
+    document.getElementById('direGuesser').value='';
+    sendDireBubbleNow('guesser','');
+    onCorrectAnswer();
+  }
+}
+
+function splitWordForDisplay(w){
+  if(!w) return ['',''];
+  const m=Math.ceil(w.length/2);
+  return [w.slice(0,m),w.slice(m)];
+}
+
+function applyWordHalves(L,R){
+  document.getElementById('wordHalfLeft').textContent=L;
+  document.getElementById('wordHalfRight').textContent=R;
+}
+
+function updateWordDisplay(seq,opts){
+  opts=opts||{};
+  const animate=opts.animate!==false;
+  const w=seq.words[seq.currentWordIdx];
+
+  // Seul le giver voit le mot. Le guesser voit des étoiles. Les observateurs voient des étoiles.
+  let displayW;
+  if(isLocalGiver()){
+    displayW=w;
+  }else{
+    displayW=maskSecretWord(w);
+  }
+  const [L,R]=splitWordForDisplay(displayW);
+  const box=document.getElementById('wordDisplay');
+
+  if(!animate){
+    applyWordHalves(L,R);
+    box.classList.remove('word-exit-anim','word-enter-anim');
+    if(L||R) box.dataset.hasWord='1';
+    return;
+  }
+
+  const hadWord=box.dataset.hasWord==='1';
+
+  function runEnter(){
+    applyWordHalves(L,R);
+    box.dataset.hasWord='1';
+    box.classList.remove('word-exit-anim');
+    void box.offsetWidth;
+    box.classList.add('word-enter-anim');
+    window.setTimeout(()=>{ box.classList.remove('word-enter-anim'); },WORD_ENTER_MS);
+  }
+
+  if(!hadWord){
+    runEnter();
+    return;
+  }
+
+  box.classList.remove('word-enter-anim');
+  void box.offsetWidth;
+  box.classList.add('word-exit-anim');
+  window.setTimeout(()=>{
+    box.classList.remove('word-exit-anim');
+    runEnter();
+  },WORD_EXIT_MS);
+}
+
+function startTimer(){
+  if(mancheState.started) return;
+  mancheState.started=true;
+  const duration=gameMode==='duo'?90:30;
+  mancheState.timeLeft=duration;
+
+  // Musique selon le mode
+  const sndFile=gameMode==='duo'?'son/1m30.wav':'son/30secondes.wav';
+  mancheState.audio30s=playGameSound(sndFile,0.5);
+
+  mancheState.timerInterval=setInterval(()=>{
+    mancheState.timeLeft--;
+    const t=mancheState.timeLeft;
+    document.getElementById('timerDisplay').textContent=formatTimer(t);
+
+    if(t<=10){
+      document.getElementById('timerBox').classList.add('urgent');
+    }
+
+    if(t<=0){
+      clearInterval(mancheState.timerInterval);
+      mancheState.timerInterval=null;
+      if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+      endSequence();
+    }
+  },1000);
+}
+
+function onCorrectAnswer(fromNetwork){
+  if(!mancheState.started) return;
+  const seq=mancheState.sequences[mancheState.currentSeq];
+  const wi=seq.currentWordIdx;
+  if(seq.found[wi]) return;
+
+  seq.found[wi]=true;
+  seq.lightsLit++;
+  seq.points++;
+
+  if(seq.teamKey==='A'){
+    mancheState.scoreA++;
+    document.getElementById('mancheScoreA').textContent=mancheState.scoreA;
+  }else{
+    mancheState.scoreB++;
+    document.getElementById('mancheScoreB').textContent=mancheState.scoreB;
+  }
+
+  // Allumer la prochaine pastille libre (ni lit ni lost) de gauche à droite
+  for(let i=0;i<5;i++){
+    const sg=document.getElementById('sphere'+i);
+    if(sg && !sg.classList.contains('lit') && !sg.classList.contains('lost')){
+      sg.classList.add('lit');
+      break;
+    }
+  }
+
+  playGameSound('son/BonneReponse.wav',0.7);
+
+  // En duo : reset flèches + clues pour le prochain mot
+  if(gameMode==='duo'){
+    mancheState.cluesGiven=0;
+    resetArrows();
+  }
+
+  // Vérifier fin (5 mots max — trouvés + perdus)
+  const totalHandled=seq.lightsLit+(seq.skipsCount||0);
+  if(totalHandled>=5){
+    clearInterval(mancheState.timerInterval);
+    mancheState.timerInterval=null;
+    if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+    setTimeout(()=>{ endSequence(); },1200);
+    if(!fromNetwork) sendData({type:'syncCorrect',seqIdx:mancheState.currentSeq,wordIdx:wi});
+    return;
+  }
+
+  if(goToNextWord(seq)){
+    clearDireFields();
+    mancheState.turn='giver';
+    refreshDireInputState();
+    updateWordDisplay(seq,{animate:true});
+  }else{
+    // Plus de mots
+    clearInterval(mancheState.timerInterval);
+    mancheState.timerInterval=null;
+    if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+    setTimeout(()=>{ endSequence(); },1200);
+  }
+
+  if(!fromNetwork) sendData({type:'syncCorrect',seqIdx:mancheState.currentSeq,wordIdx:wi});
+}
+
+function onPassWord(fromNetwork){
+  // En duo on peut passer à tout moment, en qualif seulement si chrono lancé
+  if(gameMode!=='duo' && !mancheState.started && !fromNetwork) return;
+  if(!fromNetwork && !isLocalGiver()) return;
+  const seq=mancheState.sequences[mancheState.currentSeq];
+
+  // Jouer le son passer.wav
+  playGameSound('son/passer.wav',0.7);
+
+  if(gameMode==='duo'){
+    // Sauvegarder l'index avant duoSkipWord car il le modifie
+    const wi=seq.currentWordIdx;
+    duoSkipWord();
+    if(!fromNetwork){
+      sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:wi});
+    }
+    return;
+  }
+
+  // Mode qualif : passer = on peut y revenir
+  const max=seq.words.length;
+  const startIdx=(seq.currentWordIdx+1)%max;
+  for(let i=0;i<max;i++){
+    const idx=(startIdx+i)%max;
+    if(!seq.found[idx]){
+      seq.currentWordIdx=idx;
+      clearDireFields();
+      mancheState.turn='giver';
+      mancheState.cluesGiven=0;
+      refreshDireInputState();
+      updateWordDisplay(seq,{animate:true});
+      if(!fromNetwork){
+        sendData({type:'syncPass',seqIdx:mancheState.currentSeq,newWordIdx:idx});
+        sendData({type:'turnChange',turn:'giver'});
+      }
+      return;
+    }
+  }
+}
+
+function endSequence(){
+  mancheState.started=false;
+  mancheState.wordsPhase=false;
+  if(mancheState.timerInterval){
+    clearInterval(mancheState.timerInterval);
+    mancheState.timerInterval=null;
+  }
+  if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+  refreshDireInputState();
+  document.getElementById('wordFrame').classList.remove('visible');
+
+  const nextSeq=mancheState.currentSeq+1;
+  const maxSeq=gameMode==='duo'?2:4;
+  if(nextSeq>=maxSeq){
+    setTimeout(()=>{ showMancheResults(); },1500);
+  }else{
+    // Next sequence
+    setTimeout(()=>{ startSequence(nextSeq); },1500);
+  }
+}
+
+function showMancheResults(){
+  if(gameMode==='duo'){
+    showMancheResultsDuo();
+    return;
+  }
+  const s=mancheState.sequences;
+  const candidatAScore=s[0].points+s[2].points;
+  const candidatBScore=s[1].points+s[3].points;
+  const winner=candidatAScore>=candidatBScore?teamA[0]:teamB[0];
+
+  const msg='Résultats de la manche :\n\n'+
+    teamA[0]+' (Candidat A) : '+candidatAScore+' points\n'+
+    teamB[0]+' (Candidat B) : '+candidatBScore+' points\n\n'+
+    (candidatAScore===candidatBScore?'Égalité !':winner+' est qualifié(e) !');
+
+  alert(msg);
+  backToMenu();
+}
+
+function showMancheResultsDuo(){
+  const s=mancheState.sequences;
+  const p0=teamA[0], p1=teamB[0];
+  // Séq 0: p0 fait deviner → p1 devine → points = score de p1 quand il devinait
+  // Séq 1: p1 fait deviner → p0 devine → points = score de p0 quand il devinait
+  const scoreP1asGuesser=s[0].points; // p1 devinait au tour 1
+  const scoreP0asGuesser=s[1].points; // p0 devinait au tour 2
+
+  const body=document.getElementById('resultsDuoBody');
+  // Mettre en valeur le joueur local
+  const isP0=pseudoMatch(myPseudo,p0);
+  const isP1=pseudoMatch(myPseudo,p1);
+
+  body.innerHTML=
+    '<tr'+(isP0?' style="background:rgba(255,215,0,0.08)"':'')+'><td>'+escapeHtml(p0)+(isP0?' <small style="color:#ffe040">(vous)</small>':'')+'</td>'+
+    '<td style="color:#888">fait deviner</td>'+
+    '<td style="font-size:1.3rem;font-weight:900;color:#ff4444">'+scoreP0asGuesser+'</td>'+
+    '<td style="font-size:1.4rem;font-weight:900;color:#ff4444"><strong>'+scoreP0asGuesser+'</strong></td></tr>'+
+    '<tr'+(isP1?' style="background:rgba(255,215,0,0.08)"':'')+'><td>'+escapeHtml(p1)+(isP1?' <small style="color:#ffe040">(vous)</small>':'')+'</td>'+
+    '<td style="font-size:1.3rem;font-weight:900;color:#ff4444">'+scoreP1asGuesser+'</td>'+
+    '<td style="color:#888">fait deviner</td>'+
+    '<td style="font-size:1.4rem;font-weight:900;color:#ff4444"><strong>'+scoreP1asGuesser+'</strong></td></tr>';
+
+  const winEl=document.getElementById('resultsDuoWinner');
+  if(scoreP0asGuesser>scoreP1asGuesser) winEl.textContent='\u{1F3C6} '+p0+' remporte la partie !';
+  else if(scoreP1asGuesser>scoreP0asGuesser) winEl.textContent='\u{1F3C6} '+p1+' remporte la partie !';
+  else winEl.textContent='\u{1F91D} \u00c9galit\u00e9 parfaite !';
+
+  // Remettre la musique d'accueil
+  resumeAccueilMusic();
+  showScreen('screenResultsDuo');
+}
+
+// ══════════════════════════════════════════
+// SYSTÈME DE RÈGLES & ANTI-TRICHE
+// ══════════════════════════════════════════
+function normLetters(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+}
+
+function sameFirst3(clue, secretWord){
+  const c=normLetters(clue), w=normLetters(secretWord);
+  if(c.length<3||w.length<3) return false;
+  return c.slice(0,3)===w.slice(0,3);
+}
+
+// Anti-triche : détecte les phrases collées ou les caractères interdits
+function isCheatAttempt(input){
+  const raw=input.trim();
+  if(/\s/.test(raw)) return 'phrase avec espaces';
+  // Caractères non-lettres (hors accents)
+  if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'caractères interdits';
+  const norm=normLetters(raw);
+  if(norm.length<1) return false;
+  // Patterns de phrases collées
+  const patterns=[
+    /^(cest|cestun|cestune|cestdu|cestde|cestla|cestle)/,
+    /^(ilya|ilyaun|ilyaune|ilyades)/,
+    /^(lemot|lemotcest|motcest)/,
+    /^(enrapport|cestcomme|ondirait|caressemble|jadore)/,
+  ];
+  for(const p of patterns){ if(p.test(norm)) return 'phrase déguisée'; }
+  // Mot >18 lettres = quasi-certainement une phrase collée
+  if(norm.length>18) return 'trop long';
+  return false;
+}
+
+// Validation de l'indice du giver
+function validateGiverClue(clue, secretWord){
+  const raw=clue.trim();
+  if(!raw) return {ok:false,reason:'vide'};
+  const cheat=isCheatAttempt(raw);
+  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
+  if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
+  if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
+  return {ok:true};
+}
+
+// Validation de la réponse du guesser
+function validateGuesserAnswer(answer){
+  const raw=answer.trim();
+  if(!raw) return {ok:false,reason:'vide'};
+  const cheat=isCheatAttempt(raw);
+  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
+  return {ok:true};
+}
+
+// Appliquer une faute
+function applyFault(reason, fromNetwork){
+  playGameSound('son/faute.wav',0.8);
+  applyDireBubble('giver',reason,true);
+  setTimeout(()=>{
+    if(gameMode==='duo'){
+      duoSkipWord();
+      if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:mancheState.sequences[mancheState.currentSeq]?.currentWordIdx||0,reason:reason});
+    }
+  },500);
+}
+
+// ── Back to menu ──
+function backToMenu(){
+  for(const p of conns){if(p.conn)try{p.conn.close()}catch(e){}}
+  if(peer)try{peer.destroy()}catch(e){}
+  conns=[];peer=null;connected=false;isHost=false;lobbyPlayers=[];
+  gameMode='qualif';
+  showScreen('screenAccueil');
+  document.getElementById('btnPlay').disabled=false;
+  const b=document.getElementById('btnPlayDuo');
+  if(b) b.disabled=false;
+  resumeAccueilMusic();
+}
+
+// ── Status dots animation ──
+setInterval(()=>{
+  if(document.getElementById('screenLobby').classList.contains('active')){
+    const count=lobbyPlayers.length;
+    const cap=maxPlayersForMode();
+    if(count<cap&&count>0){
+      const dots='.'.repeat((Date.now()/500|0)%4);
+      document.getElementById('lobbyStatus').textContent=count+'/'+cap+' joueurs \u2014 En attente'+dots;
+    }
+  }
+},500);
+
+// ══════════════════════════════════════════
+// EVENT LISTENERS
+// ══════════════════════════════════════════
+document.getElementById('btnPlay').addEventListener('click',()=>{gameMode='qualif';startSearch();});
+document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='duo';startSearch();});
+document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
+document.getElementById('btnBackMenu').addEventListener('click',backToMenu);
+document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
+  if(!e.target.closest('#btnConfirmInterdits')) return;
+  onConfirmInterdits();
+});
+document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
+
+document.getElementById('direGiver').addEventListener('input',e=>{
+  if(!isLocalGiver()) return;
+  if(_skipNextGiverInput){
+    _skipNextGiverInput=false;
+    return;
+  }
+  const raw=e.target.value;
+  applyDireBubble('giver',raw);
+  const starLen=Math.max(0,raw.length);
+  clearTimeout(_direSendTimer);
+  _direSendTimer=setTimeout(()=>{
+    sendData({type:'direBubble',role:'giver',text:'*'.repeat(starLen)});
+  },100);
+});
+document.getElementById('direGiver').addEventListener('keydown',e=>{
+  if(!isLocalGiver()||e.key!=='Enter') return;
+  e.preventDefault();
+  if(mancheState.turn!=='giver') return;
+  const raw=e.target.value.trim();
+  if(!raw) return;
+  if(gameMode==='duo' && mancheState.cluesGiven>=3) return;
+
+  // ── Validation des règles ──
+  const seq=getCurrentSeq();
+  if(seq){
+    const check=validateGiverClue(raw, seq.words[seq.currentWordIdx]);
+    if(!check.ok){
+      clearTimeout(_direSendTimer);
+      sendDireBubbleNow('giver',raw,true);
+      _skipNextGiverInput=true;
+      e.target.value='';
+      tryStartTimerAfterFirstClue();
+      applyFault(check.reason);
+      return;
+    }
+  }
+
+  clearTimeout(_direSendTimer);
+  sendDireBubbleNow('giver',raw,true);
+  tryStartTimerAfterFirstClue();
+  _skipNextGiverInput=true;
+  e.target.value='';
+
+  if(gameMode==='duo'){
+    consumeArrow(mancheState.cluesGiven);
+    sendData({type:'duoArrow',clueNum:mancheState.cluesGiven});
+    mancheState.cluesGiven++;
+  }
+
+  mancheState.turn='guesser';
+  sendData({type:'turnChange',turn:'guesser'});
+  refreshDireInputState();
+});
+document.getElementById('direGuesser').addEventListener('input',e=>{
+  if(!isLocalGuesser()) return;
+  if(_skipNextGuesserInput){
+    _skipNextGuesserInput=false;
+    return;
+  }
+  const raw=e.target.value;
+  applyDireBubble('guesser',raw);
+  const starLen=Math.max(0,raw.length);
+  clearTimeout(_direSendTimer);
+  _direSendTimer=setTimeout(()=>{
+    sendData({type:'direBubble',role:'guesser',text:'*'.repeat(starLen)});
+  },100);
+});
+document.getElementById('direGuesser').addEventListener('keydown',e=>{
+  if(!isLocalGuesser()||e.key!=='Enter') return;
+  e.preventDefault();
+  if(!mancheState.started || !mancheState.wordsPhase) return;
+  if(mancheState.turn!=='guesser') return;
+  const raw=document.getElementById('direGuesser').value.trim();
+  if(!raw) return;
+
+  // ── Validation anti-triche ──
+  const gCheck=validateGuesserAnswer(raw);
+  if(!gCheck.ok){
+    sendDireBubbleNow('guesser',raw,true);
+    _skipNextGuesserInput=true;
+    document.getElementById('direGuesser').value='';
+    applyFault(gCheck.reason);
+    return;
+  }
+
+  sendDireBubbleNow('guesser',raw,true);
+  _skipNextGuesserInput=true;
+  document.getElementById('direGuesser').value='';
+
+  const seq=getCurrentSeq();
+  if(seq && !seq.found[seq.currentWordIdx]){
+    const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
+    const guess=normalizeAnswer(raw);
+    if(guess===target){
+      onCorrectAnswer();
+      mancheState.cluesGiven=0;
+      resetArrows();
+      mancheState.turn='giver';
+      sendData({type:'turnChange',turn:'giver'});
+      refreshDireInputState();
+      return;
+    }
+  }
+
+  if(gameMode==='duo' && mancheState.cluesGiven>=3){
+    duoSkipWord();
+    sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
+  }else{
+    mancheState.turn='giver';
+    sendData({type:'turnChange',turn:'giver'});
+    refreshDireInputState();
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('active'));
+  if(e.key==='m'||e.key==='M'){isMuted=!isMuted;bgMusic.muted=isMuted;soundToggle.textContent=isMuted?'\u{1F507}':'\u{1F50A}';soundToggle.classList.toggle('muted',isMuted)}
+});
+document.getElementById('pseudoInput').addEventListener('keydown',e=>{if(e.key==='Enter')startSearch()});
+window.addEventListener('beforeunload',()=>{if(connected)sendData({type:'quit',pseudo:myPseudo})});
+</script>
+</body>
+</html>
