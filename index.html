@@ -1026,10 +1026,7 @@
       padding: 10px 10px 12px;
       gap: 10px;
       min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
+      overflow: visible;
     }
     /* align-self:end collait la colonne en bas → le haut (bulle donneur) était rogné par overflow:hidden */
     .game-play-column {
@@ -1064,6 +1061,126 @@
     .player-podium img { width: min(185px, 58vw); }
     .player-pseudo { font-size: 1.02rem; }
     .dire-row { flex-direction: column; align-items: stretch; }
+  }
+
+  /* Portrait téléphone : tout visible sans défilement (densité + cadre mot réduit) */
+  @media (max-width: 768px) and (orientation: portrait) {
+    #screenManche.active {
+      inset: max(4px, env(safe-area-inset-top, 0px)) max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px));
+    }
+    .manche-hud {
+      padding: 6px 8px;
+      gap: 4px;
+    }
+    .manche-hud-score {
+      min-width: 0;
+      flex: 0 1 auto;
+    }
+    .manche-hud-score .hud-pts {
+      font-size: 1.35rem;
+    }
+    .manche-hud-score .hud-team {
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+    }
+    .hud-sequence-info {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+    }
+    .hud-roles {
+      font-size: 0.62rem;
+      margin-top: 0;
+      line-height: 1.25;
+    }
+    .game-area {
+      padding: 4px 6px 6px;
+      gap: 4px;
+    }
+    .timer-box {
+      min-width: 0;
+      padding: 5px 10px 6px;
+      border-radius: 10px;
+      border-width: 2px;
+    }
+    .timer-value { font-size: 1.2rem; }
+    .timer-colon { font-size: 0.95rem; }
+    .game-play-column {
+      gap: 0;
+    }
+    .players-stage {
+      gap: 5px;
+      margin-bottom: 2px;
+      flex-shrink: 0;
+    }
+    .player-podium {
+      max-width: 100%;
+      width: 100%;
+    }
+    .player-bubble {
+      min-height: 1.65em;
+      padding: 5px 10px;
+      margin-bottom: 2px;
+      border-radius: 10px;
+      font-size: clamp(0.88rem, 3.4vw, 1.12rem);
+      line-height: 1.28;
+    }
+    .player-pseudo {
+      font-size: 0.68rem;
+      margin-bottom: 2px;
+      letter-spacing: 0.12em;
+    }
+    .player-podium img {
+      width: min(76px, 21vw);
+    }
+    .word-frame {
+      margin-top: 0;
+      flex-shrink: 0;
+      max-width: 100%;
+    }
+    .word-frame.visible {
+      transform: scale(0.78) translateY(0);
+    }
+    .word-display {
+      font-size: 1.15rem;
+      letter-spacing: 0.06em;
+    }
+    .arrows-wrap {
+      column-gap: clamp(6px, 2vw, 18px);
+    }
+    .arrows-cluster--left {
+      transform: translateX(calc(-1 * clamp(8px, 3vw, 22px)));
+    }
+    .arrows-cluster--right {
+      transform: translateX(clamp(8px, 3vw, 22px));
+    }
+    .dire-row {
+      margin-top: 2px;
+      margin-bottom: 2px;
+      gap: 5px;
+    }
+    .dire-field {
+      min-width: 0;
+      max-width: none;
+    }
+    .dire-field label {
+      font-size: 0.58rem;
+      margin-bottom: 2px;
+    }
+    .dire-input {
+      padding: 6px 10px;
+      font-size: 0.88rem;
+      border-radius: 8px;
+    }
+    .game-actions {
+      margin-top: 4px;
+      gap: 6px;
+    }
+    .game-btn {
+      padding: 6px 18px;
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      border-radius: 8px;
+    }
   }
 
   .mode-pick { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 600px; }
