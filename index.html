@@ -429,25 +429,23 @@
     flex-wrap: wrap; gap: 12px;
     padding: 0 35px 20px;
   }
-  .confirm-btn {
-    width: 55px; height: 55px; border-radius: 50%;
-    background: linear-gradient(135deg, #555, #333);
-    border: 3px solid #777; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem; color: white;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    animation: confirmPop 0.5s 2.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    opacity: 0; transform: scale(0.5);
+  .interdits-countdown {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-align: center;
+    text-transform: uppercase;
+    animation: countdownFadeIn 0.5s 3.5s forwards;
+    opacity: 0;
   }
-  @keyframes confirmPop { to { opacity: 1; transform: scale(1); } }
-  .confirm-btn:hover {
-    transform: scale(1.15);
-    background: linear-gradient(135deg, #00aa44, #008833);
-    border-color: #00cc55;
-    box-shadow: 0 0 20px rgba(0,200,80,0.4);
+  .interdits-countdown span {
+    color: var(--red-bright);
+    font-size: 1.5rem;
+    font-weight: 900;
   }
-  .confirm-btn:active { transform: scale(0.95); }
+  @keyframes countdownFadeIn { to { opacity: 1; } }
 
   /* ===== SCREEN: MANCHE (JEU) ===== */
   .manche-container {
@@ -1177,7 +1175,7 @@
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
       <button class="secondary-btn" onclick="showModal('about')">À propos</button>
     </div>
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.1 BÊTA — Connexion P2P (WebRTC) : votre IP est partagée uniquement avec les joueurs de votre partie, comme tout jeu en ligne</span></div>
   </div>
 </div>
 </div>
@@ -1241,10 +1239,9 @@
     </div>
   </div>
 
-  <!-- Checkmark (hôte uniquement) / attente pour les autres -->
+  <!-- Countdown automatique (5 secondes) -->
   <div class="interdits-confirm" id="interditsConfirmWrap">
-    <p class="interdits-wait" id="interditsWaitHost" hidden>En attente de l'hôte…</p>
-    <button type="button" class="confirm-btn" id="btnConfirmInterdits" title="Compris !">&#10004;</button>
+    <div class="interdits-countdown" id="interditsCountdown">La partie commence dans <span id="interditsTimer">5</span>s</div>
   </div>
 </div>
 </div>
@@ -1987,26 +1984,27 @@ function showInterditsScreen(manche){
     const clone=item.cloneNode(true);
     item.parentNode.replaceChild(clone,item);
   });
-  const btn=document.getElementById('btnConfirmInterdits');
-  const btnClone=btn.cloneNode(true);
-  btn.parentNode.replaceChild(btnClone,btn);
-  btnClone.id='btnConfirmInterdits';
-  btnClone.type='button';
-  updateInterditsHostUi();
-}
 
-function updateInterditsHostUi(){
-  const btn=document.getElementById('btnConfirmInterdits');
-  const wait=document.getElementById('interditsWaitHost');
-  if(!btn||!wait) return;
-  if(isHost){
-    wait.hidden=true;
-    btn.hidden=false;
-    btn.disabled=false;
-  }else{
-    wait.hidden=false;
-    btn.hidden=true;
-  }
+  // Countdown automatique : 5 secondes après affichage des règles
+  const timerEl=document.getElementById('interditsTimer');
+  const cdEl=document.getElementById('interditsCountdown');
+  if(cdEl){ cdEl.style.opacity='0'; cdEl.style.animation='none'; }
+  let _cdStarted=false;
+  // Attendre que les animations des règles soient finies (~4s) puis lancer le countdown
+  setTimeout(()=>{
+    if(cdEl){ cdEl.style.opacity='1'; }
+    _cdStarted=true;
+    let remaining=5;
+    if(timerEl) timerEl.textContent=remaining;
+    const cdInterval=setInterval(()=>{
+      remaining--;
+      if(timerEl) timerEl.textContent=remaining;
+      if(remaining<=0){
+        clearInterval(cdInterval);
+        applyInterditsTransition();
+      }
+    },1000);
+  },4000);
 }
 
 function applyInterditsTransition(){
@@ -2014,12 +2012,6 @@ function applyInterditsTransition(){
   document.body.style.filter='brightness(1.5)';
   setTimeout(()=>{document.body.style.filter='brightness(1)'},300);
   setTimeout(()=>{ startManche(); },500);
-}
-
-function onConfirmInterdits(){
-  if(!isHost) return;
-  sendData({type:'interditsConfirmed'});
-  applyInterditsTransition();
 }
 
 // ══════════════════════════════════════════
@@ -3241,10 +3233,6 @@ document.getElementById('btnPlay').addEventListener('click',()=>{gameMode='quali
 document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='duo';startSearch();});
 document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
 document.getElementById('btnBackMenu').addEventListener('click',backToMenu);
-document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
-  if(!e.target.closest('#btnConfirmInterdits')) return;
-  onConfirmInterdits();
-});
 document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
 
 document.getElementById('direGiver').addEventListener('input',e=>{
