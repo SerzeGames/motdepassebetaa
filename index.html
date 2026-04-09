@@ -1008,11 +1008,35 @@
     .manche-ribbon { padding: 6px 35px; }
     .manche-text { font-size: 0.9rem; }
     .chrono-big { font-size: 4rem; }
+    /* Plein écran manche : évite un bandeau vide à droite (héritage .screen 900px) */
+    #screenManche.active {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      inset: max(6px, env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px));
+    }
+    .manche-container {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 auto;
+    }
     .game-area {
       grid-template-columns: 1fr;
       grid-template-rows: auto 1fr;
-      padding: 14px 12px 16px;
-      gap: 12px;
+      padding: 10px 10px 12px;
+      gap: 10px;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+    /* align-self:end collait la colonne en bas → le haut (bulle donneur) était rogné par overflow:hidden */
+    .game-play-column {
+      align-self: start;
+      justify-self: stretch;
+      width: 100%;
+      max-width: none;
     }
     .game-timer-aside {
       justify-self: start;
@@ -1027,6 +1051,15 @@
       min-height: 3.05em;
       padding: 14px 16px;
       letter-spacing: 0.03em;
+      /* backdrop-filter + overflow sur iOS peut masquer le texte ; fond plus opaque à la place */
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: linear-gradient(
+        168deg,
+        rgba(52, 30, 32, 0.99) 0%,
+        rgba(22, 10, 12, 1) 42%,
+        rgba(36, 18, 22, 0.99) 100%
+      );
     }
     .player-podium img { width: min(185px, 58vw); }
     .player-pseudo { font-size: 1.02rem; }
