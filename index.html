@@ -2,13 +2,20 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>MOT DE PASSE - Le Jeu</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Russo+One&display=swap');
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    height: 100%; width: 100%;
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+  }
 
   :root {
     --red-deep: #8b0000;
@@ -26,12 +33,17 @@
     background: var(--dark-bg);
     font-family: 'Rajdhani', sans-serif;
     overflow: hidden;
-    height: 100vh;
+    height: 100dvh;
     width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: default;
+    position: fixed;
+    inset: 0;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: none;
   }
 
   /* ===== ANIMATED BACKGROUND ===== */
@@ -70,15 +82,16 @@
     position: fixed;
     z-index: 15;
     margin: 0;
-    inset: max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
-    width: auto;
-    height: auto;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
     max-width: none;
     transform: none;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
     background: #060204;
+    overflow: hidden;
   }
 
   #screenManche .manche-bg-video {
@@ -1399,6 +1412,13 @@
 <audio id="bgMusic" loop preload="auto"><source src="son/accueil.mp3" type="audio/mpeg"></audio>
 
 <script>
+// ── Anti-zoom & anti-scroll mobile ──
+document.addEventListener('touchmove',e=>{
+  if(e.touches.length>1) e.preventDefault();
+},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('gesturechange',e=>e.preventDefault());
+
 // ══════════════════════════════════════════
 // PARTICLES
 // ══════════════════════════════════════════
