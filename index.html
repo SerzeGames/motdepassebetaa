@@ -1042,8 +1042,12 @@
     .timer-colon { font-size: 1.35rem; }
     .word-display { font-size: 1.65rem; letter-spacing: 0.1em; }
     .players-stage { flex-direction: column; align-items: center; gap: 22px; }
-    .player-podium { width: 100%; max-width: 360px; }
+    .player-podium { width: auto; max-width: 100%; align-self: center; }
     .player-bubble {
+      width: fit-content;
+      max-width: min(90vw, 320px);
+      min-width: min(7rem, 50vw);
+      align-self: center;
       font-size: clamp(1.34rem, 4.8vw, 1.78rem);
       min-height: 3.05em;
       padding: 14px 16px;
@@ -1113,12 +1117,18 @@
       flex-shrink: 0;
     }
     .player-podium {
+      width: auto;
       max-width: 100%;
-      width: 100%;
+      align-self: center;
     }
+    /* Bulles calées sur le texte, pas sur toute la largeur de l’écran */
     .player-bubble {
+      width: fit-content;
+      max-width: min(86vw, 280px);
+      min-width: min(6.5rem, 42vw);
+      align-self: center;
       min-height: 1.65em;
-      padding: 5px 10px;
+      padding: 6px 14px;
       margin-bottom: 2px;
       border-radius: 10px;
       font-size: clamp(0.88rem, 3.4vw, 1.12rem);
