@@ -513,8 +513,8 @@
     display: grid;
     grid-template-columns: auto 1fr;
     grid-template-rows: auto 1fr;
-    gap: 10px 32px;
-    padding: 12px 28px 10px;
+    gap: 18px 32px;
+    padding: 20px 28px 24px;
     position: relative;
     z-index: 2;
     align-items: start;
@@ -599,7 +599,7 @@
     align-items: flex-end;
     gap: clamp(20px, 5vw, 56px);
     width: 100%;
-    margin-bottom: 6px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
   }
   .player-podium {
@@ -609,11 +609,11 @@
     width: min(300px, 48vw);
   }
   .player-bubble {
-    min-height: 2.8em;
+    min-height: 3.45em;
     width: 100%;
     max-width: 420px;
-    padding: 12px 18px;
-    margin-bottom: 6px;
+    padding: 16px 22px;
+    margin-bottom: 10px;
     border-radius: 16px;
     background: linear-gradient(
       168deg,
@@ -674,16 +674,16 @@
   }
   .player-pseudo {
     font-family: 'Rajdhani', sans-serif;
-    font-size: 1.05rem;
+    font-size: 1.12rem;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin-bottom: 10px;
   }
   .player-podium.giver .player-pseudo { color: var(--gold); }
   .player-podium.guesser .player-pseudo { color: #9ec8ff; }
   .player-podium img {
-    width: min(160px, 32vw);
+    width: min(210px, 40vw);
     height: auto;
     display: block;
     filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
@@ -712,8 +712,11 @@
     text-transform: uppercase;
     margin-bottom: 6px;
   }
+  .dire-input-wrap {
+    display: flex; gap: 6px; align-items: stretch;
+  }
   .dire-input {
-    width: 100%;
+    flex: 1;
     padding: 12px 16px;
     border-radius: 12px;
     border: 2px solid #444;
@@ -723,7 +726,21 @@
     font-size: 1.1rem;
     font-weight: 600;
     box-sizing: border-box;
+    min-width: 0;
   }
+  .dire-send-btn {
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 2px solid var(--red-main);
+    background: linear-gradient(180deg, #2a1010, #1a0808);
+    color: var(--red-bright);
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .dire-send-btn:hover { background: var(--red-deep); color: #fff; }
+  .dire-send-btn:disabled { opacity: 0.2; cursor: not-allowed; }
   .dire-input:focus {
     outline: none;
     border-color: var(--red-main);
@@ -950,10 +967,10 @@
 
   /* Action buttons */
   .game-actions {
-    display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; justify-content: center;
+    display: flex; gap: 18px; margin-top: 24px; flex-wrap: wrap; justify-content: center;
   }
   .game-btn {
-    padding: 10px 32px; border-radius: 12px; border: 2px solid;
+    padding: 14px 36px; border-radius: 12px; border: 2px solid;
     font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 700;
     letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1008,189 +1025,37 @@
     .manche-ribbon { padding: 6px 35px; }
     .manche-text { font-size: 0.9rem; }
     .chrono-big { font-size: 4rem; }
-    /* Plein écran manche : évite un bandeau vide à droite (héritage .screen 900px) */
-    #screenManche.active {
-      width: 100%;
-      max-width: none;
-      margin: 0;
-      inset: max(6px, env(safe-area-inset-top, 0px)) max(6px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px));
-    }
-    .manche-container {
-      width: 100%;
-      max-width: 100%;
-      margin: 0 auto;
-    }
     .game-area {
       grid-template-columns: 1fr;
       grid-template-rows: auto 1fr;
-      padding: 10px 10px 12px;
-      gap: 10px;
-      min-height: 0;
-      overflow: visible;
-    }
-    /* align-self:end collait la colonne en bas → le haut (bulle donneur) était rogné par overflow:hidden */
-    .game-play-column {
-      align-self: start;
-      justify-self: stretch;
-      width: 100%;
-      max-width: none;
-    }
-    .game-timer-aside {
-      justify-self: start;
-    }
-    .timer-value { font-size: 1.7rem; }
-    .timer-colon { font-size: 1.35rem; }
-    .word-display { font-size: 1.65rem; letter-spacing: 0.1em; }
-    .players-stage { flex-direction: column; align-items: center; gap: 22px; }
-    .player-podium { width: auto; max-width: 100%; align-self: center; }
-    .player-bubble {
-      width: fit-content;
-      max-width: min(90vw, 320px);
-      min-width: min(7rem, 50vw);
-      align-self: center;
-      font-size: clamp(1.34rem, 4.8vw, 1.78rem);
-      min-height: 3.05em;
-      padding: 14px 16px;
-      letter-spacing: 0.03em;
-      /* backdrop-filter + overflow sur iOS peut masquer le texte ; fond plus opaque à la place */
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      background: linear-gradient(
-        168deg,
-        rgba(52, 30, 32, 0.99) 0%,
-        rgba(22, 10, 12, 1) 42%,
-        rgba(36, 18, 22, 0.99) 100%
-      );
-    }
-    .player-podium img { width: min(185px, 58vw); }
-    .player-pseudo { font-size: 1.02rem; }
-    .dire-row { flex-direction: column; align-items: stretch; }
-  }
-
-  /* Portrait téléphone : tout visible sans défilement (densité + cadre mot réduit) */
-  @media (max-width: 768px) and (orientation: portrait) {
-    #screenManche.active {
-      inset: max(4px, env(safe-area-inset-top, 0px)) max(4px, env(safe-area-inset-right, 0px)) max(4px, env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px));
-    }
-    .manche-hud {
-      padding: 6px 8px;
-      gap: 4px;
-    }
-    .manche-hud-score {
-      min-width: 0;
-      flex: 0 1 auto;
-    }
-    .manche-hud-score .hud-pts {
-      font-size: 1.35rem;
-    }
-    .manche-hud-score .hud-team {
-      font-size: 0.58rem;
-      letter-spacing: 0.06em;
-    }
-    .hud-sequence-info {
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-    }
-    .hud-roles {
-      font-size: 0.62rem;
-      margin-top: 0;
-      line-height: 1.25;
-    }
-    .game-area {
-      padding: 4px 6px 6px;
-      gap: 4px;
-    }
-    .timer-box {
-      min-width: 0;
-      padding: 5px 10px 6px;
-      border-radius: 10px;
-      border-width: 2px;
-    }
-    .timer-value { font-size: 1.2rem; }
-    .timer-colon { font-size: 0.95rem; }
-    .game-play-column {
-      gap: 0;
-    }
-    .players-stage {
-      gap: 5px;
-      margin-bottom: 2px;
-      flex-shrink: 0;
-    }
-    .player-podium {
-      width: auto;
-      max-width: 100%;
-      align-self: center;
-    }
-    /* Bulles calées sur le texte, pas sur toute la largeur de l’écran */
-    .player-bubble {
-      width: fit-content;
-      max-width: min(86vw, 280px);
-      min-width: min(6.5rem, 42vw);
-      align-self: center;
-      min-height: 1.65em;
-      padding: 6px 14px;
-      margin-bottom: 2px;
-      border-radius: 10px;
-      font-size: clamp(0.88rem, 3.4vw, 1.12rem);
-      line-height: 1.28;
-    }
-    .player-pseudo {
-      font-size: 0.68rem;
-      margin-bottom: 2px;
-      letter-spacing: 0.12em;
-    }
-    .player-podium img {
-      width: min(76px, 21vw);
-    }
-    .word-frame {
-      margin-top: 0;
-      flex-shrink: 0;
-      max-width: 100%;
-    }
-    .word-frame.visible {
-      transform: scale(0.78) translateY(0);
-    }
-    .word-display {
-      font-size: 1.15rem;
-      letter-spacing: 0.06em;
-    }
-    .arrows-wrap {
-      column-gap: clamp(6px, 2vw, 18px);
-    }
-    .arrows-cluster--left {
-      transform: translateX(calc(-1 * clamp(8px, 3vw, 22px)));
-    }
-    .arrows-cluster--right {
-      transform: translateX(clamp(8px, 3vw, 22px));
-    }
-    .dire-row {
-      margin-top: 2px;
-      margin-bottom: 2px;
-      gap: 5px;
-    }
-    .dire-field {
-      min-width: 0;
-      max-width: none;
-    }
-    .dire-field label {
-      font-size: 0.58rem;
-      margin-bottom: 2px;
-    }
-    .dire-input {
-      padding: 6px 10px;
-      font-size: 0.88rem;
-      border-radius: 8px;
-    }
-    .game-actions {
-      margin-top: 4px;
+      padding: 8px 10px 6px;
       gap: 6px;
     }
-    .game-btn {
-      padding: 6px 18px;
-      font-size: 0.78rem;
-      letter-spacing: 0.1em;
-      border-radius: 8px;
+    .game-timer-aside { justify-self: start; }
+    .timer-box { padding: 8px 16px; }
+    .timer-value { font-size: 1.5rem; }
+    .timer-colon { font-size: 1.2rem; }
+    .word-display { font-size: 1.5rem; letter-spacing: 0.08em; }
+    .players-stage { flex-direction: row; align-items: flex-end; gap: 12px; margin-bottom: 2px; }
+    .player-podium { width: 48%; max-width: 200px; }
+    .player-bubble {
+      font-size: clamp(1rem, 3.5vw, 1.4rem);
+      min-height: 2.2em;
+      padding: 8px 10px;
+      letter-spacing: 0.02em;
+      margin-bottom: 2px;
     }
+    .player-podium img { width: min(80px, 22vw); }
+    .player-pseudo { font-size: 0.8rem; margin-bottom: 2px; }
+    .dire-row { flex-direction: column; align-items: stretch; margin-top: 2px; margin-bottom: 2px; }
+    .dire-field { max-width: none; }
+    .game-actions { margin-top: 4px; gap: 8px; }
+    .game-btn { padding: 8px 24px; font-size: 0.95rem; }
+    .word-frame { margin-top: 0; }
+    .manche-hud { padding: 6px 12px; gap: 8px; }
+    .hud-pts { font-size: 1.6rem; }
+    .hud-team { font-size: 0.55rem; }
+    .hud-sequence-info { font-size: 0.7rem; }
   }
 
   .mode-pick { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 600px; }
@@ -1410,11 +1275,17 @@
     <div class="dire-row" id="direRow">
       <div class="dire-field">
         <label for="direGiver">Faire deviner</label>
-        <input type="text" class="dire-input" id="direGiver" autocomplete="off" maxlength="48" placeholder="Dire…" />
+        <div class="dire-input-wrap">
+          <input type="text" class="dire-input" id="direGiver" autocomplete="off" maxlength="48" placeholder="Dire…" inputmode="text" enterkeyhint="send" />
+          <button type="button" class="dire-send-btn" id="btnSendGiver" title="Envoyer">&#10148;</button>
+        </div>
       </div>
       <div class="dire-field">
         <label for="direGuesser">Deviner</label>
-        <input type="text" class="dire-input" id="direGuesser" autocomplete="off" maxlength="48" placeholder="Dire…" />
+        <div class="dire-input-wrap">
+          <input type="text" class="dire-input" id="direGuesser" autocomplete="off" maxlength="48" placeholder="Dire…" inputmode="text" enterkeyhint="send" />
+          <button type="button" class="dire-send-btn" id="btnSendGuesser" title="Envoyer">&#10148;</button>
+        </div>
       </div>
     </div>
 
@@ -1755,13 +1626,14 @@ function onData(data,fromConn){
   else if(data.type==='duoSkip'){
     if(data.seqIdx===mancheState.currentSeq){
       const seq=mancheState.sequences[data.seqIdx];
-      if(seq) { seq.currentWordIdx=data.wordIdx; duoSkipWord(); }
+      if(seq) {
+        seq.currentWordIdx=data.wordIdx;
+        duoSkipWord();
+      }
     }
-    if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
-  }
-  else if(data.type==='duoFault'){
-    applyFault(data.reason||'FAUTE',true);
-    if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
+    if(isHost && fromConn){
+      for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); }
+    }
   }
 }
 
@@ -2491,6 +2363,7 @@ function duoSkipWord(){
   seq.found[wi]=true;
   seq.skipsCount=(seq.skipsCount||0)+1;
 
+  // Son passer
   playGameSound('son/passer.wav',0.7);
 
   // Pastille rouge: la plus à droite non-utilisée
@@ -2502,22 +2375,18 @@ function duoSkipWord(){
     }
   }
 
+  // Reset flèches + clues
   mancheState.cluesGiven=0;
   resetArrows();
 
-  // 3 pastilles rouges = manche perdue !
-  if(seq.skipsCount>=3){
-    playGameSound('son/perdu.wav',0.8);
-    setTimeout(()=>{ endSequence(); },1500);
-    return;
-  }
-
+  // Vérifier si tous les mots sont traités
   const totalHandled=seq.lightsLit+(seq.skipsCount||0);
   if(totalHandled>=5){
     setTimeout(()=>{ endSequence(); },1000);
     return;
   }
 
+  // Avancer au prochain mot
   seq.currentWordIdx=(wi+1)%seq.words.length;
   if(goToNextWord(seq)){
     clearDireFields();
@@ -2696,10 +2565,8 @@ function refreshDireInputState(){
       g.placeholder=myTurn?'Indice ('+remaining+' restant'+(remaining>1?'s':'')+')\u2026':'En attente\u2026';
       if(actions) actions.style.display='';
       const pass=document.getElementById('btnPass');
-      const seq=getCurrentSeq();
-      const skips=seq?(seq.skipsCount||0):0;
-      // Griser le bouton passer si déjà 2 passes (pour ne pas atteindre 3 rouges)
-      if(pass) pass.disabled=!(roundOpen && turn==='giver') || skips>=2;
+      // En duo le giver peut passer à tout moment quand c'est son tour
+      if(pass) pass.disabled=!(roundOpen && turn==='giver');
     }else{
       g.placeholder=myTurn?'Indice \u2014 Entrée pour valider':'En attente de la réponse\u2026';
       if(actions) actions.style.display='';
@@ -2996,12 +2863,12 @@ function showMancheResultsDuo(){
   body.innerHTML=
     '<tr'+(isP0?' style="background:rgba(255,215,0,0.08)"':'')+'><td>'+escapeHtml(p0)+(isP0?' <small style="color:#ffe040">(vous)</small>':'')+'</td>'+
     '<td style="color:#888">fait deviner</td>'+
-    '<td style="font-size:1.3rem;font-weight:900;color:#ff4444">'+scoreP0asGuesser+'</td>'+
-    '<td style="font-size:1.4rem;font-weight:900;color:#ff4444"><strong>'+scoreP0asGuesser+'</strong></td></tr>'+
+    '<td style="font-size:1.3rem;font-weight:900">'+scoreP0asGuesser+'</td>'+
+    '<td style="font-size:1.4rem;font-weight:900;color:#fff"><strong>'+scoreP0asGuesser+'</strong></td></tr>'+
     '<tr'+(isP1?' style="background:rgba(255,215,0,0.08)"':'')+'><td>'+escapeHtml(p1)+(isP1?' <small style="color:#ffe040">(vous)</small>':'')+'</td>'+
-    '<td style="font-size:1.3rem;font-weight:900;color:#ff4444">'+scoreP1asGuesser+'</td>'+
+    '<td style="font-size:1.3rem;font-weight:900">'+scoreP1asGuesser+'</td>'+
     '<td style="color:#888">fait deviner</td>'+
-    '<td style="font-size:1.4rem;font-weight:900;color:#ff4444"><strong>'+scoreP1asGuesser+'</strong></td></tr>';
+    '<td style="font-size:1.4rem;font-weight:900;color:#fff"><strong>'+scoreP1asGuesser+'</strong></td></tr>';
 
   const winEl=document.getElementById('resultsDuoWinner');
   if(scoreP0asGuesser>scoreP1asGuesser) winEl.textContent='\u{1F3C6} '+p0+' remporte la partie !';
@@ -3011,72 +2878,6 @@ function showMancheResultsDuo(){
   // Remettre la musique d'accueil
   resumeAccueilMusic();
   showScreen('screenResultsDuo');
-}
-
-// ══════════════════════════════════════════
-// SYSTÈME DE RÈGLES & ANTI-TRICHE
-// ══════════════════════════════════════════
-function normLetters(s){
-  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
-}
-
-function sameFirst3(clue, secretWord){
-  const c=normLetters(clue), w=normLetters(secretWord);
-  if(c.length<3||w.length<3) return false;
-  return c.slice(0,3)===w.slice(0,3);
-}
-
-// Anti-triche : détecte les phrases collées ou les caractères interdits
-function isCheatAttempt(input){
-  const raw=input.trim();
-  if(/\s/.test(raw)) return 'phrase avec espaces';
-  // Caractères non-lettres (hors accents)
-  if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'caractères interdits';
-  const norm=normLetters(raw);
-  if(norm.length<1) return false;
-  // Patterns de phrases collées
-  const patterns=[
-    /^(cest|cestun|cestune|cestdu|cestde|cestla|cestle)/,
-    /^(ilya|ilyaun|ilyaune|ilyades)/,
-    /^(lemot|lemotcest|motcest)/,
-    /^(enrapport|cestcomme|ondirait|caressemble|jadore)/,
-  ];
-  for(const p of patterns){ if(p.test(norm)) return 'phrase déguisée'; }
-  // Mot >18 lettres = quasi-certainement une phrase collée
-  if(norm.length>18) return 'trop long';
-  return false;
-}
-
-// Validation de l'indice du giver
-function validateGiverClue(clue, secretWord){
-  const raw=clue.trim();
-  if(!raw) return {ok:false,reason:'vide'};
-  const cheat=isCheatAttempt(raw);
-  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
-  if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
-  if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
-  return {ok:true};
-}
-
-// Validation de la réponse du guesser
-function validateGuesserAnswer(answer){
-  const raw=answer.trim();
-  if(!raw) return {ok:false,reason:'vide'};
-  const cheat=isCheatAttempt(raw);
-  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
-  return {ok:true};
-}
-
-// Appliquer une faute
-function applyFault(reason, fromNetwork){
-  playGameSound('son/faute.wav',0.8);
-  applyDireBubble('giver',reason,true);
-  setTimeout(()=>{
-    if(gameMode==='duo'){
-      duoSkipWord();
-      if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:mancheState.sequences[mancheState.currentSeq]?.currentWordIdx||0,reason:reason});
-    }
-  },500);
 }
 
 // ── Back to menu ──
@@ -3137,22 +2938,9 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   if(mancheState.turn!=='giver') return;
   const raw=e.target.value.trim();
   if(!raw) return;
-  if(gameMode==='duo' && mancheState.cluesGiven>=3) return;
 
-  // ── Validation des règles ──
-  const seq=getCurrentSeq();
-  if(seq){
-    const check=validateGiverClue(raw, seq.words[seq.currentWordIdx]);
-    if(!check.ok){
-      clearTimeout(_direSendTimer);
-      sendDireBubbleNow('giver',raw,true);
-      _skipNextGiverInput=true;
-      e.target.value='';
-      tryStartTimerAfterFirstClue();
-      applyFault(check.reason);
-      return;
-    }
-  }
+  // En mode duo : vérifier limite 3 indices
+  if(gameMode==='duo' && mancheState.cluesGiven>=3) return;
 
   clearTimeout(_direSendTimer);
   sendDireBubbleNow('giver',raw,true);
@@ -3160,12 +2948,14 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   _skipNextGiverInput=true;
   e.target.value='';
 
+  // En mode duo : consommer une flèche
   if(gameMode==='duo'){
     consumeArrow(mancheState.cluesGiven);
     sendData({type:'duoArrow',clueNum:mancheState.cluesGiven});
     mancheState.cluesGiven++;
   }
 
+  // Tour passe au guesser
   mancheState.turn='guesser';
   sendData({type:'turnChange',turn:'guesser'});
   refreshDireInputState();
@@ -3187,20 +2977,11 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(!isLocalGuesser()||e.key!=='Enter') return;
   e.preventDefault();
-  if(!mancheState.started || !mancheState.wordsPhase) return;
-  if(mancheState.turn!=='guesser') return;
+  console.log('[MDP] Guesser Enter:', {started:mancheState.started, wordsPhase:mancheState.wordsPhase, turn:mancheState.turn, value:document.getElementById('direGuesser').value});
+  if(!mancheState.started || !mancheState.wordsPhase) { console.warn('[MDP] Blocked: started/wordsPhase'); return; }
+  if(mancheState.turn!=='guesser') { console.warn('[MDP] Blocked: not guesser turn'); return; }
   const raw=document.getElementById('direGuesser').value.trim();
   if(!raw) return;
-
-  // ── Validation anti-triche ──
-  const gCheck=validateGuesserAnswer(raw);
-  if(!gCheck.ok){
-    sendDireBubbleNow('guesser',raw,true);
-    _skipNextGuesserInput=true;
-    document.getElementById('direGuesser').value='';
-    applyFault(gCheck.reason);
-    return;
-  }
 
   sendDireBubbleNow('guesser',raw,true);
   _skipNextGuesserInput=true;
@@ -3210,6 +2991,7 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(seq && !seq.found[seq.currentWordIdx]){
     const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
     const guess=normalizeAnswer(raw);
+    console.log('[MDP] Guesser check:', {raw, guess, target, word:seq.words[seq.currentWordIdx], idx:seq.currentWordIdx, match:guess===target});
     if(guess===target){
       onCorrectAnswer();
       mancheState.cluesGiven=0;
@@ -3221,10 +3003,13 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     }
   }
 
+  // Mauvaise réponse
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
+    // 3 indices épuisés + mauvaise réponse → mot passé définitivement
     duoSkipWord();
     sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
   }else{
+    // Tour repasse au giver
     mancheState.turn='giver';
     sendData({type:'turnChange',turn:'giver'});
     refreshDireInputState();
@@ -3237,6 +3022,16 @@ document.addEventListener('keydown',e=>{
 });
 document.getElementById('pseudoInput').addEventListener('keydown',e=>{if(e.key==='Enter')startSearch()});
 window.addEventListener('beforeunload',()=>{if(connected)sendData({type:'quit',pseudo:myPseudo})});
+
+// Boutons Envoyer (mobile) — simulent Enter
+document.getElementById('btnSendGiver').addEventListener('click',()=>{
+  const inp=document.getElementById('direGiver');
+  inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+});
+document.getElementById('btnSendGuesser').addEventListener('click',()=>{
+  const inp=document.getElementById('direGuesser');
+  inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+});
 </script>
 </body>
 </html>
