@@ -2896,12 +2896,13 @@ function onCorrectAnswer(fromNetwork){
 }
 
 function onPassWord(fromNetwork){
-  // En duo on peut passer à tout moment, en qualif seulement si chrono lancé
   if(gameMode!=='duo' && !mancheState.started && !fromNetwork) return;
   if(!fromNetwork && !isLocalGiver()) return;
   const seq=mancheState.sequences[mancheState.currentSeq];
 
-  // Jouer le son passer.wav
+  // Démarrer le chrono si c'est la première action
+  tryStartTimerAfterFirstClue();
+
   playGameSound('son/passer.wav',0.7);
 
   if(gameMode==='duo'){
