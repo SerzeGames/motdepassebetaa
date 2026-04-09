@@ -1619,7 +1619,15 @@ function onData(data,fromConn){
   }
   else if(data.type==='direBubble'){
     applyDireBubble(data.role,data.text,!!data.pop);
-    // Ne PAS démarrer le timer ici — seul le message 'timerStart' le fait
+    // Synchronisation immédiate du tour quand on reçoit un indice/réponse validé(e)
+    if(data.pop && data.role==='giver' && isLocalGuesser()){
+      mancheState.turn='guesser';
+      refreshDireInputState();
+    }
+    if(data.pop && data.role==='guesser' && isLocalGiver()){
+      mancheState.turn='giver';
+      refreshDireInputState();
+    }
     if(isHost && fromConn){
       for(const p of conns){
         if(p.conn!==fromConn) sendTo(p,data);
@@ -2691,7 +2699,6 @@ function refreshDireInputState(){
     g.disabled=true;
     if(actions) actions.style.display='none';
 
-    // Le guesser peut taper uniquement si c'est son tour ET le chrono tourne
     const myTurn=roundOpen && chronoOn && turn==='guesser';
     u.disabled=!myTurn;
     if(!chronoOn){
