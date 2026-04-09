@@ -3044,30 +3044,52 @@ function isCheatAttempt(input){
   ];
   for(const p of phrasePatterns){ if(p.test(norm)) return 'phrase déguisée'; }
 
-  // Détection d'articles/pronoms/prépositions collés au début
-  // Si le mot commence par un article court suivi d'un vrai mot → suspect
-  const prefixes=[
-    'un','une','le','la','les','des','du','de','au','aux','mon','ton','son',
-    'ma','ta','sa','mes','tes','ses','ce','cet','cette','ces',
-    'qui','que','quel','quelle','pour','par','sur','sous','dans','avec','sans',
-    'mais','donc','car','ni','ou','et','en','est','pas','plus','tres','trop'
-  ];
-  for(const pref of prefixes){
-    if(norm.length > pref.length+2 && norm.startsWith(pref)){
-      // Vérifier que la suite ressemble à un mot (au moins 3 lettres)
-      const rest=norm.slice(pref.length);
-      // Si le reste commence par une voyelle après un article finissant par consonne,
-      // ou si le reste est long → probablement des mots collés
-      if(rest.length>=3) return 'phrase déguisée';
-    }
-  }
+  // Vérifier d'abord si le mot complet est dans le dictionnaire → si oui, c'est valide
+  const allWordsRef=[...WORDS_EASY,...WORDS_MEDIUM,...WORDS_HARD];
+  const isKnownWord=allWordsRef.some(w=>normLetters(w)===norm) || allWordsRef.some(w=>{
+    const nw=normLetters(w);
+    if(Math.abs(nw.length-norm.length)>1) return false;
+    if(nw===norm) return true;
+    let diff=0;
+    if(nw.length===norm.length){ for(let i=0;i<nw.length;i++){if(nw[i]!==norm[i])diff++;if(diff>1)return false;} return diff<=1; }
+    const longer=nw.length>norm.length?nw:norm, shorter=nw.length>norm.length?norm:nw;
+    let j=0; for(let i=0;i<longer.length;i++){if(longer[i]!==shorter[j]){diff++;if(diff>1)return false;}else j++;} return true;
+  });
 
-  // Détection de suffixes collés (mot + article/pronom)
-  const suffixes=['est','sont','sera','etait','comme','avec','pour','dans','aussi'];
-  for(const suf of suffixes){
-    if(norm.length > suf.length+3 && norm.endsWith(suf)){
-      return 'phrase déguisée';
+  // Si le mot est connu du dictionnaire, pas besoin de vérifier les préfixes/suffixes
+  if(!isKnownWord){
+    // Détection de mots collés : articles, pronoms, preps, adjectifs courants
+    const prefixes=[
+      'un','une','le','la','les','des','du','de','au','aux','mon','ton','son',
+      'ma','ta','sa','mes','tes','ses','ce','cet','cette','ces',
+      'qui','que','quel','quelle','pour','par','sur','sous','dans','avec','sans',
+      'mais','donc','car','ni','ou','et','en','est','pas','plus','tres','trop',
+      'gros','grosse','petit','petite','grand','grande','bon','bonne','beau','belle',
+      'vieux','vieille','jeune','long','longue','haut','haute','bas','basse',
+      'noir','blanc','rouge','bleu','vert','jaune','rose',
+      'fait','comme','tout','toute','bien','mal','fort','forte',
+      'genre','style','type','sorte','espece','forme','coup',
+      'faux','vrai','seul','plein','super','mega','hyper','ultra','mini','maxi',
+      'demi','semi','anti','multi','pre','post',
+      'ca','ya'
+    ];
+    for(const pref of prefixes){
+      if(norm.length > pref.length+2 && norm.startsWith(pref)){
+        const rest=norm.slice(pref.length);
+        if(rest.length>=3) return 'phrase déguisée';
+      }
     }
+
+    // Détection de suffixes collés
+    const suffixMots=['est','sont','sera','etait','comme','avec','pour','dans','aussi','ici','tard','fort','bien','mal'];
+    for(const suf of suffixMots){
+      if(norm.length > suf.length+3 && norm.endsWith(suf)){
+        return 'phrase déguisée';
+      }
+    }
+
+    // Mot >7 lettres inconnu du dictionnaire
+    if(norm.length>7) return 'mot inconnu';
   }
 
   if(norm.length>15) return 'mot trop long';
@@ -3098,72 +3120,6 @@ function applyFault(reason,fromNetwork){
       if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:mancheState.sequences[mancheState.currentSeq]?.currentWordIdx||0,reason:reason});
     }
   },500);
-}
-
-// ══════════════════════════════════════════
-// VÉRIFICATION IA ASYNCHRONE (Claude)
-// ══════════════════════════════════════════
-let _aiCheckQueue=[];
-let _aiChecking=false;
-
-function aiCheckClue(clue, secretWord, seqIdx, wordIdx){
-  _aiCheckQueue.push({clue, secretWord, seqIdx, wordIdx});
-  if(!_aiChecking) processAiQueue();
-}
-
-async function processAiQueue(){
-  if(_aiCheckQueue.length===0){ _aiChecking=false; return; }
-  _aiChecking=true;
-  const item=_aiCheckQueue.shift();
-  try{
-    const verdict=await callAiValidator(item.clue, item.secretWord);
-    console.log('[IA] Verdict pour "'+item.clue+'" (mot: '+item.secretWord+'):', verdict);
-    if(verdict.faute && item.seqIdx===mancheState.currentSeq){
-      // L'IA a détecté une triche → appliquer la faute
-      applyFault('IA : '+verdict.raison);
-    }
-  }catch(err){
-    console.warn('[IA] Erreur vérification:',err);
-  }
-  // Traiter le suivant
-  setTimeout(processAiQueue, 200);
-}
-
-async function callAiValidator(clue, secretWord){
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:150,
-        messages:[{
-          role:'user',
-          content:`Tu es l'arbitre du jeu "Mot de Passe". Le joueur doit faire deviner le mot "${secretWord}" à son partenaire en donnant UN SEUL mot comme indice.
-
-L'indice donné est : "${clue}"
-
-Règles :
-- L'indice doit être UN SEUL MOT réel du dictionnaire français (pas une phrase collée, pas un mot inventé)
-- L'indice ne doit PAS être le mot lui-même ou un mot de la même famille directe
-- L'indice ne doit PAS commencer par les mêmes 3 premières lettres que "${secretWord}"
-- Pas de noms propres
-
-Réponds UNIQUEMENT en JSON strict sans backticks :
-{"faute":true/false,"raison":"explication courte"}`
-        }]
-      })
-    });
-    const data=await resp.json();
-    const text=data.content?data.content.map(c=>c.text||'').join(''):'';
-    // Parser le JSON de la réponse
-    const clean=text.replace(/```json|```/g,'').trim();
-    const result=JSON.parse(clean);
-    return {faute:!!result.faute, raison:result.raison||'indice invalide'};
-  }catch(err){
-    console.warn('[IA] Parse error:',err);
-    return {faute:false, raison:''};
-  }
 }
 
 // ── Back to menu ──
@@ -3251,11 +3207,6 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   tryStartTimerAfterFirstClue();
   _skipNextGiverInput=true;
   e.target.value='';
-
-  // Vérification IA asynchrone en arrière-plan
-  if(seq){
-    aiCheckClue(raw, seq.words[seq.currentWordIdx], mancheState.currentSeq, seq.currentWordIdx);
-  }
 
   if(gameMode==='duo'){
     consumeArrow(mancheState.cluesGiven);
