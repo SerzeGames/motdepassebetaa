@@ -239,6 +239,8 @@
   .sound-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; width: 50px; height: 50px; border-radius: 50%; background: rgba(30,10,10,0.9); border: 2px solid var(--red-deep); color: var(--silver); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; backdrop-filter: blur(10px); }
   .sound-toggle:hover { transform: scale(1.1); border-color: var(--red-main); box-shadow: 0 0 15px rgba(196,30,30,0.3); }
   .sound-toggle.muted { opacity: 0.5; }
+  /* Masquer le bouton son pendant la manche */
+  #screenManche.active ~ .sound-toggle { display: none; }
 
   .particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
   .particle { position: absolute; width: 3px; height: 3px; background: var(--red-bright); border-radius: 50%; opacity: 0; animation: particleFloat linear infinite; }
