@@ -399,6 +399,14 @@
   .interdit-item:nth-child(3) { animation-delay: 1.8s; }
   .interdit-item:nth-child(4) { animation-delay: 2.1s; }
   .interdit-item:nth-child(5) { animation-delay: 2.4s; }
+  .interdit-item:nth-child(6) { animation-delay: 2.7s; }
+  .interdit-item:nth-child(7) { animation-delay: 3.0s; }
+  .interdit-item:nth-child(8) { animation-delay: 3.3s; }
+  .interdit-item:nth-child(9) { animation-delay: 3.6s; }
+  .interdit-item.section-title {
+    color: var(--red-bright); font-size: 0.8rem; letter-spacing: 3px; padding: 6px 0 2px;
+    border-bottom: none; opacity: 0;
+  }
   @keyframes interditSlide { to { opacity: 1; transform: translateX(0); } }
 
   /* Checkmark button */
@@ -1226,14 +1234,10 @@
   <!-- Interdits panel -->
   <div class="interdits-panel">
     <div class="interdits-title-bar">
-      <div class="interdits-title-text">LES INTERDITS</div>
+      <div class="interdits-title-text">LES RÈGLES</div>
     </div>
-    <div class="interdits-list">
-      <div class="interdit-item">Pas de mot composé</div>
-      <div class="interdit-item">Pas de mot de la même famille</div>
-      <div class="interdit-item">Pas de mot qui commence pareil</div>
-      <div class="interdit-item">Pas de découpage du mot</div>
-      <div class="interdit-item">Pas de mime</div>
+    <div class="interdits-list" id="interditsList">
+      <!-- Rempli dynamiquement par showInterditsScreen() -->
     </div>
   </div>
 
@@ -1885,7 +1889,6 @@ function showInterditsScreen(manche){
     document.getElementById('teamAMembers').textContent=teamA[0]||'';
     document.getElementById('teamBMembers').textContent=teamB[0]||'';
     document.getElementById('mancheText').textContent='DUEL';
-    // Changer les labels
     document.querySelector('.score-team.team-a').textContent=teamA[0]||'JOUEUR 1';
     document.querySelector('.score-team.team-b').textContent=teamB[0]||'JOUEUR 2';
     document.querySelector('.score-members#teamAMembers').textContent='';
@@ -1900,10 +1903,32 @@ function showInterditsScreen(manche){
   document.getElementById('scoreA').textContent='0';
   document.getElementById('scoreB').textContent='0';
 
+  // Remplir les règles selon le mode
+  const list=document.getElementById('interditsList');
+  if(gameMode==='duo'){
+    list.innerHTML=
+      '<div class="interdit-item section-title">— INDICES INTERDITS —</div>'+
+      '<div class="interdit-item">Un seul mot par indice, pas de phrase</div>'+
+      '<div class="interdit-item">Lettres uniquement — pas de tiret ni chiffre</div>'+
+      '<div class="interdit-item">Les 3 premières lettres doivent différer du mot</div>'+
+      '<div class="interdit-item section-title">— MODE DUEL —</div>'+
+      '<div class="interdit-item">⏱ 1 min 30 par tour — 5 mots à faire deviner</div>'+
+      '<div class="interdit-item">➤ 3 indices maximum par mot (flèches rouges)</div>'+
+      '<div class="interdit-item">🟢 Mot trouvé = pastille verte (de gauche à droite)</div>'+
+      '<div class="interdit-item">🔴 Mot passé ou raté = pastille rouge (de droite à gauche)</div>'+
+      '<div class="interdit-item">❌ 3 pastilles rouges = manche perdue !</div>';
+  }else{
+    list.innerHTML=
+      '<div class="interdit-item">Un seul mot par indice, pas de phrase</div>'+
+      '<div class="interdit-item">Pas de mot de la même famille</div>'+
+      '<div class="interdit-item">Les 3 premières lettres doivent différer du mot</div>'+
+      '<div class="interdit-item">Lettres uniquement — pas de tiret ni chiffre</div>'+
+      '<div class="interdit-item">30 secondes par séquence — 5 mots à deviner</div>';
+  }
+
   showScreen('screenInterdits');
 
-  // Re-trigger animations by cloning interdit items
-  const list=document.querySelector('.interdits-list');
+  // Re-trigger animations
   const items=list.querySelectorAll('.interdit-item');
   items.forEach(item=>{
     const clone=item.cloneNode(true);
@@ -3244,14 +3269,16 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(!isLocalGuesser()||e.key!=='Enter') return;
   e.preventDefault();
-  if(!mancheState.started || !mancheState.wordsPhase) return;
-  if(mancheState.turn!=='guesser') return;
+  const _dbg={started:mancheState.started, wordsPhase:mancheState.wordsPhase, turn:mancheState.turn};
+  if(!mancheState.started || !mancheState.wordsPhase){ console.warn('[MDP] Guesser BLOCKED: not started/wordsPhase',_dbg); return; }
+  if(mancheState.turn!=='guesser'){ console.warn('[MDP] Guesser BLOCKED: turn='+mancheState.turn); return; }
   const raw=document.getElementById('direGuesser').value.trim();
-  if(!raw) return;
+  if(!raw){ console.warn('[MDP] Guesser BLOCKED: empty input'); return; }
 
   // ── Validation anti-triche ──
   const gCheck=validateGuesserAnswer(raw);
   if(!gCheck.ok){
+    console.warn('[MDP] Guesser FAULT:',gCheck.reason);
     sendDireBubbleNow('guesser',raw,true);
     _skipNextGuesserInput=true;
     document.getElementById('direGuesser').value='';
@@ -3264,20 +3291,29 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   document.getElementById('direGuesser').value='';
 
   const seq=getCurrentSeq();
-  if(seq && !seq.found[seq.currentWordIdx]){
-    const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
-    const guess=normalizeAnswer(raw);
-    if(guess===target){
-      onCorrectAnswer();
-      mancheState.cluesGiven=0;
-      resetArrows();
-      mancheState.turn='giver';
-      sendData({type:'turnChange',turn:'giver'});
-      refreshDireInputState();
-      return;
-    }
+  if(!seq){ console.error('[MDP] Guesser: NO SEQ!'); return; }
+  const wi=seq.currentWordIdx;
+  const target=normalizeAnswer(seq.words[wi]);
+  const guess=normalizeAnswer(raw);
+  console.log('[MDP] Guesser compare:', JSON.stringify({raw, guess, target, word:seq.words[wi], idx:wi, found:seq.found[wi], match:guess===target}));
+
+  if(!seq.found[wi] && guess===target){
+    console.log('[MDP] ✅ CORRECT!');
+    onCorrectAnswer();
+    mancheState.cluesGiven=0;
+    resetArrows();
+    mancheState.turn='giver';
+    sendData({type:'turnChange',turn:'giver'});
+    refreshDireInputState();
+    return;
   }
 
+  if(guess===target && seq.found[wi]){
+    console.error('[MDP] ⚠️ Word already found! idx='+wi+' found='+JSON.stringify(seq.found));
+  }
+
+  // Mauvaise réponse
+  console.log('[MDP] ❌ Wrong answer');
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
     duoSkipWord();
     sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
