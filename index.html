@@ -609,17 +609,18 @@
     width: min(300px, 48vw);
   }
 
-  /* Bandeau "C'est votre tour !" */
+  /* Bandeau "C'est votre tour !" — centré en haut de la zone de jeu */
   .your-turn-banner {
     display: none;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
+    width: 100%;
+    font-family: 'Russo One', sans-serif;
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
     color: var(--red-bright);
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 5px;
     text-align: center;
-    margin-bottom: 4px;
+    padding: 6px 0;
+    text-shadow: 0 0 20px rgba(255,26,26,0.5), 0 0 40px rgba(255,26,26,0.2);
     animation: turnPulse 1.5s ease-in-out infinite;
   }
   .your-turn-banner.visible { display: block; }
@@ -1258,16 +1259,16 @@
     </aside>
 
     <div class="game-play-column">
+    <!-- Bandeau "C'est votre tour !" centré -->
+    <div class="your-turn-banner" id="turnBanner">C'EST VOTRE TOUR !</div>
     <!-- Podiums : bulles + pseudo + bonhomme -->
     <div class="players-stage" id="playersStage">
       <div class="player-podium giver">
-        <div class="your-turn-banner" id="turnBannerGiver">C'est votre tour !</div>
         <div class="player-bubble" id="bubbleGiver" aria-live="polite"></div>
         <div class="player-pseudo" id="podiumGiverPseudo">—</div>
         <img src="images/Bonhomme.png" alt="" id="imgPodiumGiver">
       </div>
       <div class="player-podium guesser">
-        <div class="your-turn-banner" id="turnBannerGuesser">C'est votre tour !</div>
         <div class="player-bubble" id="bubbleGuesser" aria-live="polite"></div>
         <div class="player-pseudo" id="podiumGuesserPseudo">—</div>
         <img src="images/Bonhomme.png" alt="" id="imgPodiumGuesser">
@@ -1603,6 +1604,8 @@ function onData(data,fromConn){
     }
   }
   else if(data.type==='timerStart'){
+    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+    mancheState.audioBed=null;
     if(mancheState.wordsPhase && !mancheState.started) startTimer();
     refreshDireInputState();
     if(isHost && fromConn){
@@ -2398,6 +2401,13 @@ function revealWordFrame(){
 
   refreshDireInputState();
   playGameSound('son/IndiceDisplay.wav',0.7);
+  // Jouer bedfinale.wav en boucle en attendant le premier indice
+  setTimeout(()=>{
+    if(!mancheState.started){
+      mancheState.audioBed=playGameSound('son/bedfinale.wav',0.35);
+      if(mancheState.audioBed) mancheState.audioBed.loop=true;
+    }
+  },800);
   frame.classList.add('visible');
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{ updateWordDisplay(seq,{animate:true}); });
@@ -2662,20 +2672,18 @@ function refreshDireInputState(){
   }
 
   // ── Bandeau "C'est votre tour !" + surbrillance input ──
-  const bGiver=document.getElementById('turnBannerGiver');
-  const bGuesser=document.getElementById('turnBannerGuesser');
-  if(bGiver) bGiver.classList.remove('visible');
-  if(bGuesser) bGuesser.classList.remove('visible');
+  const banner=document.getElementById('turnBanner');
+  if(banner) banner.classList.remove('visible');
   g.classList.remove('input-glow');
   u.classList.remove('input-glow');
 
   if(roundOpen){
     if(gOK && turn==='giver'){
-      if(bGiver) bGiver.classList.add('visible');
+      if(banner) banner.classList.add('visible');
       g.classList.add('input-glow');
     }
     if(uOK && turn==='guesser' && chronoOn){
-      if(bGuesser) bGuesser.classList.add('visible');
+      if(banner) banner.classList.add('visible');
       u.classList.add('input-glow');
     }
   }
@@ -2683,6 +2691,9 @@ function refreshDireInputState(){
 
 function tryStartTimerAfterFirstClue(){
   if(mancheState.started || !mancheState.wordsPhase) return;
+  // Arrêter la musique bedfinale
+  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+  mancheState.audioBed=null;
   startTimer();
   sendData({type:'timerStart'});
   refreshDireInputState();
@@ -2899,6 +2910,25 @@ function endSequence(){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+  // Arrêter bedfinale si elle tourne encore
+  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+  mancheState.audioBed=null;
+
+  // Son de fin selon le résultat
+  const seq=mancheState.sequences[mancheState.currentSeq];
+  if(seq){
+    const skips=seq.skipsCount||0;
+    if(skips>=3){
+      // 3 rouges = manche perdue (son déjà joué par duoSkipWord)
+    }else if(seq.lightsLit>=3){
+      // 3+ bonnes réponses = victoire
+      playGameSound('son/victoire.wav',0.7);
+    }else if(mancheState.timeLeft<=0){
+      // Temps écoulé sans assez de bonnes réponses
+      playGameSound('son/perdu.wav',0.7);
+    }
+  }
+
   refreshDireInputState();
   document.getElementById('wordFrame').classList.remove('visible');
 
@@ -2907,7 +2937,6 @@ function endSequence(){
   if(nextSeq>=maxSeq){
     setTimeout(()=>{ showMancheResults(); },1500);
   }else{
-    // Next sequence
     setTimeout(()=>{ startSequence(nextSeq); },1500);
   }
 }
@@ -3007,8 +3036,8 @@ document.getElementById('direGiver').addEventListener('input',e=>{
   if(!isLocalGiver()) return;
   // Retirer la surbrillance dès la première frappe
   e.target.classList.remove('input-glow');
-  const bGiver=document.getElementById('turnBannerGiver');
-  if(bGiver) bGiver.classList.remove('visible');
+  const banner=document.getElementById('turnBanner');
+  if(banner) banner.classList.remove('visible');
   if(_skipNextGiverInput){
     _skipNextGiverInput=false;
     return;
@@ -3053,8 +3082,8 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
   if(!isLocalGuesser()) return;
   // Retirer la surbrillance dès la première frappe
   e.target.classList.remove('input-glow');
-  const bGuesser=document.getElementById('turnBannerGuesser');
-  if(bGuesser) bGuesser.classList.remove('visible');
+  const banner2=document.getElementById('turnBanner');
+  if(banner2) banner2.classList.remove('visible');
   if(_skipNextGuesserInput){
     _skipNextGuesserInput=false;
     return;
