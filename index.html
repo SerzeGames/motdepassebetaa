@@ -3068,19 +3068,18 @@ function isCheatAttempt(input){
   const isKnownWord=allWordsRef.some(w=>normLetters(w)===norm);
 
   if(!isKnownWord){
-    // Détection de mots collés : seulement préfixes de 3+ lettres pour éviter les faux positifs
+    // Détection de mots collés : seulement préfixes qui ne sont PAS des débuts de vrais mots courants
     const prefixes=[
       'une','les','des','aux','mon','ton','son',
       'mes','tes','ses','cet','cette','ces',
-      'qui','que','quel','quelle','pour','par','sur','sous','dans','avec','sans',
-      'mais','donc','car','pas','plus','tres','trop',
-      'gros','grosse','petit','petite','grand','grande','bon','bonne','beau','belle',
-      'vieux','vieille','jeune','long','longue','haut','haute','bas','basse',
+      'qui','que','quel','quelle','pour','sous','dans','avec','sans',
+      'mais','donc','plus','tres','trop',
+      'gros','grosse','petit','petite','grand','grande','bonne','belle',
+      'vieux','vieille','longue','haute','basse',
       'noir','blanc','rouge','bleu','vert','jaune','rose',
-      'fait','comme','tout','toute','bien','mal','fort','forte',
+      'fait','comme','tout','toute','bien','mal','forte',
       'genre','style','type','sorte','espece','forme','coup',
-      'faux','vrai','seul','plein','super','mega','hyper','ultra','mini','maxi',
-      'demi','semi','anti','multi','pre','post'
+      'plein','super','mega','hyper','ultra','mini','maxi'
     ];
     for(const pref of prefixes){
       if(norm.length > pref.length+2 && norm.startsWith(pref)){
