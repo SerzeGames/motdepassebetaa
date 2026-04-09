@@ -1686,14 +1686,13 @@ function onData(data,fromConn){
   else if(data.type==='duoSkip'){
     if(data.seqIdx===mancheState.currentSeq){
       const seq=mancheState.sequences[data.seqIdx];
-      if(seq) {
-        seq.currentWordIdx=data.wordIdx;
-        duoSkipWord();
-      }
+      if(seq) { seq.currentWordIdx=data.wordIdx; duoSkipWord(); }
     }
-    if(isHost && fromConn){
-      for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); }
-    }
+    if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
+  }
+  else if(data.type==='duoFault'){
+    applyFault(data.reason||'FAUTE',true);
+    if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
   }
 }
 
@@ -3016,6 +3015,59 @@ function showMancheResultsDuo(){
   showScreen('screenResultsDuo');
 }
 
+// ══════════════════════════════════════════
+// SYSTÈME DE RÈGLES & ANTI-TRICHE
+// ══════════════════════════════════════════
+function normLetters(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+}
+function sameFirst3(clue,secretWord){
+  const c=normLetters(clue),w=normLetters(secretWord);
+  return c.length>=3 && w.length>=3 && c.slice(0,3)===w.slice(0,3);
+}
+function isCheatAttempt(input){
+  const raw=input.trim();
+  if(/\s/.test(raw)) return 'un seul mot autorisé';
+  if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'lettres uniquement';
+  const norm=normLetters(raw);
+  if(norm.length<1) return false;
+  const patterns=[
+    /^(cest|cestun|cestune|cestdu|cestde|cestla|cestle)/,
+    /^(ilya|ilyaun|ilyaune|ilyades)/,
+    /^(lemot|lemotcest|motcest)/,
+    /^(enrapport|cestcomme|ondirait|caressemble)/,
+  ];
+  for(const p of patterns){ if(p.test(norm)) return 'phrase déguisée'; }
+  if(norm.length>18) return 'mot trop long';
+  return false;
+}
+function validateGiverClue(clue,secretWord){
+  const raw=clue.trim();
+  if(!raw) return {ok:false,reason:'vide'};
+  const cheat=isCheatAttempt(raw);
+  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
+  if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
+  if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
+  return {ok:true};
+}
+function validateGuesserAnswer(answer){
+  const raw=answer.trim();
+  if(!raw) return {ok:false,reason:'vide'};
+  const cheat=isCheatAttempt(raw);
+  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
+  return {ok:true};
+}
+function applyFault(reason,fromNetwork){
+  playGameSound('son/faute.wav',0.8);
+  applyDireBubble('giver',reason,true);
+  setTimeout(()=>{
+    if(gameMode==='duo'){
+      duoSkipWord();
+      if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:mancheState.sequences[mancheState.currentSeq]?.currentWordIdx||0,reason:reason});
+    }
+  },500);
+}
+
 // ── Back to menu ──
 function backToMenu(){
   if(window._mmCleanup) window._mmCleanup();
@@ -3079,9 +3131,22 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   if(mancheState.turn!=='giver') return;
   const raw=e.target.value.trim();
   if(!raw) return;
-
-  // En mode duo : vérifier limite 3 indices
   if(gameMode==='duo' && mancheState.cluesGiven>=3) return;
+
+  // ── Validation des règles ──
+  const seq=getCurrentSeq();
+  if(seq){
+    const check=validateGiverClue(raw, seq.words[seq.currentWordIdx]);
+    if(!check.ok){
+      clearTimeout(_direSendTimer);
+      sendDireBubbleNow('giver',raw,true);
+      _skipNextGiverInput=true;
+      e.target.value='';
+      tryStartTimerAfterFirstClue();
+      applyFault(check.reason);
+      return;
+    }
+  }
 
   clearTimeout(_direSendTimer);
   sendDireBubbleNow('giver',raw,true);
@@ -3089,14 +3154,12 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   _skipNextGiverInput=true;
   e.target.value='';
 
-  // En mode duo : consommer une flèche
   if(gameMode==='duo'){
     consumeArrow(mancheState.cluesGiven);
     sendData({type:'duoArrow',clueNum:mancheState.cluesGiven});
     mancheState.cluesGiven++;
   }
 
-  // Tour passe au guesser
   mancheState.turn='guesser';
   sendData({type:'turnChange',turn:'guesser'});
   refreshDireInputState();
@@ -3122,11 +3185,20 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(!isLocalGuesser()||e.key!=='Enter') return;
   e.preventDefault();
-  console.log('[MDP] Guesser Enter:', {started:mancheState.started, wordsPhase:mancheState.wordsPhase, turn:mancheState.turn, value:document.getElementById('direGuesser').value});
-  if(!mancheState.started || !mancheState.wordsPhase) { console.warn('[MDP] Blocked: started/wordsPhase'); return; }
-  if(mancheState.turn!=='guesser') { console.warn('[MDP] Blocked: not guesser turn'); return; }
+  if(!mancheState.started || !mancheState.wordsPhase) return;
+  if(mancheState.turn!=='guesser') return;
   const raw=document.getElementById('direGuesser').value.trim();
   if(!raw) return;
+
+  // ── Validation anti-triche ──
+  const gCheck=validateGuesserAnswer(raw);
+  if(!gCheck.ok){
+    sendDireBubbleNow('guesser',raw,true);
+    _skipNextGuesserInput=true;
+    document.getElementById('direGuesser').value='';
+    applyFault(gCheck.reason);
+    return;
+  }
 
   sendDireBubbleNow('guesser',raw,true);
   _skipNextGuesserInput=true;
@@ -3136,7 +3208,6 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(seq && !seq.found[seq.currentWordIdx]){
     const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
     const guess=normalizeAnswer(raw);
-    console.log('[MDP] Guesser check:', {raw, guess, target, word:seq.words[seq.currentWordIdx], idx:seq.currentWordIdx, match:guess===target});
     if(guess===target){
       onCorrectAnswer();
       mancheState.cluesGiven=0;
@@ -3148,13 +3219,10 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     }
   }
 
-  // Mauvaise réponse
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
-    // 3 indices épuisés + mauvaise réponse → mot passé définitivement
     duoSkipWord();
     sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
   }else{
-    // Tour repasse au giver
     mancheState.turn='giver';
     sendData({type:'turnChange',turn:'giver'});
     refreshDireInputState();
