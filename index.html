@@ -1152,7 +1152,7 @@
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
       <button class="secondary-btn" onclick="showModal('about')">À propos</button>
     </div>
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn</div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1686,6 +1686,7 @@ function tryMatchmaking(){
   const prefix=gameMode==='duo'?LOBBY_PREFIX+'duo-':LOBBY_PREFIX;
   const myId=prefix+'p-'+Math.random().toString(36).substr(2,8);
   peer=new Peer(myId);
+  let _mmAborted=false;
 
   peer.on('error',err=>{
     console.warn('Peer error:',err);
@@ -1693,12 +1694,19 @@ function tryMatchmaking(){
   });
 
   peer.on('open',()=>{
-    console.log('My peer ID:',peer.id);
+    console.log('[MM] My peer ID:',peer.id);
+    attemptJoinRooms();
+  });
+
+  function attemptJoinRooms(){
+    if(_mmAborted||connected) return;
     let joined=false;
+    console.log('[MM] Scanning rooms...');
 
     for(let i=0;i<NUM_ROOMS;i++){
       const roomId=prefix+'room-'+i;
-      const c=peer.connect(roomId,{reliable:true});
+      let c;
+      try{ c=peer.connect(roomId,{reliable:true}); }catch(e){ continue; }
 
       c.on('open',()=>{
         if(joined||connected){try{c.close()}catch(e){}return}
@@ -1706,7 +1714,7 @@ function tryMatchmaking(){
 
         const rp={id:c.peer,conn:c,pseudo:'Hôte',isRoomHost:true,_listenersAttached:true};
         conns.push(rp);
-        console.log('Joined room:',roomId);
+        console.log('[MM] Joined room:',roomId);
 
         c.on('data',d=>onData(d,c));
         c.on('close',()=>{
@@ -1726,62 +1734,85 @@ function tryMatchmaking(){
       setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},1500);
     }
 
-    setTimeout(()=>{if(joined||connected)return;becomeHost()},2500);
-  });
-}
+    // Si aucune room trouvée après 2s → devenir hôte
+    const jitterMs=Math.floor(Math.random()*800);
+    setTimeout(()=>{if(!joined&&!connected&&!_mmAborted) becomeHostWithRetry()}, 2000+jitterMs);
+  }
 
-function becomeHost(){
-  if(connected)return;
-  const prefix=gameMode==='duo'?LOBBY_PREFIX+'duo-':LOBBY_PREFIX;
-  const roomIndex=Math.floor(Math.random()*NUM_ROOMS);
-  const roomId=prefix+'room-'+roomIndex;
+  function becomeHostWithRetry(){
+    if(connected||_mmAborted) return;
+    const roomIndex=Math.floor(Math.random()*NUM_ROOMS);
+    const roomId=prefix+'room-'+roomIndex;
+    console.log('[MM] Becoming host:',roomId);
 
-  peer.destroy();
-  peer=new Peer(roomId);
+    peer.destroy();
+    peer=new Peer(roomId);
 
-  peer.on('open',()=>{
-    console.log('Hosting room:',roomId);
-    isHost=true;connected=true;
-    rebuildLobbyList();
-    document.getElementById('lobbyStatus').textContent='Partie créée ! En attente de joueurs...';
-  });
+    let hostTimeout=null;
 
-  peer.on('connection',c=>{
-    const need=maxPlayersForMode();
-    if(conns.length>=need-1){try{c.close()}catch(e){}return}
+    peer.on('open',()=>{
+      if(_mmAborted){peer.destroy();return;}
+      console.log('[MM] Hosting room:',roomId);
+      isHost=true;connected=true;
+      rebuildLobbyList();
+      document.getElementById('lobbyStatus').textContent='Partie créée ! En attente...';
 
-    const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
-    conns.push(rp);
+      // Si personne ne rejoint après 6s, retenter en tant que client
+      hostTimeout=setTimeout(()=>{
+        if(conns.length===0 && !_mmAborted){
+          console.log('[MM] Nobody joined, retrying as client...');
+          connected=false; isHost=false;
+          peer.destroy();
+          peer=new Peer(prefix+'p-'+Math.random().toString(36).substr(2,8));
+          peer.on('error',err=>{ if(err.type!=='peer-unavailable') console.warn('Peer error:',err); });
+          peer.on('open',()=>{ attemptJoinRooms(); });
+        }
+      },6000);
+    });
 
-    const setup=()=>{
-      if(rp._listenersAttached)return;
-      rp._listenersAttached=true;
+    peer.on('connection',c=>{
+      if(hostTimeout){clearTimeout(hostTimeout);hostTimeout=null;}
+      const need=maxPlayersForMode();
+      if(conns.length>=need-1){try{c.close()}catch(e){}return}
 
-      c.on('data',d=>onData(d,c));
-      c.on('close',()=>{
-        const idx=conns.indexOf(rp);
-        if(idx>=0)conns.splice(idx,1);
-        for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
+      const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
+      conns.push(rp);
+
+      const setup=()=>{
+        if(rp._listenersAttached)return;
+        rp._listenersAttached=true;
+
+        c.on('data',d=>onData(d,c));
+        c.on('close',()=>{
+          const idx=conns.indexOf(rp);
+          if(idx>=0)conns.splice(idx,1);
+          for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
+          rebuildLobbyList();
+          broadcastRoster();
+        });
+
+        sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
+        for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
         rebuildLobbyList();
         broadcastRoster();
-      });
+      };
 
-      sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
-      for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
-      rebuildLobbyList();
-      broadcastRoster();
-    };
+      c.on('open',setup);
+      if(c.open)setup();
+    });
 
-    c.on('open',setup);
-    if(c.open)setup();
-  });
+    peer.on('error',err=>{
+      console.warn('[MM] Host error:',err);
+      if(err.type==='unavailable-id'){
+        // Room déjà prise → réessayer avec un autre index
+        setTimeout(()=>{if(!connected&&!_mmAborted) becomeHostWithRetry()},1000+Math.random()*1000);
+      }
+    });
+  }
 
-  peer.on('error',err=>{
-    console.warn('Host error:',err);
-    if(err.type==='unavailable-id'){
-      setTimeout(()=>{if(connected)return;peer.destroy();becomeHost()},1500);
-    }
-  });
+  // Cleanup si le joueur quitte le lobby
+  const origBack=backToMenu;
+  window._mmCleanup=()=>{ _mmAborted=true; };
 }
 
 // ── Game start ──
@@ -2935,6 +2966,7 @@ function showMancheResultsDuo(){
 
 // ── Back to menu ──
 function backToMenu(){
+  if(window._mmCleanup) window._mmCleanup();
   for(const p of conns){if(p.conn)try{p.conn.close()}catch(e){}}
   if(peer)try{peer.destroy()}catch(e){}
   conns=[];peer=null;connected=false;isHost=false;lobbyPlayers=[];
