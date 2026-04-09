@@ -702,7 +702,8 @@
   .dire-field {
     flex: 1;
     min-width: 200px;
-    max-width: 360px;
+    max-width: 520px;
+    margin: 0 auto;
   }
   .dire-field label {
     display: block;
@@ -711,6 +712,7 @@
     letter-spacing: 2px;
     text-transform: uppercase;
     margin-bottom: 6px;
+    text-align: center;
   }
   .dire-input-wrap {
     display: flex; gap: 6px; align-items: stretch;
@@ -2528,8 +2530,8 @@ function refreshDireInputState(){
   if(isObserver){
     g.disabled=true;
     u.disabled=true;
-    g.parentElement.style.display='none';
-    u.parentElement.style.display='none';
+    g.closest('.dire-field').style.display='none';
+    u.closest('.dire-field').style.display='none';
     if(actions) actions.style.display='none';
 
     let obs=document.getElementById('observerMsg');
@@ -2551,8 +2553,8 @@ function refreshDireInputState(){
 
   // ── Giver ──
   if(gOK){
-    g.parentElement.style.display='';
-    u.parentElement.style.display='none';
+    g.closest('.dire-field').style.display='';
+    u.closest('.dire-field').style.display='none';
     u.disabled=true;
 
     let myTurn=roundOpen && turn==='giver';
@@ -2578,8 +2580,8 @@ function refreshDireInputState(){
 
   // ── Guesser ──
   if(uOK){
-    u.parentElement.style.display='';
-    g.parentElement.style.display='none';
+    u.closest('.dire-field').style.display='';
+    g.closest('.dire-field').style.display='none';
     g.disabled=true;
     if(actions) actions.style.display='none';
 
