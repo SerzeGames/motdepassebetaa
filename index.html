@@ -2460,7 +2460,6 @@ function duoSkipWord(){
   seq.found[wi]=true;
   seq.skipsCount=(seq.skipsCount||0)+1;
 
-  // Son passer
   playGameSound('son/passer.wav',0.7);
 
   // Pastille rouge: la plus à droite non-utilisée
@@ -2472,18 +2471,28 @@ function duoSkipWord(){
     }
   }
 
-  // Reset flèches + clues
   mancheState.cluesGiven=0;
   resetArrows();
 
-  // Vérifier si tous les mots sont traités
+  // 3 pastilles rouges = manche perdue !
+  if(seq.skipsCount>=3){
+    playGameSound('son/perdu.wav',0.8);
+    mancheState.started=false;
+    mancheState.wordsPhase=false;
+    if(mancheState.timerInterval){ clearInterval(mancheState.timerInterval); mancheState.timerInterval=null; }
+    if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+    refreshDireInputState();
+    setTimeout(()=>{ endSequence(); },1500);
+    return;
+  }
+
   const totalHandled=seq.lightsLit+(seq.skipsCount||0);
   if(totalHandled>=5){
     setTimeout(()=>{ endSequence(); },1000);
     return;
   }
 
-  // Avancer au prochain mot
   seq.currentWordIdx=(wi+1)%seq.words.length;
   if(goToNextWord(seq)){
     clearDireFields();
@@ -2662,8 +2671,10 @@ function refreshDireInputState(){
       g.placeholder=myTurn?'Indice ('+remaining+' restant'+(remaining>1?'s':'')+')\u2026':'En attente\u2026';
       if(actions) actions.style.display='';
       const pass=document.getElementById('btnPass');
-      // En duo le giver peut passer à tout moment quand c'est son tour
-      if(pass) pass.disabled=!(roundOpen && turn==='giver');
+      const seq=getCurrentSeq();
+      const skips=seq?(seq.skipsCount||0):0;
+      // Griser si pas le tour du giver OU déjà 2 passes (pour ne pas atteindre 3 rouges)
+      if(pass) pass.disabled=!(roundOpen && turn==='giver') || skips>=2;
     }else{
       g.placeholder=myTurn?'Indice \u2014 Entrée pour valider':'En attente de la réponse\u2026';
       if(actions) actions.style.display='';
@@ -3044,19 +3055,10 @@ function isCheatAttempt(input){
   ];
   for(const p of phrasePatterns){ if(p.test(norm)) return 'phrase déguisée'; }
 
-  // Vérifier d'abord si le mot complet est dans le dictionnaire → si oui, c'est valide
+  // Vérifier d'abord si le mot complet est dans le dictionnaire → si oui, skip les checks préfixes
   const allWordsRef=[...WORDS_EASY,...WORDS_MEDIUM,...WORDS_HARD];
-  const isKnownWord=allWordsRef.some(w=>normLetters(w)===norm) || allWordsRef.some(w=>{
-    const nw=normLetters(w);
-    if(Math.abs(nw.length-norm.length)>1) return false;
-    if(nw===norm) return true;
-    let diff=0;
-    if(nw.length===norm.length){ for(let i=0;i<nw.length;i++){if(nw[i]!==norm[i])diff++;if(diff>1)return false;} return diff<=1; }
-    const longer=nw.length>norm.length?nw:norm, shorter=nw.length>norm.length?norm:nw;
-    let j=0; for(let i=0;i<longer.length;i++){if(longer[i]!==shorter[j]){diff++;if(diff>1)return false;}else j++;} return true;
-  });
+  const isKnownWord=allWordsRef.some(w=>normLetters(w)===norm);
 
-  // Si le mot est connu du dictionnaire, pas besoin de vérifier les préfixes/suffixes
   if(!isKnownWord){
     // Détection de mots collés : seulement préfixes de 3+ lettres pour éviter les faux positifs
     const prefixes=[
@@ -3086,9 +3088,6 @@ function isCheatAttempt(input){
         return 'phrase déguisée';
       }
     }
-
-    // Mot >10 lettres inconnu du dictionnaire
-    if(norm.length>10) return 'mot inconnu';
   }
 
   if(norm.length>15) return 'mot trop long';
