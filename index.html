@@ -1425,6 +1425,35 @@ document.addEventListener('touchmove',e=>{
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('gesturechange',e=>e.preventDefault());
 
+// ── Anti-cheat : détecter les injections de scripts ──
+(function(){
+  // Surveiller les modifications du DOM pour détecter les menus injectés
+  const _acObserver=new MutationObserver(muts=>{
+    for(const m of muts){
+      for(const n of m.addedNodes){
+        if(n.nodeType===1 && n.id && /mod|cheat|hack|vip|exploit/i.test(n.id)){
+          try{n.remove();}catch(e){}
+          console.warn('[ANTI-CHEAT] Injection détectée et supprimée');
+        }
+      }
+    }
+  });
+  _acObserver.observe(document.body,{childList:true,subtree:true});
+
+  // Protéger les fonctions de validation contre le monkey-patching
+  setInterval(()=>{
+    if(typeof validateGiverClue==='function' && validateGiverClue._protected!==true){
+      // Quelqu'un a remplacé la fonction
+      console.warn('[ANTI-CHEAT] validateGiverClue modifiée — rechargement');
+      location.reload();
+    }
+    if(typeof validateGuesserAnswer==='function' && validateGuesserAnswer._protected!==true){
+      console.warn('[ANTI-CHEAT] validateGuesserAnswer modifiée — rechargement');
+      location.reload();
+    }
+  },3000);
+})();
+
 // ══════════════════════════════════════════
 // PARTICLES
 // ══════════════════════════════════════════
@@ -1616,6 +1645,16 @@ function onData(data,fromConn){
   else if(data.type==='syncSequences'){
     if(data.mode) gameMode=data.mode;
     mancheState.sequences=data.sequences;
+    // Anti-cheat : masquer les mots des séquences où on est guesser
+    for(const seq of mancheState.sequences){
+      if(pseudoMatch(myPseudo, seq.guesser)){
+        seq._wordsHidden=true;
+        seq._realWords=null; // le guesser ne connaît PAS les vrais mots
+        seq.words=seq.words.map(w=>'*'.repeat(w.length));
+      }else{
+        seq._wordsHidden=false;
+      }
+    }
     if(!isHost && clientAwaitingSequenceStart){
       clientAwaitingSequenceStart=false;
       startSequence(0);
@@ -1623,7 +1662,7 @@ function onData(data,fromConn){
   }
   else if(data.type==='direBubble'){
     applyDireBubble(data.role,data.text,!!data.pop);
-    // Synchronisation immédiate du tour quand on reçoit un indice/réponse validé(e)
+    // Synchronisation immédiate du tour
     if(data.pop && data.role==='giver' && isLocalGuesser()){
       mancheState.turn='guesser';
       refreshDireInputState();
@@ -1631,6 +1670,20 @@ function onData(data,fromConn){
     if(data.pop && data.role==='guesser' && isLocalGiver()){
       mancheState.turn='giver';
       refreshDireInputState();
+      // Anti-cheat : le giver valide la réponse du guesser (car le guesser n'a pas les mots)
+      if(data.guess && mancheState.started){
+        const seq=getCurrentSeq();
+        if(seq && !seq.found[seq.currentWordIdx]){
+          const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
+          const guess=normalizeAnswer(data.guess);
+          if(guess===target){
+            onCorrectAnswer();
+            mancheState.cluesGiven=0;
+            resetArrows();
+            sendData({type:'syncCorrect',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
+          }
+        }
+      }
     }
     if(isHost && fromConn){
       for(const p of conns){
@@ -3134,6 +3187,8 @@ function validateGiverClue(clue,secretWord){
   if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
   return {ok:true};
 }
+validateGiverClue._protected=true;
+
 function validateGuesserAnswer(answer){
   const raw=answer.trim();
   if(!raw) return {ok:false,reason:'vide'};
@@ -3141,6 +3196,7 @@ function validateGuesserAnswer(answer){
   if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
   return {ok:true};
 }
+validateGuesserAnswer._protected=true;
 function applyFault(reason,fromNetwork){
   playGameSound('son/faute.wav',0.8);
   applyDireBubble('giver',reason,true);
@@ -3286,34 +3342,38 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     return;
   }
 
+  // Envoyer avec le guess en clair pour que le giver puisse valider
   sendDireBubbleNow('guesser',raw,true);
+  // Aussi envoyer le guess séparément pour la validation côté giver
+  sendData({type:'direBubble',role:'guesser',text:raw,pop:true,guess:raw});
   _skipNextGuesserInput=true;
   document.getElementById('direGuesser').value='';
 
   const seq=getCurrentSeq();
   if(!seq){ console.error('[MDP] Guesser: NO SEQ!'); return; }
   const wi=seq.currentWordIdx;
-  const target=normalizeAnswer(seq.words[wi]);
-  const guess=normalizeAnswer(raw);
-  console.log('[MDP] Guesser compare:', JSON.stringify({raw, guess, target, word:seq.words[wi], idx:wi, found:seq.found[wi], match:guess===target}));
 
-  if(!seq.found[wi] && guess===target){
-    console.log('[MDP] ✅ CORRECT!');
-    onCorrectAnswer();
-    mancheState.cluesGiven=0;
-    resetArrows();
-    mancheState.turn='giver';
-    sendData({type:'turnChange',turn:'giver'});
-    refreshDireInputState();
-    return;
+  // Si les mots ne sont pas masqués (on est aussi giver dans une autre config), vérifier localement
+  if(!seq._wordsHidden && !seq.found[wi]){
+    const target=normalizeAnswer(seq.words[wi]);
+    const guess=normalizeAnswer(raw);
+    console.log('[MDP] Guesser local check:', JSON.stringify({guess, target, match:guess===target}));
+    if(guess===target){
+      console.log('[MDP] ✅ CORRECT (local)!');
+      onCorrectAnswer();
+      mancheState.cluesGiven=0;
+      resetArrows();
+      mancheState.turn='giver';
+      sendData({type:'turnChange',turn:'giver'});
+      refreshDireInputState();
+      return;
+    }
   }
 
-  if(guess===target && seq.found[wi]){
-    console.error('[MDP] ⚠️ Word already found! idx='+wi+' found='+JSON.stringify(seq.found));
-  }
+  // Si les mots SONT masqués, la validation sera faite par le giver via direBubble.guess
+  // On attend juste le syncCorrect en retour
 
-  // Mauvaise réponse
-  console.log('[MDP] ❌ Wrong answer');
+  // Mauvaise réponse (ou en attente de validation giver)
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
     duoSkipWord();
     sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
