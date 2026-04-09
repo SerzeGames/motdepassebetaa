@@ -608,6 +608,36 @@
     align-items: center;
     width: min(300px, 48vw);
   }
+
+  /* Bandeau "C'est votre tour !" */
+  .your-turn-banner {
+    display: none;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--red-bright);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-align: center;
+    margin-bottom: 4px;
+    animation: turnPulse 1.5s ease-in-out infinite;
+  }
+  .your-turn-banner.visible { display: block; }
+  @keyframes turnPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Surbrillance du champ de saisie quand c'est le tour du joueur */
+  .dire-input.input-glow {
+    border-color: var(--red-bright) !important;
+    box-shadow: 0 0 12px rgba(255,26,26,0.5), 0 0 24px rgba(255,26,26,0.2), inset 0 0 6px rgba(255,26,26,0.1) !important;
+    animation: inputGlow 1.8s ease-in-out infinite;
+  }
+  @keyframes inputGlow {
+    0%, 100% { box-shadow: 0 0 12px rgba(255,26,26,0.5), 0 0 24px rgba(255,26,26,0.2), inset 0 0 6px rgba(255,26,26,0.1); }
+    50% { box-shadow: 0 0 18px rgba(255,26,26,0.7), 0 0 36px rgba(255,26,26,0.3), inset 0 0 8px rgba(255,26,26,0.15); }
+  }
   .player-bubble {
     min-height: 3.45em;
     width: 100%;
@@ -1231,11 +1261,13 @@
     <!-- Podiums : bulles + pseudo + bonhomme -->
     <div class="players-stage" id="playersStage">
       <div class="player-podium giver">
+        <div class="your-turn-banner" id="turnBannerGiver">C'est votre tour !</div>
         <div class="player-bubble" id="bubbleGiver" aria-live="polite"></div>
         <div class="player-pseudo" id="podiumGiverPseudo">—</div>
         <img src="images/Bonhomme.png" alt="" id="imgPodiumGiver">
       </div>
       <div class="player-podium guesser">
+        <div class="your-turn-banner" id="turnBannerGuesser">C'est votre tour !</div>
         <div class="player-bubble" id="bubbleGuesser" aria-live="polite"></div>
         <div class="player-pseudo" id="podiumGuesserPseudo">—</div>
         <img src="images/Bonhomme.png" alt="" id="imgPodiumGuesser">
@@ -2597,6 +2629,25 @@ function refreshDireInputState(){
       u.placeholder='En attente de l\'indice\u2026';
     }
   }
+
+  // ── Bandeau "C'est votre tour !" + surbrillance input ──
+  const bGiver=document.getElementById('turnBannerGiver');
+  const bGuesser=document.getElementById('turnBannerGuesser');
+  if(bGiver) bGiver.classList.remove('visible');
+  if(bGuesser) bGuesser.classList.remove('visible');
+  g.classList.remove('input-glow');
+  u.classList.remove('input-glow');
+
+  if(roundOpen){
+    if(gOK && turn==='giver'){
+      if(bGiver) bGiver.classList.add('visible');
+      g.classList.add('input-glow');
+    }
+    if(uOK && turn==='guesser' && chronoOn){
+      if(bGuesser) bGuesser.classList.add('visible');
+      u.classList.add('input-glow');
+    }
+  }
 }
 
 function tryStartTimerAfterFirstClue(){
@@ -2922,6 +2973,10 @@ document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
 
 document.getElementById('direGiver').addEventListener('input',e=>{
   if(!isLocalGiver()) return;
+  // Retirer la surbrillance dès la première frappe
+  e.target.classList.remove('input-glow');
+  const bGiver=document.getElementById('turnBannerGiver');
+  if(bGiver) bGiver.classList.remove('visible');
   if(_skipNextGiverInput){
     _skipNextGiverInput=false;
     return;
@@ -2964,6 +3019,10 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
 });
 document.getElementById('direGuesser').addEventListener('input',e=>{
   if(!isLocalGuesser()) return;
+  // Retirer la surbrillance dès la première frappe
+  e.target.classList.remove('input-glow');
+  const bGuesser=document.getElementById('turnBannerGuesser');
+  if(bGuesser) bGuesser.classList.remove('visible');
   if(_skipNextGuesserInput){
     _skipNextGuesserInput=false;
     return;
