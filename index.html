@@ -1689,8 +1689,7 @@ function onData(data,fromConn){
     }
   }
   else if(data.type==='timerStart'){
-    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
-    mancheState.audioBed=null;
+    stopBedfinaleMusic();
     if(mancheState.wordsPhase && !mancheState.started) startTimer();
     refreshDireInputState();
     if(isHost && fromConn){
@@ -2305,6 +2304,8 @@ let mancheState = {
   timerInterval: null,
   timeLeft: 30,
   audio30s: null,
+  audioBed: null,
+  bedfinaleTimerId: null,
   started: false,
   wordsPhase: false,
   turn: 'giver',
@@ -2350,6 +2351,20 @@ function getSequencesTwoPlayers(seed){
 
 function playGameSound(src, vol){
   try{ const a=new Audio(src); a.volume=vol||0.6; a.play(); return a; }catch(e){ return null; }
+}
+
+function stopBedfinaleMusic(){
+  if(mancheState.bedfinaleTimerId){
+    clearTimeout(mancheState.bedfinaleTimerId);
+    mancheState.bedfinaleTimerId=null;
+  }
+  if(mancheState.audioBed){
+    try{
+      mancheState.audioBed.loop=false;
+      mancheState.audioBed.pause();
+    }catch(e){}
+    mancheState.audioBed=null;
+  }
 }
 
 function formatTimer(secs){
@@ -2439,6 +2454,7 @@ function startSequence(idx){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+  stopBedfinaleMusic();
 
   // Show sequence overlay
   const seqOv=document.getElementById('seqOverlay');
@@ -2502,7 +2518,9 @@ function revealWordFrame(){
   refreshDireInputState();
   playGameSound('son/IndiceDisplay.wav',0.7);
   // Jouer bedfinale.wav en boucle en attendant le premier indice
-  setTimeout(()=>{
+  stopBedfinaleMusic();
+  mancheState.bedfinaleTimerId=setTimeout(()=>{
+    mancheState.bedfinaleTimerId=null;
     if(!mancheState.started){
       mancheState.audioBed=playGameSound('son/bedfinale.wav',0.35);
       if(mancheState.audioBed) mancheState.audioBed.loop=true;
@@ -2559,7 +2577,7 @@ function duoSkipWord(){
     mancheState.wordsPhase=false;
     if(mancheState.timerInterval){ clearInterval(mancheState.timerInterval); mancheState.timerInterval=null; }
     if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+    stopBedfinaleMusic();
     refreshDireInputState();
     setTimeout(()=>{ endSequence(); },1500);
     return;
@@ -2801,9 +2819,7 @@ function refreshDireInputState(){
 
 function tryStartTimerAfterFirstClue(){
   if(mancheState.started || !mancheState.wordsPhase) return;
-  // Arrêter la musique bedfinale
-  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
-  mancheState.audioBed=null;
+  stopBedfinaleMusic();
   startTimer();
   sendData({type:'timerStart'});
   refreshDireInputState();
@@ -2884,6 +2900,8 @@ function updateWordDisplay(seq,opts){
 
 function startTimer(){
   if(mancheState.started) return;
+  stopBedfinaleMusic();
+  if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
   mancheState.started=true;
   const duration=gameMode==='duo'?90:30;
   mancheState.timeLeft=duration;
@@ -3021,9 +3039,7 @@ function endSequence(){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-  // Arrêter bedfinale si elle tourne encore
-  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
-  mancheState.audioBed=null;
+  stopBedfinaleMusic();
 
   // Son de fin selon le résultat
   const seq=mancheState.sequences[mancheState.currentSeq];
