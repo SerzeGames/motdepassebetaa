@@ -399,14 +399,6 @@
   .interdit-item:nth-child(3) { animation-delay: 1.8s; }
   .interdit-item:nth-child(4) { animation-delay: 2.1s; }
   .interdit-item:nth-child(5) { animation-delay: 2.4s; }
-  .interdit-item:nth-child(6) { animation-delay: 2.7s; }
-  .interdit-item:nth-child(7) { animation-delay: 3.0s; }
-  .interdit-item:nth-child(8) { animation-delay: 3.3s; }
-  .interdit-item:nth-child(9) { animation-delay: 3.6s; }
-  .interdit-item.section-title {
-    color: var(--red-bright); font-size: 0.8rem; letter-spacing: 3px; padding: 6px 0 2px;
-    border-bottom: none; opacity: 0;
-  }
   @keyframes interditSlide { to { opacity: 1; transform: translateX(0); } }
 
   /* Checkmark button */
@@ -429,23 +421,25 @@
     flex-wrap: wrap; gap: 12px;
     padding: 0 35px 20px;
   }
-  .interdits-countdown {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: var(--gold);
-    text-align: center;
-    text-transform: uppercase;
-    animation: countdownFadeIn 0.5s 3.5s forwards;
-    opacity: 0;
+  .confirm-btn {
+    width: 55px; height: 55px; border-radius: 50%;
+    background: linear-gradient(135deg, #555, #333);
+    border: 3px solid #777; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; color: white;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    animation: confirmPop 0.5s 2.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0; transform: scale(0.5);
   }
-  .interdits-countdown span {
-    color: var(--red-bright);
-    font-size: 1.5rem;
-    font-weight: 900;
+  @keyframes confirmPop { to { opacity: 1; transform: scale(1); } }
+  .confirm-btn:hover {
+    transform: scale(1.15);
+    background: linear-gradient(135deg, #00aa44, #008833);
+    border-color: #00cc55;
+    box-shadow: 0 0 20px rgba(0,200,80,0.4);
   }
-  @keyframes countdownFadeIn { to { opacity: 1; } }
+  .confirm-btn:active { transform: scale(0.95); }
 
   /* ===== SCREEN: MANCHE (JEU) ===== */
   .manche-container {
@@ -1175,7 +1169,7 @@
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
       <button class="secondary-btn" onclick="showModal('about')">À propos</button>
     </div>
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.1 BÊTA — Connexion P2P (WebRTC) : votre IP est partagée uniquement avec les joueurs de votre partie, comme tout jeu en ligne</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1232,16 +1226,21 @@
   <!-- Interdits panel -->
   <div class="interdits-panel">
     <div class="interdits-title-bar">
-      <div class="interdits-title-text">LES RÈGLES</div>
+      <div class="interdits-title-text">LES INTERDITS</div>
     </div>
-    <div class="interdits-list" id="interditsList">
-      <!-- Rempli dynamiquement par showInterditsScreen() -->
+    <div class="interdits-list">
+      <div class="interdit-item">Pas de mot composé</div>
+      <div class="interdit-item">Pas de mot de la même famille</div>
+      <div class="interdit-item">Pas de mot qui commence pareil</div>
+      <div class="interdit-item">Pas de découpage du mot</div>
+      <div class="interdit-item">Pas de mime</div>
     </div>
   </div>
 
-  <!-- Countdown automatique (5 secondes) -->
+  <!-- Checkmark (hôte uniquement) / attente pour les autres -->
   <div class="interdits-confirm" id="interditsConfirmWrap">
-    <div class="interdits-countdown" id="interditsCountdown">La partie commence dans <span id="interditsTimer">5</span>s</div>
+    <p class="interdits-wait" id="interditsWaitHost" hidden>En attente de l'hôte…</p>
+    <button type="button" class="confirm-btn" id="btnConfirmInterdits" title="Compris !">&#10004;</button>
   </div>
 </div>
 </div>
@@ -1421,35 +1420,6 @@ document.addEventListener('touchmove',e=>{
 },{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('gesturechange',e=>e.preventDefault());
-
-// ── Anti-cheat : détecter les injections de scripts ──
-(function(){
-  // Surveiller les modifications du DOM pour détecter les menus injectés
-  const _acObserver=new MutationObserver(muts=>{
-    for(const m of muts){
-      for(const n of m.addedNodes){
-        if(n.nodeType===1 && n.id && /mod|cheat|hack|vip|exploit/i.test(n.id)){
-          try{n.remove();}catch(e){}
-          console.warn('[ANTI-CHEAT] Injection détectée et supprimée');
-        }
-      }
-    }
-  });
-  _acObserver.observe(document.body,{childList:true,subtree:true});
-
-  // Protéger les fonctions de validation contre le monkey-patching
-  setInterval(()=>{
-    if(typeof validateGiverClue==='function' && validateGiverClue._protected!==true){
-      // Quelqu'un a remplacé la fonction
-      console.warn('[ANTI-CHEAT] validateGiverClue modifiée — rechargement');
-      location.reload();
-    }
-    if(typeof validateGuesserAnswer==='function' && validateGuesserAnswer._protected!==true){
-      console.warn('[ANTI-CHEAT] validateGuesserAnswer modifiée — rechargement');
-      location.reload();
-    }
-  },3000);
-})();
 
 // ══════════════════════════════════════════
 // PARTICLES
@@ -1642,16 +1612,6 @@ function onData(data,fromConn){
   else if(data.type==='syncSequences'){
     if(data.mode) gameMode=data.mode;
     mancheState.sequences=data.sequences;
-    // Anti-cheat : masquer les mots des séquences où on est guesser
-    for(const seq of mancheState.sequences){
-      if(pseudoMatch(myPseudo, seq.guesser)){
-        seq._wordsHidden=true;
-        seq._realWords=null; // le guesser ne connaît PAS les vrais mots
-        seq.words=seq.words.map(w=>'*'.repeat(w.length));
-      }else{
-        seq._wordsHidden=false;
-      }
-    }
     if(!isHost && clientAwaitingSequenceStart){
       clientAwaitingSequenceStart=false;
       startSequence(0);
@@ -1659,7 +1619,7 @@ function onData(data,fromConn){
   }
   else if(data.type==='direBubble'){
     applyDireBubble(data.role,data.text,!!data.pop);
-    // Synchronisation immédiate du tour
+    // Synchronisation immédiate du tour quand on reçoit un indice/réponse validé(e)
     if(data.pop && data.role==='giver' && isLocalGuesser()){
       mancheState.turn='guesser';
       refreshDireInputState();
@@ -1667,20 +1627,6 @@ function onData(data,fromConn){
     if(data.pop && data.role==='guesser' && isLocalGiver()){
       mancheState.turn='giver';
       refreshDireInputState();
-      // Anti-cheat : le giver valide la réponse du guesser (car le guesser n'a pas les mots)
-      if(data.guess && mancheState.started){
-        const seq=getCurrentSeq();
-        if(seq && !seq.found[seq.currentWordIdx]){
-          const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
-          const guess=normalizeAnswer(data.guess);
-          if(guess===target){
-            onCorrectAnswer();
-            mancheState.cluesGiven=0;
-            resetArrows();
-            sendData({type:'syncCorrect',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
-          }
-        }
-      }
     }
     if(isHost && fromConn){
       for(const p of conns){
@@ -1689,7 +1635,8 @@ function onData(data,fromConn){
     }
   }
   else if(data.type==='timerStart'){
-    stopBedfinaleMusic();
+    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+    mancheState.audioBed=null;
     if(mancheState.wordsPhase && !mancheState.started) startTimer();
     refreshDireInputState();
     if(isHost && fromConn){
@@ -1938,6 +1885,7 @@ function showInterditsScreen(manche){
     document.getElementById('teamAMembers').textContent=teamA[0]||'';
     document.getElementById('teamBMembers').textContent=teamB[0]||'';
     document.getElementById('mancheText').textContent='DUEL';
+    // Changer les labels
     document.querySelector('.score-team.team-a').textContent=teamA[0]||'JOUEUR 1';
     document.querySelector('.score-team.team-b').textContent=teamB[0]||'JOUEUR 2';
     document.querySelector('.score-members#teamAMembers').textContent='';
@@ -1952,58 +1900,35 @@ function showInterditsScreen(manche){
   document.getElementById('scoreA').textContent='0';
   document.getElementById('scoreB').textContent='0';
 
-  // Remplir les règles selon le mode
-  const list=document.getElementById('interditsList');
-  if(gameMode==='duo'){
-    list.innerHTML=
-      '<div class="interdit-item section-title">— INDICES INTERDITS —</div>'+
-      '<div class="interdit-item">Un seul mot par indice, pas de phrase</div>'+
-      '<div class="interdit-item">Lettres uniquement — pas de tiret ni chiffre</div>'+
-      '<div class="interdit-item">Les 3 premières lettres doivent différer du mot</div>'+
-      '<div class="interdit-item section-title">— MODE DUEL —</div>'+
-      '<div class="interdit-item">⏱ 1 min 30 par tour — 5 mots à faire deviner</div>'+
-      '<div class="interdit-item">➤ 3 indices maximum par mot (flèches rouges)</div>'+
-      '<div class="interdit-item">🟢 Mot trouvé = pastille verte (de gauche à droite)</div>'+
-      '<div class="interdit-item">🔴 Mot passé ou raté = pastille rouge (de droite à gauche)</div>'+
-      '<div class="interdit-item">❌ 3 pastilles rouges = manche perdue !</div>';
-  }else{
-    list.innerHTML=
-      '<div class="interdit-item">Un seul mot par indice, pas de phrase</div>'+
-      '<div class="interdit-item">Pas de mot de la même famille</div>'+
-      '<div class="interdit-item">Les 3 premières lettres doivent différer du mot</div>'+
-      '<div class="interdit-item">Lettres uniquement — pas de tiret ni chiffre</div>'+
-      '<div class="interdit-item">30 secondes par séquence — 5 mots à deviner</div>';
-  }
-
   showScreen('screenInterdits');
 
-  // Re-trigger animations
+  // Re-trigger animations by cloning interdit items
+  const list=document.querySelector('.interdits-list');
   const items=list.querySelectorAll('.interdit-item');
   items.forEach(item=>{
     const clone=item.cloneNode(true);
     item.parentNode.replaceChild(clone,item);
   });
+  const btn=document.getElementById('btnConfirmInterdits');
+  const btnClone=btn.cloneNode(true);
+  btn.parentNode.replaceChild(btnClone,btn);
+  btnClone.id='btnConfirmInterdits';
+  btnClone.type='button';
+  updateInterditsHostUi();
+}
 
-  // Countdown automatique : 5 secondes après affichage des règles
-  const timerEl=document.getElementById('interditsTimer');
-  const cdEl=document.getElementById('interditsCountdown');
-  if(cdEl){ cdEl.style.opacity='0'; cdEl.style.animation='none'; }
-  let _cdStarted=false;
-  // Attendre que les animations des règles soient finies (~4s) puis lancer le countdown
-  setTimeout(()=>{
-    if(cdEl){ cdEl.style.opacity='1'; }
-    _cdStarted=true;
-    let remaining=5;
-    if(timerEl) timerEl.textContent=remaining;
-    const cdInterval=setInterval(()=>{
-      remaining--;
-      if(timerEl) timerEl.textContent=remaining;
-      if(remaining<=0){
-        clearInterval(cdInterval);
-        applyInterditsTransition();
-      }
-    },1000);
-  },4000);
+function updateInterditsHostUi(){
+  const btn=document.getElementById('btnConfirmInterdits');
+  const wait=document.getElementById('interditsWaitHost');
+  if(!btn||!wait) return;
+  if(isHost){
+    wait.hidden=true;
+    btn.hidden=false;
+    btn.disabled=false;
+  }else{
+    wait.hidden=false;
+    btn.hidden=true;
+  }
 }
 
 function applyInterditsTransition(){
@@ -2011,6 +1936,12 @@ function applyInterditsTransition(){
   document.body.style.filter='brightness(1.5)';
   setTimeout(()=>{document.body.style.filter='brightness(1)'},300);
   setTimeout(()=>{ startManche(); },500);
+}
+
+function onConfirmInterdits(){
+  if(!isHost) return;
+  sendData({type:'interditsConfirmed'});
+  applyInterditsTransition();
 }
 
 // ══════════════════════════════════════════
@@ -2304,8 +2235,6 @@ let mancheState = {
   timerInterval: null,
   timeLeft: 30,
   audio30s: null,
-  audioBed: null,
-  bedfinaleTimerId: null,
   started: false,
   wordsPhase: false,
   turn: 'giver',
@@ -2351,20 +2280,6 @@ function getSequencesTwoPlayers(seed){
 
 function playGameSound(src, vol){
   try{ const a=new Audio(src); a.volume=vol||0.6; a.play(); return a; }catch(e){ return null; }
-}
-
-function stopBedfinaleMusic(){
-  if(mancheState.bedfinaleTimerId){
-    clearTimeout(mancheState.bedfinaleTimerId);
-    mancheState.bedfinaleTimerId=null;
-  }
-  if(mancheState.audioBed){
-    try{
-      mancheState.audioBed.loop=false;
-      mancheState.audioBed.pause();
-    }catch(e){}
-    mancheState.audioBed=null;
-  }
 }
 
 function formatTimer(secs){
@@ -2454,7 +2369,6 @@ function startSequence(idx){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-  stopBedfinaleMusic();
 
   // Show sequence overlay
   const seqOv=document.getElementById('seqOverlay');
@@ -2518,9 +2432,7 @@ function revealWordFrame(){
   refreshDireInputState();
   playGameSound('son/IndiceDisplay.wav',0.7);
   // Jouer bedfinale.wav en boucle en attendant le premier indice
-  stopBedfinaleMusic();
-  mancheState.bedfinaleTimerId=setTimeout(()=>{
-    mancheState.bedfinaleTimerId=null;
+  setTimeout(()=>{
     if(!mancheState.started){
       mancheState.audioBed=playGameSound('son/bedfinale.wav',0.35);
       if(mancheState.audioBed) mancheState.audioBed.loop=true;
@@ -2577,7 +2489,7 @@ function duoSkipWord(){
     mancheState.wordsPhase=false;
     if(mancheState.timerInterval){ clearInterval(mancheState.timerInterval); mancheState.timerInterval=null; }
     if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-    stopBedfinaleMusic();
+    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
     refreshDireInputState();
     setTimeout(()=>{ endSequence(); },1500);
     return;
@@ -2819,7 +2731,9 @@ function refreshDireInputState(){
 
 function tryStartTimerAfterFirstClue(){
   if(mancheState.started || !mancheState.wordsPhase) return;
-  stopBedfinaleMusic();
+  // Arrêter la musique bedfinale
+  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+  mancheState.audioBed=null;
   startTimer();
   sendData({type:'timerStart'});
   refreshDireInputState();
@@ -2900,8 +2814,6 @@ function updateWordDisplay(seq,opts){
 
 function startTimer(){
   if(mancheState.started) return;
-  stopBedfinaleMusic();
-  if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
   mancheState.started=true;
   const duration=gameMode==='duo'?90:30;
   mancheState.timeLeft=duration;
@@ -3039,7 +2951,9 @@ function endSequence(){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-  stopBedfinaleMusic();
+  // Arrêter bedfinale si elle tourne encore
+  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+  mancheState.audioBed=null;
 
   // Son de fin selon le résultat
   const seq=mancheState.sequences[mancheState.currentSeq];
@@ -3154,18 +3068,19 @@ function isCheatAttempt(input){
   const isKnownWord=allWordsRef.some(w=>normLetters(w)===norm);
 
   if(!isKnownWord){
-    // Détection de mots collés : seulement préfixes qui ne sont PAS des débuts de vrais mots courants
+    // Détection de mots collés : seulement préfixes de 3+ lettres pour éviter les faux positifs
     const prefixes=[
       'une','les','des','aux','mon','ton','son',
       'mes','tes','ses','cet','cette','ces',
-      'qui','que','quel','quelle','pour','sous','dans','avec','sans',
-      'mais','donc','plus','tres','trop',
-      'gros','grosse','petit','petite','grand','grande','bonne','belle',
-      'vieux','vieille','longue','haute','basse',
+      'qui','que','quel','quelle','pour','par','sur','sous','dans','avec','sans',
+      'mais','donc','car','pas','plus','tres','trop',
+      'gros','grosse','petit','petite','grand','grande','bon','bonne','beau','belle',
+      'vieux','vieille','jeune','long','longue','haut','haute','bas','basse',
       'noir','blanc','rouge','bleu','vert','jaune','rose',
-      'fait','comme','tout','toute','bien','mal','forte',
+      'fait','comme','tout','toute','bien','mal','fort','forte',
       'genre','style','type','sorte','espece','forme','coup',
-      'plein','super','mega','hyper','ultra','mini','maxi'
+      'faux','vrai','seul','plein','super','mega','hyper','ultra','mini','maxi',
+      'demi','semi','anti','multi','pre','post'
     ];
     for(const pref of prefixes){
       if(norm.length > pref.length+2 && norm.startsWith(pref)){
@@ -3195,8 +3110,6 @@ function validateGiverClue(clue,secretWord){
   if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
   return {ok:true};
 }
-validateGiverClue._protected=true;
-
 function validateGuesserAnswer(answer){
   const raw=answer.trim();
   if(!raw) return {ok:false,reason:'vide'};
@@ -3204,7 +3117,6 @@ function validateGuesserAnswer(answer){
   if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
   return {ok:true};
 }
-validateGuesserAnswer._protected=true;
 function applyFault(reason,fromNetwork){
   playGameSound('son/faute.wav',0.8);
   applyDireBubble('giver',reason,true);
@@ -3249,6 +3161,10 @@ document.getElementById('btnPlay').addEventListener('click',()=>{gameMode='quali
 document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='duo';startSearch();});
 document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
 document.getElementById('btnBackMenu').addEventListener('click',backToMenu);
+document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
+  if(!e.target.closest('#btnConfirmInterdits')) return;
+  onConfirmInterdits();
+});
 document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
 
 document.getElementById('direGiver').addEventListener('input',e=>{
@@ -3329,16 +3245,14 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(!isLocalGuesser()||e.key!=='Enter') return;
   e.preventDefault();
-  const _dbg={started:mancheState.started, wordsPhase:mancheState.wordsPhase, turn:mancheState.turn};
-  if(!mancheState.started || !mancheState.wordsPhase){ console.warn('[MDP] Guesser BLOCKED: not started/wordsPhase',_dbg); return; }
-  if(mancheState.turn!=='guesser'){ console.warn('[MDP] Guesser BLOCKED: turn='+mancheState.turn); return; }
+  if(!mancheState.started || !mancheState.wordsPhase) return;
+  if(mancheState.turn!=='guesser') return;
   const raw=document.getElementById('direGuesser').value.trim();
-  if(!raw){ console.warn('[MDP] Guesser BLOCKED: empty input'); return; }
+  if(!raw) return;
 
   // ── Validation anti-triche ──
   const gCheck=validateGuesserAnswer(raw);
   if(!gCheck.ok){
-    console.warn('[MDP] Guesser FAULT:',gCheck.reason);
     sendDireBubbleNow('guesser',raw,true);
     _skipNextGuesserInput=true;
     document.getElementById('direGuesser').value='';
@@ -3346,24 +3260,15 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     return;
   }
 
-  // Envoyer avec le guess en clair pour que le giver puisse valider
   sendDireBubbleNow('guesser',raw,true);
-  // Aussi envoyer le guess séparément pour la validation côté giver
-  sendData({type:'direBubble',role:'guesser',text:raw,pop:true,guess:raw});
   _skipNextGuesserInput=true;
   document.getElementById('direGuesser').value='';
 
   const seq=getCurrentSeq();
-  if(!seq){ console.error('[MDP] Guesser: NO SEQ!'); return; }
-  const wi=seq.currentWordIdx;
-
-  // Si les mots ne sont pas masqués (on est aussi giver dans une autre config), vérifier localement
-  if(!seq._wordsHidden && !seq.found[wi]){
-    const target=normalizeAnswer(seq.words[wi]);
+  if(seq && !seq.found[seq.currentWordIdx]){
+    const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
     const guess=normalizeAnswer(raw);
-    console.log('[MDP] Guesser local check:', JSON.stringify({guess, target, match:guess===target}));
     if(guess===target){
-      console.log('[MDP] ✅ CORRECT (local)!');
       onCorrectAnswer();
       mancheState.cluesGiven=0;
       resetArrows();
@@ -3374,10 +3279,6 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     }
   }
 
-  // Si les mots SONT masqués, la validation sera faite par le giver via direBubble.guess
-  // On attend juste le syncCorrect en retour
-
-  // Mauvaise réponse (ou en attente de validation giver)
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
     duoSkipWord();
     sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
