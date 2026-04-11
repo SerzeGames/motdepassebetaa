@@ -3695,7 +3695,8 @@ const SYNONYM_GROUPS=[
   ['cadeau','present','offrande','surprise'],['voyage','aventure','excursion','randonnee','croisiere','traversee','promenade','pelerinage'],
   ['vacances','repos','retraite','detente'],['sport','athletisme','competition'],
   ['football','rugby','handball','basketball','volleyball','hockey','tennis','badminton','baseball','golf','boxe','judo','escrime','ski','surf','snowboard','natation','cyclisme'],
-  ['course','marathon','sprint','galop'],['ski','luge','snowboard','bobsleigh'],
+  ['course','marathon','sprint','galop'],['ski','luge','snowboard','bobsleigh','toboggan'],
+  ['toboggan','glissade','glissoire','rampe'],
   ['reve','songe','illusion','fantasme','chimere','utopie'],
   ['mystere','enigme','secret','intrigue'],['legende','mythe','mythologie','fable','conte'],
   ['magie','sorcellerie','enchantement','sortilege','illusion'],
@@ -3713,6 +3714,88 @@ const SYNONYM_GROUPS=[
   ['taille','dimension','envergure','stature','gabarit'],
   ['poids','masse','charge','pesanteur'],
 ];
+
+// ── Traductions anglaises courantes (clé = anglais normalisé, valeur = français normalisé) ──
+const ENGLISH_TRANSLATIONS={
+  'computer':'ordinateur','mouse':'souris','keyboard':'clavier','screen':'ecran',
+  'tree':'arbre','flower':'fleur','sun':'soleil','moon':'lune','star':'etoile',
+  'water':'eau','fire':'feu','earth':'terre','wind':'vent','rain':'pluie','snow':'neige',
+  'house':'maison','door':'porte','window':'fenetre','roof':'toit','wall':'mur','floor':'sol',
+  'car':'voiture','boat':'bateau','ship':'navire','plane':'avion','train':'train','bike':'velo',
+  'dog':'chien','cat':'chat','bird':'oiseau','fish':'poisson','horse':'cheval','cow':'vache',
+  'pig':'cochon','chicken':'poulet','duck':'canard','rabbit':'lapin','snake':'serpent',
+  'lion':'lion','tiger':'tigre','bear':'ours','wolf':'loup','fox':'renard','monkey':'singe',
+  'elephant':'elephant','giraffe':'girafe','whale':'baleine','shark':'requin','dolphin':'dauphin',
+  'spider':'araignee','butterfly':'papillon','bee':'abeille','ant':'fourmi','frog':'grenouille',
+  'turtle':'tortue','eagle':'aigle','owl':'hibou','parrot':'perroquet','swan':'cygne',
+  'book':'livre','letter':'lettre','word':'mot','pen':'stylo','pencil':'crayon','paper':'papier',
+  'school':'ecole','teacher':'professeur','student':'eleve','class':'classe',
+  'doctor':'medecin','hospital':'hopital','nurse':'infirmier',
+  'king':'roi','queen':'reine','prince':'prince','knight':'chevalier','castle':'chateau',
+  'sword':'epee','shield':'bouclier','arrow':'fleche','bow':'arc','gun':'fusil','bomb':'bombe',
+  'war':'guerre','peace':'paix','army':'armee','soldier':'soldat','battle':'bataille',
+  'food':'nourriture','bread':'pain','cheese':'fromage','meat':'viande','egg':'oeuf',
+  'milk':'lait','butter':'beurre','sugar':'sucre','salt':'sel','honey':'miel',
+  'fruit':'fruit','apple':'pomme','banana':'banane','orange':'orange','lemon':'citron',
+  'grape':'raisin','cherry':'cerise','strawberry':'fraise','peach':'peche','pear':'poire',
+  'vegetable':'legume','potato':'pomme','carrot':'carotte','onion':'oignon','tomato':'tomate',
+  'cake':'gateau','chocolate':'chocolat','candy':'bonbon','cookie':'biscuit','pie':'tarte',
+  'coffee':'cafe','tea':'the','beer':'biere','wine':'vin','juice':'jus',
+  'chair':'chaise','table':'table','bed':'lit','lamp':'lampe','mirror':'miroir',
+  'clock':'horloge','watch':'montre','key':'cle','knife':'couteau','fork':'fourchette',
+  'spoon':'cuillere','plate':'assiette','cup':'tasse','bottle':'bouteille','glass':'verre',
+  'shirt':'chemise','hat':'chapeau','shoe':'chaussure','dress':'robe','coat':'manteau',
+  'glove':'gant','sock':'chaussette','belt':'ceinture','tie':'cravate',
+  'head':'tete','eye':'oeil','ear':'oreille','nose':'nez','mouth':'bouche',
+  'hand':'main','finger':'doigt','arm':'bras','leg':'jambe','foot':'pied',
+  'heart':'coeur','brain':'cerveau','tooth':'dent','hair':'cheveux','skin':'peau','bone':'os',
+  'mountain':'montagne','river':'riviere','lake':'lac','sea':'mer','ocean':'ocean',
+  'island':'ile','forest':'foret','desert':'desert','beach':'plage','valley':'vallee',
+  'bridge':'pont','road':'route','path':'chemin','street':'rue','tunnel':'tunnel',
+  'garden':'jardin','park':'parc','farm':'ferme','field':'champ',
+  'sky':'ciel','cloud':'nuage','storm':'tempete','lightning':'eclair','thunder':'tonnerre',
+  'spring':'printemps','summer':'ete','autumn':'automne','winter':'hiver',
+  'day':'jour','night':'nuit','morning':'matin','evening':'soir',
+  'love':'amour','fear':'peur','anger':'colere','joy':'joie','sadness':'tristesse',
+  'friend':'ami','enemy':'ennemi','family':'famille','child':'enfant','baby':'bebe',
+  'man':'homme','woman':'femme','boy':'garcon','girl':'fille',
+  'father':'pere','mother':'mere','brother':'frere','sister':'soeur',
+  'music':'musique','song':'chanson','dance':'danse','piano':'piano','guitar':'guitare',
+  'violin':'violon','drum':'tambour','trumpet':'trompette','flute':'flute',
+  'painting':'peinture','drawing':'dessin','sculpture':'sculpture','theater':'theatre',
+  'movie':'film','cinema':'cinema','photo':'photo','camera':'camera',
+  'gold':'or','silver':'argent','diamond':'diamant','iron':'fer','copper':'cuivre',
+  'stone':'pierre','brick':'brique','wood':'bois','glass':'verre','steel':'acier',
+  'game':'jeu','ball':'ballon','race':'course','team':'equipe','goal':'but',
+  'dream':'reve','story':'histoire','magic':'magie','ghost':'fantome','monster':'monstre',
+  'dragon':'dragon','pirate':'pirate','treasure':'tresor','crown':'couronne','throne':'trone',
+  'flag':'drapeau','map':'carte','compass':'boussole','rope':'corde','wheel':'roue',
+  'hammer':'marteau','saw':'scie','nail':'clou','brush':'brosse','bucket':'seau',
+  'candle':'bougie','bell':'cloche','ring':'bague','necklace':'collier','bracelet':'bracelet',
+  'umbrella':'parapluie','bag':'sac','box':'boite','basket':'panier',
+  'newspaper':'journal','magazine':'magazine','envelope':'enveloppe',
+  'price':'prix','money':'argent','coin':'monnaie','bank':'banque',
+  'church':'eglise','prison':'prison','museum':'musee','library':'bibliotheque',
+  'restaurant':'restaurant','hotel':'hotel','airport':'aeroport','station':'gare',
+  'smoke':'fumee','flame':'flamme','ash':'cendre','coal':'charbon',
+  'ice':'glace','frost':'givre','fog':'brouillard','rainbow':'arc',
+  'wave':'vague','tide':'maree','sand':'sable','cliff':'falaise',
+  'cave':'grotte','volcano':'volcan','earthquake':'seisme',
+  'nest':'nid','cage':'cage','fence':'barriere','gate':'portail',
+  'ladder':'echelle','stairs':'escalier','elevator':'ascenseur',
+  'slide':'toboggan','swing':'balancoire','pool':'piscine',
+  'level':'niveau','score':'score','challenge':'defi','puzzle':'puzzle',
+  'interview':'entretien','speech':'discours','debate':'debat',
+  'kitchen':'cuisine','bathroom':'douche','bedroom':'chambre','office':'bureau',
+  'speed':'vitesse','strength':'force','weight':'poids','height':'taille',
+  'color':'couleur','shape':'forme','size':'taille','sound':'son',
+  'smell':'odeur','taste':'gout','touch':'toucher','sight':'vue',
+  'silence':'silence','noise':'bruit','shadow':'ombre','light':'lumiere',
+  'beginning':'debut','end':'fin','life':'vie','death':'mort',
+  'truth':'verite','lie':'mensonge','secret':'secret','mystery':'mystere',
+  'luck':'chance','mistake':'erreur','victory':'victoire','defeat':'defaite',
+  'freedom':'liberte','justice':'justice','courage':'courage',
+};
 
 // Index rapide pour lookup
 const _synonymMap=new Map();
@@ -3733,6 +3816,18 @@ function isSynonym(clue,secretWord){
   if(syns && syns.has(c)) return true;
   const syns2=_synonymMap.get(c);
   if(syns2 && syns2.has(w)) return true;
+  return false;
+}
+
+function isEnglishTranslation(clue,secretWord){
+  const c=normLetters(clue), w=normLetters(secretWord);
+  // L'indice est un mot anglais qui traduit le mot secret ?
+  const frenchOfClue=ENGLISH_TRANSLATIONS[c];
+  if(frenchOfClue && normLetters(frenchOfClue)===w) return true;
+  // Le mot secret a une traduction anglaise qui correspond à l'indice ?
+  for(const [eng,fr] of Object.entries(ENGLISH_TRANSLATIONS)){
+    if(normLetters(fr)===w && normLetters(eng)===c) return true;
+  }
   return false;
 }
 
@@ -3793,6 +3888,7 @@ function validateGiverClue(clue,secretWord){
   if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
   if(isSameFamily(raw,secretWord)) return {ok:false,reason:'FAUTE : mot de la même famille'};
   if(isSynonym(raw,secretWord)) return {ok:false,reason:'FAUTE : synonyme interdit'};
+  if(isEnglishTranslation(raw,secretWord)) return {ok:false,reason:'FAUTE : traduction interdite'};
   return {ok:true};
 }
 function validateGuesserAnswer(answer){
