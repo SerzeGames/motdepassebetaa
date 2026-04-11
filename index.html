@@ -239,7 +239,17 @@
   .sound-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; width: 50px; height: 50px; border-radius: 50%; background: rgba(30,10,10,0.9); border: 2px solid var(--red-deep); color: var(--silver); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; backdrop-filter: blur(10px); }
   .sound-toggle:hover { transform: scale(1.1); border-color: var(--red-main); box-shadow: 0 0 15px rgba(196,30,30,0.3); }
   .sound-toggle.muted { opacity: 0.5; }
-  /* Masquer le bouton son pendant la manche */
+  /* DEBUG PANEL */
+  #debugPanel {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: rgba(0,0,0,0.92); color: #0f0; font-family: monospace; font-size: 11px;
+    padding: 6px 10px; max-height: 120px; overflow-y: auto; pointer-events: none;
+    border-bottom: 2px solid #0f0; display: none;
+  }
+  #debugPanel.visible { display: block; }
+  #debugPanel .dbg-ok { color: #0f0; }
+  #debugPanel .dbg-fail { color: #f44; }
+  #debugPanel .dbg-warn { color: #fa0; }
   #screenManche.active ~ .sound-toggle { display: none; }
 
   .particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
@@ -1126,6 +1136,7 @@
 </head>
 <body>
 
+<div id="debugPanel"></div>
 <div class="bg-layer"></div>
 <div class="dot-matrix"></div>
 <div class="circle-deco c1"></div>
@@ -1414,6 +1425,20 @@
 <audio id="bgMusic" loop preload="auto"><source src="son/accueil.mp3" type="audio/mpeg"></audio>
 
 <script>
+// ══════════════════════════════════════════
+// DEBUG PANEL
+// ══════════════════════════════════════════
+const _dbgPanel=document.getElementById('debugPanel');
+const _dbgLines=[];
+function dbg(msg,cls){
+  cls=cls||'';
+  _dbgLines.push('<span class="'+cls+'">'+msg+'</span>');
+  if(_dbgLines.length>12) _dbgLines.shift();
+  _dbgPanel.innerHTML=_dbgLines.join('<br>');
+  _dbgPanel.classList.add('visible');
+  console.log('[DBG]',msg);
+}
+
 // ── Anti-zoom & anti-scroll mobile ──
 document.addEventListener('touchmove',e=>{
   if(e.touches.length>1) e.preventDefault();
@@ -1559,7 +1584,7 @@ function rebuildLobbyList(){
 function broadcastRoster(){
   if(!isHost)return;
   const players=[{id:peer.id,pseudo:myPseudo,isHost:true},...conns.map(p=>({id:p.id,pseudo:p.pseudo,isHost:false}))];
-  // Disambiguate duplicate pseudos for display
+  // Disambiguate duplicate pseudos
   const counts={};
   for(const p of players){ const k=p.pseudo.trim().toLowerCase(); counts[k]=(counts[k]||0)+1; }
   const seen={};
@@ -1567,12 +1592,10 @@ function broadcastRoster(){
     const k=p.pseudo.trim().toLowerCase();
     if(counts[k]>1){ seen[k]=(seen[k]||0)+1; p.pseudo=p.pseudo.trim()+' ('+seen[k]+')'; }
   }
-  // Update local pseudo
   const me=players.find(p=>p.isHost);
   if(me) myPseudo=me.pseudo;
   for(const p of players){ if(p.isHost) continue; const c=conns.find(c=>c.id===p.id); if(c) c.pseudo=p.pseudo; }
   sendData({type:'roster',players,mode:gameMode});
-  // Send updated pseudos so clients update their myPseudo
   for(const p of players){
     if(p.isHost) continue;
     const c=conns.find(c=>c.id===p.id);
@@ -1615,6 +1638,7 @@ function onData(data,fromConn){
   else if(data.type==='pseudoUpdate'){
     if(peer && data.id===peer.id){
       myPseudo=data.pseudo;
+      dbg('Pseudo mis à jour: '+myPseudo);
     }
     rebuildLobbyList();
   }
@@ -1671,6 +1695,7 @@ function onData(data,fromConn){
     }
   }
   else if(data.type==='syncCorrect'){
+    dbg('syncCorrect reçu: seqIdx='+data.seqIdx+' wordIdx='+data.wordIdx+' currentSeq='+mancheState.currentSeq);
     if(data.seqIdx!==mancheState.currentSeq) return;
     const seq=mancheState.sequences[data.seqIdx];
     if(!seq || seq.found[data.wordIdx]) return;
@@ -2353,6 +2378,9 @@ function startSequence(idx){
   mancheState.turn='giver'; // giver commence toujours
   const seq=mancheState.sequences[idx];
 
+  dbg('═══ Séquence '+idx+' ═══ giver="'+seq.giver+'" guesser="'+seq.guesser+'" myPseudo="'+myPseudo+'"');
+  dbg('isLocalGiver='+isLocalGiver()+' isLocalGuesser='+isLocalGuesser()+' mots='+JSON.stringify(seq.words));
+
   for(let i=0;i<5;i++){
     const s=document.getElementById('sphere'+i);
     if(s) s.classList.remove('lit');
@@ -2724,8 +2752,7 @@ function refreshDireInputState(){
     g.disabled=true;
     if(actions) actions.style.display='none';
 
-    // Le guesser peut toujours taper dès que le chrono tourne,
-    // même si turn !== 'guesser' (la synchro réseau peut être en retard)
+    // Toujours actif dès que le chrono tourne (ne pas dépendre de turn)
     const canType=roundOpen && chronoOn;
     u.disabled=!canType;
     if(!chronoOn){
@@ -2840,6 +2867,7 @@ function updateWordDisplay(seq,opts){
 function startTimer(){
   if(mancheState.started) return;
   mancheState.started=true;
+  dbg('⏱ Timer démarré! started=true');
   const duration=gameMode==='duo'?90:30;
   mancheState.timeLeft=duration;
 
@@ -2866,10 +2894,18 @@ function startTimer(){
 }
 
 function onCorrectAnswer(fromNetwork){
-  if(!mancheState.started) return;
+  dbg('onCorrectAnswer appelé (fromNetwork='+fromNetwork+') started='+mancheState.started);
+  if(!mancheState.started){
+    dbg('onCorrectAnswer BLOQUÉ: started=false','dbg-fail');
+    return;
+  }
   const seq=mancheState.sequences[mancheState.currentSeq];
   const wi=seq.currentWordIdx;
-  if(seq.found[wi]) return;
+  if(seq.found[wi]){
+    dbg('onCorrectAnswer BLOQUÉ: mot déjà trouvé idx='+wi,'dbg-fail');
+    return;
+  }
+  dbg('onCorrectAnswer: mot validé idx='+wi+' "'+seq.words[wi]+'"','dbg-ok');
 
   seq.found[wi]=true;
   seq.lightsLit++;
@@ -3219,19 +3255,67 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
   _direSendTimer=setTimeout(()=>{
     sendData({type:'direBubble',role:'guesser',text:'*'.repeat(starLen)});
   },100);
+
+  // ── Auto-validation backup : valide dès que le mot tapé correspond ──
+  if(mancheState.started && mancheState.wordsPhase){
+    const seq=getCurrentSeq();
+    if(seq && !seq.found[seq.currentWordIdx]){
+      const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
+      const guess=normalizeAnswer(raw);
+      if(guess && target && guess===target){
+        dbg('AUTO-VALID: "'+raw+'" → OK !','dbg-ok');
+        _skipNextGuesserInput=true;
+        e.target.value='';
+        clearTimeout(_direSendTimer);
+        sendDireBubbleNow('guesser',raw,true);
+        onCorrectAnswer();
+        mancheState.cluesGiven=0;
+        if(gameMode==='duo') resetArrows();
+        mancheState.turn='giver';
+        sendData({type:'turnChange',turn:'giver'});
+        refreshDireInputState();
+      }
+    }
+  }
 });
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
-  if(!isLocalGuesser()||e.key!=='Enter') return;
+  if(e.key!=='Enter') return;
   e.preventDefault();
-  if(!mancheState.started || !mancheState.wordsPhase) return;
-  // Ne PAS bloquer si turn!=='guesser' — la synchro réseau peut être en retard.
-  // On accepte toujours la réponse du guesser tant que le chrono tourne.
-  const raw=document.getElementById('direGuesser').value.trim();
-  if(!raw) return;
 
-  // ── Validation anti-triche ──
+  // ── DEBUG : log chaque étape ──
+  const _isGuesser=isLocalGuesser();
+  dbg('── ENTER pressé ── isLocalGuesser='+_isGuesser+' myPseudo="'+myPseudo+'"');
+
+  if(!_isGuesser){
+    const seq=getCurrentSeq();
+    dbg('BLOQUÉ: pas le guesser. seq.guesser="'+(seq?seq.guesser:'null')+'"','dbg-fail');
+    return;
+  }
+
+  if(!mancheState.wordsPhase){
+    dbg('BLOQUÉ: wordsPhase=false','dbg-fail');
+    return;
+  }
+  if(!mancheState.started){
+    dbg('BLOQUÉ: started=false (chrono pas lancé)','dbg-fail');
+    return;
+  }
+
+  // NE PAS bloquer sur turn !== guesser (synchro réseau peut être en retard)
+  if(mancheState.turn!=='guesser'){
+    dbg('WARN: turn="'+mancheState.turn+'" mais on continue quand même','dbg-warn');
+  }
+
+  const raw=document.getElementById('direGuesser').value.trim();
+  if(!raw){
+    dbg('BLOQUÉ: champ vide','dbg-fail');
+    return;
+  }
+
+  // ── Validation anti-triche (allégée) ──
   const gCheck=validateGuesserAnswer(raw);
   if(!gCheck.ok){
+    dbg('BLOQUÉ par validation: '+gCheck.reason,'dbg-fail');
     sendDireBubbleNow('guesser',raw,true);
     _skipNextGuesserInput=true;
     document.getElementById('direGuesser').value='';
@@ -3244,10 +3328,16 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   document.getElementById('direGuesser').value='';
 
   const seq=getCurrentSeq();
+  dbg('seq='+(seq?'OK':'NULL')+' currentWordIdx='+(seq?seq.currentWordIdx:'?')+' found='+(seq?JSON.stringify(seq.found):'?'));
+
   if(seq && !seq.found[seq.currentWordIdx]){
-    const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
+    const targetWord=seq.words[seq.currentWordIdx];
+    const target=normalizeAnswer(targetWord);
     const guess=normalizeAnswer(raw);
+    dbg('Comparaison: guess="'+guess+'" vs target="'+target+'" (mot="'+targetWord+'", tapé="'+raw+'")');
+
     if(guess===target){
+      dbg('✅ BONNE RÉPONSE !','dbg-ok');
       onCorrectAnswer();
       mancheState.cluesGiven=0;
       resetArrows();
@@ -3255,7 +3345,11 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
       sendData({type:'turnChange',turn:'giver'});
       refreshDireInputState();
       return;
+    }else{
+      dbg('❌ Mauvaise réponse: "'+guess+'" ≠ "'+target+'"','dbg-fail');
     }
+  }else{
+    dbg('SKIP comparaison: seq='+(seq?'OK':'NULL')+' found[idx]='+(seq?seq.found[seq.currentWordIdx]:'?'),'dbg-warn');
   }
 
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
