@@ -1555,11 +1555,49 @@ function rebuildLobbyList(){
   updateLobbyUI();
 }
 
+// ── Disambiguate duplicate pseudos ──
+function disambiguatePseudos(players){
+  // Count occurrences of each pseudo (case-insensitive)
+  const counts={};
+  for(const p of players){
+    const key=p.pseudo.trim().toLowerCase();
+    counts[key]=(counts[key]||0)+1;
+  }
+  // For any duplicated pseudo, append (1), (2), etc.
+  const seen={};
+  for(const p of players){
+    const key=p.pseudo.trim().toLowerCase();
+    if(counts[key]>1){
+      seen[key]=(seen[key]||0)+1;
+      p.pseudo=p.pseudo.trim()+' ('+seen[key]+')';
+    }
+  }
+  return players;
+}
+
 // ── Host: broadcast roster ──
 function broadcastRoster(){
   if(!isHost)return;
   const players=[{id:peer.id,pseudo:myPseudo,isHost:true},...conns.map(p=>({id:p.id,pseudo:p.pseudo,isHost:false}))];
+  // Disambiguate duplicate pseudos
+  disambiguatePseudos(players);
+  // Update local pseudo if it was changed
+  const me=players.find(p=>p.isHost);
+  if(me) myPseudo=me.pseudo;
+  // Update conns pseudos
+  for(const p of players){
+    if(p.isHost) continue;
+    const c=conns.find(c=>c.id===p.id);
+    if(c) c.pseudo=p.pseudo;
+  }
   sendData({type:'roster',players,mode:gameMode});
+  // Also send updated pseudos to each client so they update their own myPseudo
+  for(const p of players){
+    if(p.isHost) continue;
+    const c=conns.find(c=>c.id===p.id);
+    if(c) sendTo(c,{type:'pseudoUpdate',id:p.id,pseudo:p.pseudo});
+  }
+  rebuildLobbyList();
   const need=maxPlayersForMode();
   if(players.length>=need){
     setTimeout(()=>{
@@ -1592,6 +1630,13 @@ function onData(data,fromConn){
     lobbyPlayers=data.players.map(p=>({id:p.id,pseudo:p.pseudo,isHost:p.isHost,isMe:(peer&&p.id===peer.id)}));
     for(const p of data.players){if(peer&&p.id===peer.id)continue;const ex=conns.find(c=>c.id===p.id);if(ex)ex.pseudo=p.pseudo}
     updateLobbyUI();
+  }
+  else if(data.type==='pseudoUpdate'){
+    // Host has renamed us to disambiguate duplicates
+    if(peer && data.id===peer.id){
+      myPseudo=data.pseudo;
+    }
+    rebuildLobbyList();
   }
   else if(data.type==='playerJoined'){
     if(peer&&data.id!==peer.id&&!conns.find(c=>c.id===data.id)){
@@ -3051,52 +3096,7 @@ function isCheatAttempt(input){
   const norm=normLetters(raw);
   if(norm.length<1) return false;
 
-  // Patterns de phrases collées classiques
-  const phrasePatterns=[
-    /^(cest|cestun|cestune|cestdu|cestde|cestla|cestle|cestles|cestmon|cestton|cestson)/,
-    /^(ilya|ilyaun|ilyaune|ilyades|ilyale|ilyala)/,
-    /^(lemot|lemotcest|motcest|lemotest)/,
-    /^(enrapport|cestcomme|ondirait|caressemble|jadore|jaime)/,
-    /^(onfait|onpeut|ondoit|ondit|onva)/,
-    /^(jepense|jecrois|jesuis|jevois|jeveux)/,
-    /^(tupeux|tudois|tuvas|tuas)/,
-  ];
-  for(const p of phrasePatterns){ if(p.test(norm)) return 'phrase déguisée'; }
-
-  // Vérifier d'abord si le mot complet est dans le dictionnaire → si oui, skip les checks préfixes
-  const allWordsRef=[...WORDS_EASY,...WORDS_MEDIUM,...WORDS_HARD];
-  const isKnownWord=allWordsRef.some(w=>normLetters(w)===norm);
-
-  if(!isKnownWord){
-    // Détection de mots collés : seulement préfixes de 3+ lettres pour éviter les faux positifs
-    const prefixes=[
-      'une','les','des','aux','mon','ton','son',
-      'mes','tes','ses','cet','cette','ces',
-      'qui','que','quel','quelle','pour','par','sur','sous','dans','avec','sans',
-      'mais','donc','car','pas','plus','tres','trop',
-      'gros','grosse','petit','petite','grand','grande','bon','bonne','beau','belle',
-      'vieux','vieille','jeune','long','longue','haut','haute','bas','basse',
-      'noir','blanc','rouge','bleu','vert','jaune','rose',
-      'fait','comme','tout','toute','bien','mal','fort','forte',
-      'genre','style','type','sorte','espece','forme','coup',
-      'faux','vrai','seul','plein','super','mega','hyper','ultra','mini','maxi',
-      'demi','semi','anti','multi','pre','post'
-    ];
-    for(const pref of prefixes){
-      if(norm.length > pref.length+2 && norm.startsWith(pref)){
-        const rest=norm.slice(pref.length);
-        if(rest.length>=3) return 'phrase déguisée';
-      }
-    }
-
-    // Détection de suffixes collés
-    const suffixMots=['est','sont','sera','etait','comme','avec','pour','dans','aussi','ici','tard','fort','bien','mal'];
-    for(const suf of suffixMots){
-      if(norm.length > suf.length+3 && norm.endsWith(suf)){
-        return 'phrase déguisée';
-      }
-    }
-  }
+  // (Règle "phrase déguisée" désactivée)
 
   if(norm.length>15) return 'mot trop long';
   return false;
@@ -3113,8 +3113,7 @@ function validateGiverClue(clue,secretWord){
 function validateGuesserAnswer(answer){
   const raw=answer.trim();
   if(!raw) return {ok:false,reason:'vide'};
-  const cheat=isCheatAttempt(raw);
-  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
+  // Le guesser peut taper n'importe quel mot sans restriction anti-triche
   return {ok:true};
 }
 function applyFault(reason,fromNetwork){
