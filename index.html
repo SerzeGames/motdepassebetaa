@@ -239,19 +239,6 @@
   .sound-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; width: 50px; height: 50px; border-radius: 50%; background: rgba(30,10,10,0.9); border: 2px solid var(--red-deep); color: var(--silver); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; backdrop-filter: blur(10px); }
   .sound-toggle:hover { transform: scale(1.1); border-color: var(--red-main); box-shadow: 0 0 15px rgba(196,30,30,0.3); }
   .sound-toggle.muted { opacity: 0.5; }
-  /* DEBUG PANEL */
-  #debugPanel {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-    background: rgba(0,0,0,0.92); color: #0f0; font-family: monospace; font-size: 11px;
-    padding: 6px 10px; max-height: 150px; overflow-y: auto; pointer-events: auto;
-    border-bottom: 2px solid #0f0; display: none;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-  }
-  #debugPanel.visible { display: block; }
-  #debugPanel .dbg-ok { color: #0f0; }
-  #debugPanel .dbg-fail { color: #f44; }
-  #debugPanel .dbg-warn { color: #fa0; }
   #screenManche.active ~ .sound-toggle { display: none; }
 
   .particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
@@ -1138,7 +1125,6 @@
 </head>
 <body>
 
-<div id="debugPanel"></div>
 <div class="bg-layer"></div>
 <div class="dot-matrix"></div>
 <div class="circle-deco c1"></div>
@@ -1427,21 +1413,6 @@
 <audio id="bgMusic" loop preload="auto"><source src="son/accueil.mp3" type="audio/mpeg"></audio>
 
 <script>
-// ══════════════════════════════════════════
-// DEBUG PANEL
-// ══════════════════════════════════════════
-const _dbgPanel=document.getElementById('debugPanel');
-const _dbgLines=[];
-function dbg(msg,cls){
-  cls=cls||'';
-  _dbgLines.push('<span class="'+cls+'">'+msg+'</span>');
-  if(_dbgLines.length>30) _dbgLines.shift();
-  _dbgPanel.innerHTML=_dbgLines.join('<br>');
-  _dbgPanel.classList.add('visible');
-  _dbgPanel.scrollTop=_dbgPanel.scrollHeight;
-  console.log('[DBG]',msg);
-}
-
 // ── Anti-zoom & anti-scroll mobile ──
 document.addEventListener('touchmove',e=>{
   if(e.touches.length>1) e.preventDefault();
@@ -1641,7 +1612,6 @@ function onData(data,fromConn){
   else if(data.type==='pseudoUpdate'){
     if(peer && data.id===peer.id){
       myPseudo=data.pseudo;
-      dbg('Pseudo mis à jour: '+myPseudo);
     }
     rebuildLobbyList();
   }
@@ -1698,7 +1668,7 @@ function onData(data,fromConn){
     }
   }
   else if(data.type==='syncCorrect'){
-    dbg('syncCorrect reçu: seqIdx='+data.seqIdx+' wordIdx='+data.wordIdx+' currentSeq='+mancheState.currentSeq);
+
     if(data.seqIdx!==mancheState.currentSeq) return;
     const seq=mancheState.sequences[data.seqIdx];
     if(!seq || seq.found[data.wordIdx]) return;
@@ -2381,8 +2351,6 @@ function startSequence(idx){
   mancheState.turn='giver'; // giver commence toujours
   const seq=mancheState.sequences[idx];
 
-  dbg('═══ Séquence '+idx+' ═══ giver="'+seq.giver+'" guesser="'+seq.guesser+'" myPseudo="'+myPseudo+'"');
-  dbg('isLocalGiver='+isLocalGiver()+' isLocalGuesser='+isLocalGuesser()+' mots='+JSON.stringify(seq.words));
 
   for(let i=0;i<5;i++){
     const s=document.getElementById('sphere'+i);
@@ -2870,7 +2838,6 @@ function updateWordDisplay(seq,opts){
 function startTimer(){
   if(mancheState.started) return;
   mancheState.started=true;
-  dbg('⏱ Timer démarré! started=true');
   const duration=gameMode==='duo'?90:30;
   mancheState.timeLeft=duration;
 
@@ -2897,18 +2864,14 @@ function startTimer(){
 }
 
 function onCorrectAnswer(fromNetwork){
-  dbg('onCorrectAnswer appelé (fromNetwork='+fromNetwork+') started='+mancheState.started);
   if(!mancheState.started){
-    dbg('onCorrectAnswer BLOQUÉ: started=false','dbg-fail');
     return;
   }
   const seq=mancheState.sequences[mancheState.currentSeq];
   const wi=seq.currentWordIdx;
   if(seq.found[wi]){
-    dbg('onCorrectAnswer BLOQUÉ: mot déjà trouvé idx='+wi,'dbg-fail');
     return;
   }
-  dbg('onCorrectAnswer: mot validé idx='+wi+' "'+seq.words[wi]+'"','dbg-ok');
 
   seq.found[wi]=true;
   seq.lightsLit++;
@@ -3265,38 +3228,31 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
 
   // ── DEBUG : log chaque étape ──
   const _isGuesser=isLocalGuesser();
-  dbg('── ENTER pressé ── isLocalGuesser='+_isGuesser+' myPseudo="'+myPseudo+'"');
 
   if(!_isGuesser){
     const seq=getCurrentSeq();
-    dbg('BLOQUÉ: pas le guesser. seq.guesser="'+(seq?seq.guesser:'null')+'"','dbg-fail');
     return;
   }
 
   if(!mancheState.wordsPhase){
-    dbg('BLOQUÉ: wordsPhase=false','dbg-fail');
     return;
   }
   if(!mancheState.started){
-    dbg('BLOQUÉ: started=false (chrono pas lancé)','dbg-fail');
     return;
   }
 
   // NE PAS bloquer sur turn !== guesser (synchro réseau peut être en retard)
   if(mancheState.turn!=='guesser'){
-    dbg('WARN: turn="'+mancheState.turn+'" mais on continue quand même','dbg-warn');
   }
 
   const raw=document.getElementById('direGuesser').value.trim();
   if(!raw){
-    dbg('BLOQUÉ: champ vide','dbg-fail');
     return;
   }
 
   // ── Validation anti-triche (allégée) ──
   const gCheck=validateGuesserAnswer(raw);
   if(!gCheck.ok){
-    dbg('BLOQUÉ par validation: '+gCheck.reason,'dbg-fail');
     sendDireBubbleNow('guesser',raw,true);
     _skipNextGuesserInput=true;
     document.getElementById('direGuesser').value='';
@@ -3309,7 +3265,6 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   document.getElementById('direGuesser').value='';
 
   const seq=getCurrentSeq();
-  dbg('seq='+(seq?'OK':'NULL')+' currentWordIdx='+(seq?seq.currentWordIdx:'?')+' found='+(seq?JSON.stringify(seq.found):'?'));
 
   if(seq){
     const guess=normalizeAnswer(raw);
@@ -3324,17 +3279,13 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
       }
     }
 
-    dbg('Comparaison: guess="'+guess+'" cherché dans mots non trouvés → matchedIdx='+matchedIdx);
     if(matchedIdx>=0){
-      dbg('Match trouvé: mots['+matchedIdx+']="'+seq.words[matchedIdx]+'"');
     }else{
-      dbg('Pas de match. Mots restants: '+seq.words.filter((_,i)=>!seq.found[i]).join(', '),'dbg-fail');
     }
 
     if(matchedIdx>=0){
       // Resync currentWordIdx avant d'appeler onCorrectAnswer
       seq.currentWordIdx=matchedIdx;
-      dbg('✅ BONNE RÉPONSE ! (idx='+matchedIdx+')','dbg-ok');
       onCorrectAnswer();
       mancheState.cluesGiven=0;
       resetArrows();
@@ -3343,10 +3294,8 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
       refreshDireInputState();
       return;
     }else{
-      dbg('❌ Mauvaise réponse: "'+guess+'"','dbg-fail');
     }
   }else{
-    dbg('SKIP comparaison: seq=NULL','dbg-warn');
   }
 
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
