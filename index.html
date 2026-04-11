@@ -243,8 +243,10 @@
   #debugPanel {
     position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
     background: rgba(0,0,0,0.92); color: #0f0; font-family: monospace; font-size: 11px;
-    padding: 6px 10px; max-height: 120px; overflow-y: auto; pointer-events: none;
+    padding: 6px 10px; max-height: 150px; overflow-y: auto; pointer-events: auto;
     border-bottom: 2px solid #0f0; display: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
   #debugPanel.visible { display: block; }
   #debugPanel .dbg-ok { color: #0f0; }
@@ -1433,9 +1435,10 @@ const _dbgLines=[];
 function dbg(msg,cls){
   cls=cls||'';
   _dbgLines.push('<span class="'+cls+'">'+msg+'</span>');
-  if(_dbgLines.length>12) _dbgLines.shift();
+  if(_dbgLines.length>30) _dbgLines.shift();
   _dbgPanel.innerHTML=_dbgLines.join('<br>');
   _dbgPanel.classList.add('visible');
+  _dbgPanel.scrollTop=_dbgPanel.scrollHeight;
   console.log('[DBG]',msg);
 }
 
@@ -3255,28 +3258,6 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
   _direSendTimer=setTimeout(()=>{
     sendData({type:'direBubble',role:'guesser',text:'*'.repeat(starLen)});
   },100);
-
-  // ── Auto-validation backup : valide dès que le mot tapé correspond ──
-  if(mancheState.started && mancheState.wordsPhase){
-    const seq=getCurrentSeq();
-    if(seq && !seq.found[seq.currentWordIdx]){
-      const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
-      const guess=normalizeAnswer(raw);
-      if(guess && target && guess===target){
-        dbg('AUTO-VALID: "'+raw+'" → OK !','dbg-ok');
-        _skipNextGuesserInput=true;
-        e.target.value='';
-        clearTimeout(_direSendTimer);
-        sendDireBubbleNow('guesser',raw,true);
-        onCorrectAnswer();
-        mancheState.cluesGiven=0;
-        if(gameMode==='duo') resetArrows();
-        mancheState.turn='giver';
-        sendData({type:'turnChange',turn:'giver'});
-        refreshDireInputState();
-      }
-    }
-  }
 });
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(e.key!=='Enter') return;
@@ -3330,14 +3311,30 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   const seq=getCurrentSeq();
   dbg('seq='+(seq?'OK':'NULL')+' currentWordIdx='+(seq?seq.currentWordIdx:'?')+' found='+(seq?JSON.stringify(seq.found):'?'));
 
-  if(seq && !seq.found[seq.currentWordIdx]){
-    const targetWord=seq.words[seq.currentWordIdx];
-    const target=normalizeAnswer(targetWord);
+  if(seq){
     const guess=normalizeAnswer(raw);
-    dbg('Comparaison: guess="'+guess+'" vs target="'+target+'" (mot="'+targetWord+'", tapé="'+raw+'")');
 
-    if(guess===target){
-      dbg('✅ BONNE RÉPONSE !','dbg-ok');
+    // ── Comparer avec TOUS les mots non trouvés (pas seulement currentWordIdx) ──
+    // Corrige les désynchronisations réseau de currentWordIdx
+    let matchedIdx=-1;
+    for(let i=0;i<seq.words.length;i++){
+      if(!seq.found[i] && normalizeAnswer(seq.words[i])===guess){
+        matchedIdx=i;
+        break;
+      }
+    }
+
+    dbg('Comparaison: guess="'+guess+'" cherché dans mots non trouvés → matchedIdx='+matchedIdx);
+    if(matchedIdx>=0){
+      dbg('Match trouvé: mots['+matchedIdx+']="'+seq.words[matchedIdx]+'"');
+    }else{
+      dbg('Pas de match. Mots restants: '+seq.words.filter((_,i)=>!seq.found[i]).join(', '),'dbg-fail');
+    }
+
+    if(matchedIdx>=0){
+      // Resync currentWordIdx avant d'appeler onCorrectAnswer
+      seq.currentWordIdx=matchedIdx;
+      dbg('✅ BONNE RÉPONSE ! (idx='+matchedIdx+')','dbg-ok');
       onCorrectAnswer();
       mancheState.cluesGiven=0;
       resetArrows();
@@ -3346,10 +3343,10 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
       refreshDireInputState();
       return;
     }else{
-      dbg('❌ Mauvaise réponse: "'+guess+'" ≠ "'+target+'"','dbg-fail');
+      dbg('❌ Mauvaise réponse: "'+guess+'"','dbg-fail');
     }
   }else{
-    dbg('SKIP comparaison: seq='+(seq?'OK':'NULL')+' found[idx]='+(seq?seq.found[seq.currentWordIdx]:'?'),'dbg-warn');
+    dbg('SKIP comparaison: seq=NULL','dbg-warn');
   }
 
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
