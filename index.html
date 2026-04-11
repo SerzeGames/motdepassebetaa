@@ -1274,6 +1274,79 @@
     border-color: #8866aa;
   }
   .mode-pick .search-btn.mode-duo:hover { border-color: #aa88cc; box-shadow: 0 0 28px rgba(160,120,200,0.35); }
+
+  .mode-pick .search-btn.mode-friend {
+    font-size: 1.35rem; letter-spacing: 3px;
+    background: linear-gradient(180deg, #0f1a15 0%, #081510 50%, #0f1a15 100%);
+    border-color: #44aa66;
+  }
+  .mode-pick .search-btn.mode-friend:hover { border-color: #66cc88; box-shadow: 0 0 28px rgba(80,200,120,0.35); }
+
+  /* ===== FRIEND MODAL ===== */
+  .friend-modal { max-width: 480px; }
+  .friend-tabs {
+    display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .friend-tab {
+    flex: 1; padding: 12px; background: rgba(255,255,255,0.03);
+    border: none; color: #777; font-family: 'Rajdhani', sans-serif; font-size: 1rem;
+    font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
+    transition: all 0.3s;
+  }
+  .friend-tab.active { background: rgba(196,30,30,0.25); color: white; }
+  .friend-tab:hover:not(.active) { background: rgba(255,255,255,0.06); color: #aaa; }
+
+  .friend-mode-select {
+    display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
+  }
+  .friend-mode-btn {
+    padding: 10px 24px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04); color: #888; font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: all 0.3s;
+  }
+  .friend-mode-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(212,168,67,0.1); }
+
+  .friend-code-display {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 20px; margin-bottom: 20px;
+  }
+  .friend-code-label {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; font-weight: 600;
+    color: #666; letter-spacing: 3px; text-transform: uppercase;
+  }
+  .friend-code-value {
+    font-family: 'Orbitron', sans-serif; font-size: 2.8rem; font-weight: 900;
+    color: var(--gold); letter-spacing: 12px; text-shadow: 0 0 20px rgba(212,168,67,0.4);
+    user-select: all; -webkit-user-select: all;
+  }
+  .friend-code-copy {
+    padding: 6px 18px; border-radius: 6px; border: 1px solid rgba(212,168,67,0.3);
+    background: rgba(212,168,67,0.1); color: var(--gold); font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all 0.3s;
+  }
+  .friend-code-copy:hover { background: rgba(212,168,67,0.25); }
+
+  .friend-create-btn { margin-top: 5px; }
+
+  .friend-join-row {
+    display: flex; justify-content: center; margin-bottom: 20px;
+  }
+  .friend-code-input {
+    width: 200px; padding: 16px 20px; border: 2px solid rgba(212,168,67,0.3); border-radius: 14px;
+    background: rgba(0,0,0,0.3); color: var(--gold); font-family: 'Orbitron', sans-serif;
+    font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 10px;
+    text-transform: uppercase; outline: none; transition: all 0.3s;
+  }
+  .friend-code-input::placeholder { color: rgba(212,168,67,0.2); font-size: 1rem; letter-spacing: 4px; }
+  .friend-code-input:focus { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,168,67,0.2); }
+
+  .friend-status {
+    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 600;
+    color: #888; text-align: center; margin-top: 10px; min-height: 24px; letter-spacing: 1px;
+  }
+
   .results-duo-wrap { max-width: 640px; margin: 0 auto; }
   .results-duo-title { font-family: 'Russo One', sans-serif; font-size: 1.6rem; color: var(--red-bright); text-align: center; margin-bottom: 8px; letter-spacing: 3px; }
   .results-duo-sub { text-align: center; color: #888; font-size: 0.95rem; margin-bottom: 22px; }
@@ -1330,6 +1403,7 @@
       </div>
       <button type="button" class="search-btn" id="btnPlay">RECHERCHE RAPIDE — 4 JOUEURS</button>
       <button type="button" class="search-btn mode-duo" id="btnPlayDuo">DEUX JOUEURS</button>
+      <button type="button" class="search-btn mode-friend" id="btnPlayFriend">JOUER ENTRE AMIS</button>
     </div>
     <div class="bottom-buttons">
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
@@ -1590,6 +1664,40 @@
     <p>Ce jeu est une adaptation web gratuite et non officielle inspirée de l'émission "Mot de passe" diffusée sur France 2.</p>
     <p>Version multijoueur — jouable à 4 joueurs en ligne via PeerJS.</p>
     <p style="color:#888;margin-top:20px;font-size:0.8rem">Développé avec passion — 2026 Edition</p>
+  </div>
+</div>
+
+<!-- ══════ MODAL: MODE AMIS ══════ -->
+<div class="modal-overlay" id="modalFriend">
+  <div class="modal friend-modal">
+    <button class="modal-close" onclick="closeFriendModal()">&#10005;</button>
+    <h2>JOUER ENTRE AMIS</h2>
+    <div class="friend-tabs">
+      <button class="friend-tab active" id="tabCreate" onclick="switchFriendTab('create')">Créer une partie</button>
+      <button class="friend-tab" id="tabJoin" onclick="switchFriendTab('join')">Rejoindre</button>
+    </div>
+    <div class="friend-panel" id="panelCreate">
+      <p style="color:#aaa;text-align:center;margin-bottom:12px">Choisis le mode puis partage le code à tes amis</p>
+      <div class="friend-mode-select">
+        <button class="friend-mode-btn active" id="friendModeDuo" onclick="setFriendMode('duo')">2 joueurs</button>
+        <button class="friend-mode-btn" id="friendModeQualif" onclick="setFriendMode('qualif')">4 joueurs</button>
+      </div>
+      <div class="friend-code-display" id="friendCodeDisplay">
+        <span class="friend-code-label">VOTRE CODE</span>
+        <span class="friend-code-value" id="friendCodeValue">——</span>
+        <button class="friend-code-copy" id="friendCodeCopy" onclick="copyFriendCode()">COPIER</button>
+      </div>
+      <button type="button" class="search-btn friend-create-btn" id="btnFriendCreate">CRÉER LA PARTIE</button>
+      <p class="friend-status" id="friendCreateStatus"></p>
+    </div>
+    <div class="friend-panel" id="panelJoin" style="display:none">
+      <p style="color:#aaa;text-align:center;margin-bottom:12px">Entre le code donné par ton ami</p>
+      <div class="friend-join-row">
+        <input type="text" class="friend-code-input" id="friendCodeInput" placeholder="Code..." maxlength="6" spellcheck="false" autocomplete="off" />
+      </div>
+      <button type="button" class="search-btn friend-create-btn" id="btnFriendJoin">REJOINDRE</button>
+      <p class="friend-status" id="friendJoinStatus"></p>
+    </div>
   </div>
 </div>
 
@@ -1922,6 +2030,7 @@ function startSearch(){
   myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
+  document.getElementById('btnPlayFriend').disabled=true;
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='Connexion...';
   connected=false;conns=[];lobbyPlayers=[];
@@ -2914,14 +3023,15 @@ function refreshDireInputState(){
     g.disabled=true;
     if(actions) actions.style.display='none';
 
-    // Toujours actif dès que le chrono tourne (ne pas dépendre de turn)
-    const canType=roundOpen && chronoOn;
-    u.disabled=!canType;
+    const myTurn=roundOpen && chronoOn && turn==='guesser';
+    u.disabled=!myTurn;
     if(!chronoOn){
       u.placeholder='En attente du 1er indice\u2026';
-    }else{
+    }else if(turn==='guesser'){
       u.placeholder='Devinez le mot\u2026';
-      if(turn==='guesser') u.focus();
+      u.focus();
+    }else{
+      u.placeholder='En attente de l\'indice\u2026';
     }
   }
 
@@ -3265,6 +3375,7 @@ function sameFirst3(clue,secretWord){
 function isCheatAttempt(input){
   const raw=input.trim();
   if(/\s/.test(raw)) return 'un seul mot autorisé';
+  if(/[_\-0-9.,;:!?\/\\@#$%^&*()+={}[\]<>~`"']/.test(raw)) return 'lettres uniquement';
   if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'lettres uniquement';
   const norm=normLetters(raw);
   if(norm.length<1) return false;
@@ -3310,6 +3421,8 @@ function backToMenu(){
   document.getElementById('btnPlay').disabled=false;
   const b=document.getElementById('btnPlayDuo');
   if(b) b.disabled=false;
+  const bf=document.getElementById('btnPlayFriend');
+  if(bf) bf.disabled=false;
   resumeAccueilMusic();
 }
 
@@ -3330,8 +3443,191 @@ setInterval(()=>{
 // ══════════════════════════════════════════
 document.getElementById('btnPlay').addEventListener('click',()=>{gameMode='qualif';startSearch();});
 document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='duo';startSearch();});
+document.getElementById('btnPlayFriend').addEventListener('click',()=>{ openFriendModal(); });
 document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
 document.getElementById('btnBackMenu').addEventListener('click',backToMenu);
+
+// ══════════════════════════════════════════
+// MODE AMIS — Partie privée avec code
+// ══════════════════════════════════════════
+const FRIEND_PREFIX='motdepasse-friend-';
+let friendMode='duo'; // duo ou qualif
+let friendCode='';
+
+function generateFriendCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='';
+  for(let i=0;i<5;i++) code+=chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+
+function openFriendModal(){
+  friendCode=generateFriendCode();
+  document.getElementById('friendCodeValue').textContent=friendCode;
+  document.getElementById('friendCreateStatus').textContent='';
+  document.getElementById('friendJoinStatus').textContent='';
+  document.getElementById('friendCodeInput').value='';
+  document.getElementById('modalFriend').classList.add('active');
+  switchFriendTab('create');
+}
+
+function closeFriendModal(){
+  document.getElementById('modalFriend').classList.remove('active');
+}
+
+function switchFriendTab(tab){
+  document.getElementById('tabCreate').classList.toggle('active',tab==='create');
+  document.getElementById('tabJoin').classList.toggle('active',tab==='join');
+  document.getElementById('panelCreate').style.display=tab==='create'?'':'none';
+  document.getElementById('panelJoin').style.display=tab==='join'?'':'none';
+  if(tab==='join') document.getElementById('friendCodeInput').focus();
+}
+
+function setFriendMode(mode){
+  friendMode=mode;
+  document.getElementById('friendModeDuo').classList.toggle('active',mode==='duo');
+  document.getElementById('friendModeQualif').classList.toggle('active',mode==='qualif');
+}
+
+function copyFriendCode(){
+  const code=document.getElementById('friendCodeValue').textContent;
+  navigator.clipboard.writeText(code).then(()=>{
+    const btn=document.getElementById('friendCodeCopy');
+    btn.textContent='COPIÉ !';
+    setTimeout(()=>{ btn.textContent='COPIER'; },1500);
+  }).catch(()=>{});
+}
+
+function startFriendCreate(){
+  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  gameMode=friendMode;
+  closeFriendModal();
+  document.getElementById('btnPlay').disabled=true;
+  document.getElementById('btnPlayDuo').disabled=true;
+  showScreen('screenLobby');
+  document.getElementById('lobbyStatus').textContent='En attente de vos amis...';
+  document.getElementById('lobbyTopText').textContent='Partie privée — Code : '+friendCode;
+  connected=false;conns=[];lobbyPlayers=[];
+
+  // Créer une room avec le code comme ID
+  const roomId=FRIEND_PREFIX+friendCode.toUpperCase();
+  peer=new Peer(roomId);
+
+  peer.on('error',err=>{
+    console.warn('Friend host error:',err);
+    if(err.type==='unavailable-id'){
+      document.getElementById('lobbyStatus').textContent='Ce code est déjà utilisé, réessayez...';
+      setTimeout(backToMenu,2500);
+    }
+  });
+
+  peer.on('open',()=>{
+    isHost=true;connected=true;
+    rebuildLobbyList();
+    document.getElementById('lobbyStatus').textContent='Partie créée ! Code : '+friendCode;
+  });
+
+  peer.on('connection',c=>{
+    const need=maxPlayersForMode();
+    if(conns.length>=need-1){try{c.close()}catch(e){}return;}
+
+    const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
+    conns.push(rp);
+
+    const setup=()=>{
+      if(rp._listenersAttached)return;
+      rp._listenersAttached=true;
+      c.on('data',d=>onData(d,c));
+      c.on('close',()=>{
+        const idx=conns.indexOf(rp);
+        if(idx>=0)conns.splice(idx,1);
+        for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
+        rebuildLobbyList();
+        broadcastRoster();
+      });
+      sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
+      for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
+      rebuildLobbyList();
+      broadcastRoster();
+    };
+    c.on('open',setup);
+    if(c.open)setup();
+  });
+
+  window._mmCleanup=()=>{};
+}
+
+function startFriendJoin(){
+  const code=document.getElementById('friendCodeInput').value.trim().toUpperCase();
+  if(!code||code.length<3){
+    document.getElementById('friendJoinStatus').textContent='Entrez un code valide';
+    return;
+  }
+  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  closeFriendModal();
+  document.getElementById('btnPlay').disabled=true;
+  document.getElementById('btnPlayDuo').disabled=true;
+  showScreen('screenLobby');
+  document.getElementById('lobbyStatus').textContent='Connexion à la partie...';
+  document.getElementById('lobbyTopText').textContent='Rejoint la partie — Code : '+code;
+  connected=false;conns=[];lobbyPlayers=[];
+
+  const myId=FRIEND_PREFIX+'p-'+Math.random().toString(36).substr(2,8);
+  peer=new Peer(myId);
+
+  peer.on('error',err=>{
+    console.warn('Friend join error:',err);
+    if(err.type==='peer-unavailable'){
+      document.getElementById('lobbyStatus').textContent='Partie introuvable... Vérifiez le code.';
+      setTimeout(backToMenu,3000);
+    }
+  });
+
+  peer.on('open',()=>{
+    const roomId=FRIEND_PREFIX+code;
+    const c=peer.connect(roomId,{reliable:true});
+
+    c.on('open',()=>{
+      connected=true;isHost=false;
+      const rp={id:c.peer,conn:c,pseudo:'Hôte',isRoomHost:true,_listenersAttached:true};
+      conns.push(rp);
+
+      c.on('data',d=>onData(d,c));
+      c.on('close',()=>{
+        conns=conns.filter(p=>p.conn!==c);
+        if(!connected)return;
+        connected=false;
+        document.getElementById('lobbyStatus').textContent='Hôte déconnecté...';
+        setTimeout(backToMenu,2000);
+      });
+
+      c.send({type:'pseudo',id:peer.id,pseudo:myPseudo});
+      rebuildLobbyList();
+      document.getElementById('lobbyStatus').textContent='Connecté ! En attente du lancement...';
+    });
+
+    c.on('error',()=>{
+      document.getElementById('lobbyStatus').textContent='Impossible de rejoindre... Code invalide ?';
+      setTimeout(backToMenu,3000);
+    });
+
+    setTimeout(()=>{
+      if(!connected){
+        document.getElementById('lobbyStatus').textContent='Partie introuvable...';
+        setTimeout(backToMenu,2000);
+      }
+    },5000);
+  });
+
+  window._mmCleanup=()=>{};
+}
+
+// Event listeners mode amis
+document.getElementById('btnFriendCreate').addEventListener('click',startFriendCreate);
+document.getElementById('btnFriendJoin').addEventListener('click',startFriendJoin);
+document.getElementById('friendCodeInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); startFriendJoin(); }
+});
 document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
   if(!e.target.closest('#btnConfirmInterdits')) return;
   onConfirmInterdits();
@@ -3417,31 +3713,19 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(e.key!=='Enter') return;
   e.preventDefault();
 
-  // ── DEBUG : log chaque étape ──
   const _isGuesser=isLocalGuesser();
+  if(!_isGuesser) return;
+  if(!mancheState.wordsPhase) return;
+  if(!mancheState.started) return;
 
-  if(!_isGuesser){
-    const seq=getCurrentSeq();
-    return;
-  }
-
-  if(!mancheState.wordsPhase){
-    return;
-  }
-  if(!mancheState.started){
-    return;
-  }
-
-  // NE PAS bloquer sur turn !== guesser (synchro réseau peut être en retard)
-  if(mancheState.turn!=='guesser'){
-  }
+  // Bloquer si ce n'est pas le tour du guesser (anti-spam)
+  // Sauf si le champ n'est pas disabled (tolérance pour micro-désync réseau)
+  if(mancheState.turn!=='guesser' && document.getElementById('direGuesser').disabled) return;
 
   const raw=document.getElementById('direGuesser').value.trim();
-  if(!raw){
-    return;
-  }
+  if(!raw) return;
 
-  // ── Validation anti-triche (allégée) ──
+  // ── Validation ──
   const gCheck=validateGuesserAnswer(raw);
   if(!gCheck.ok){
     sendDireBubbleNow('guesser',raw,true);
@@ -3461,7 +3745,6 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     const guess=normalizeAnswer(raw);
 
     // ── Comparer avec TOUS les mots non trouvés (pas seulement currentWordIdx) ──
-    // Corrige les désynchronisations réseau de currentWordIdx
     let matchedIdx=-1;
     for(let i=0;i<seq.words.length;i++){
       if(!seq.found[i] && normalizeAnswer(seq.words[i])===guess){
@@ -3471,11 +3754,6 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
     }
 
     if(matchedIdx>=0){
-    }else{
-    }
-
-    if(matchedIdx>=0){
-      // Resync currentWordIdx avant d'appeler onCorrectAnswer
       seq.currentWordIdx=matchedIdx;
       onCorrectAnswer();
       mancheState.cluesGiven=0;
@@ -3484,9 +3762,7 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
       sendData({type:'turnChange',turn:'giver'});
       refreshDireInputState();
       return;
-    }else{
     }
-  }else{
   }
 
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
