@@ -3478,6 +3478,193 @@ function sameFirst3(clue,secretWord){
   const c=normLetters(clue),w=normLetters(secretWord);
   return c.length>=3 && w.length>=3 && c.slice(0,3)===w.slice(0,3);
 }
+
+// ── Détection mot de la même famille ──
+
+// Dictionnaire de synonymes / traductions courantes (normalisés sans accents, minuscules)
+const SYNONYM_GROUPS=[
+  ['livre','bouquin','ouvrage','roman','manuscrit','recueil'],
+  ['niveau','level','echelon','palier','etage','stade'],
+  ['maison','habitation','domicile','demeure','logement','logis','foyer','baraque'],
+  ['voiture','auto','automobile','vehicule','bagnole','caisse'],
+  ['argent','monnaie','fric','thune','oseille','pognon','sous','tune'],
+  ['manger','bouffer','devorer','engloutir','grignoter'],
+  ['beau','joli','magnifique','splendide','superbe'],
+  ['grand','immense','enorme','geant','gigantesque','colossal'],
+  ['petit','minuscule','minime','infime','microscopique'],
+  ['rapide','vite','veloce','prompt','celere','furtif'],
+  ['lent','lentement','tardif','paresseux'],
+  ['ami','copain','pote','camarade','compagnon'],
+  ['enfant','gosse','gamin','mome','bambin','mioche','garnement'],
+  ['travail','boulot','taf','emploi','job','labeur','besogne'],
+  ['dormir','roupiller','pioncer','sommeiller'],
+  ['content','heureux','joyeux','ravi','satisfait','enchante'],
+  ['triste','malheureux','chagrin','morose','melancolique','abattu'],
+  ['peur','frayeur','crainte','terreur','angoisse','effroi','frousse','trouille'],
+  ['crier','hurler','gueuler','brailler','vociférer'],
+  ['parler','causer','discuter','bavarder','jaser','papoter'],
+  ['regarder','observer','contempler','examiner','scruter','mater'],
+  ['marcher','avancer','deambuler','arpenter'],
+  ['courir','sprinter','galoper','foncer','cavaler','detaler'],
+  ['tomber','chuter','trebucher','degringoler','basculer'],
+  ['frapper','taper','cogner','battre','assener'],
+  ['vetement','habit','fringue','tenue','accoutrement'],
+  ['chapeau','couvre-chef','coiffure','beret','casquette'],
+  ['chaussure','soulier','godasse','basket','pompe'],
+  ['chemin','route','sentier','piste','voie','passage'],
+  ['montagne','mont','sommet','pic','colline'],
+  ['riviere','fleuve','cours','ruisseau','torrent'],
+  ['mer','ocean','flot','vague'],
+  ['foret','bois','bosquet','futaie'],
+  ['soleil','astre','etoile'],
+  ['nourriture','aliment','repas','pitance','bouffe','victuaille'],
+  ['chien','clebs','cabot','clébard','toutou','molosse'],
+  ['chat','minou','matou','felin','greffier'],
+  ['oiseau','piaf','volatile','passereau'],
+  ['bateau','navire','embarcation','vaisseau','barque','canot'],
+  ['avion','aeronef','aeroplane','zinc','coucou'],
+  ['terre','sol','terrain','parcelle','plancher'],
+  ['ciel','firmament','voute','azur'],
+  ['eau','flotte','aqua'],
+  ['feu','flamme','brasier','incendie','foyer'],
+  ['vent','brise','souffle','bourrasque','rafale','tempete'],
+  ['froid','glacial','gele','frigide','hivernal'],
+  ['chaud','brulant','torride','caniculaire','bouillant'],
+  ['rouge','ecarlate','vermillon','cramoisi','pourpre','carmin'],
+  ['bleu','azur','indigo','cobalt','cyan','saphir'],
+  ['blanc','immacule','ivoire','neigeux','laiteux'],
+  ['noir','sombre','obscur','tenebreux','ebene'],
+  ['roi','monarque','souverain','sire','majeste'],
+  ['reine','souveraine','imperatrice'],
+  ['guerre','combat','bataille','conflit','lutte','affrontement'],
+  ['paix','armistice','cessez','treve','accord'],
+  ['medecin','docteur','toubib','praticien','clinicien'],
+  ['ecole','college','lycee','etablissement','institution'],
+  ['professeur','enseignant','prof','instituteur','maitre','pedagogue'],
+  ['eleve','etudiant','apprenant','ecolier','lyceen','collegien'],
+  ['musique','melodie','chanson','air','morceau','refrain','tube'],
+  ['film','cinema','movie','pellicule','long-metrage'],
+  ['prison','geole','cachot','penitencier','bagne','taule'],
+  ['police','flic','gendarme','agent','keuf','poulet'],
+  ['voleur','cambrioleur','brigand','bandit','malfrat','escroc'],
+  ['mentir','menteur','mensonge','bobard','bluff'],
+  ['mort','deces','trepas','fin','disparition'],
+  ['vie','existence','vivant'],
+  ['debut','commencement','depart','amorce','entame'],
+  ['fin','terme','conclusion','achèvement','denouement'],
+  ['force','puissance','vigueur','robustesse','energie'],
+  ['faible','fragile','debile','chetif','frele'],
+  ['riche','fortune','aise','opulent','nanti'],
+  ['pauvre','miserable','demuni','indigent','necessiteux'],
+  ['vieux','ancien','age','vetuste','antique','archaique'],
+  ['jeune','juvenile','cadet','adolescent','nouveau'],
+  ['facile','simple','aise','elementaire','basique'],
+  ['difficile','dur','ardu','complique','complexe','penible'],
+  ['dormir','sommeil','somme','sieste','dodo','repos'],
+  ['lit','couche','couchette','pieu','plumard','pageot'],
+  ['pierre','roche','caillou','galet','rocher'],
+  ['arbre','arbuste','vegetation'],
+  ['fleur','floraison','bouquet'],
+  ['fruit','baie','recolte'],
+  ['pain','baguette','miche','croute'],
+  ['lait','lacte','creme'],
+  ['viande','bidoche','barbaque','steak'],
+  ['poisson','peche','friture'],
+  ['couteau','lame','canif','poignard','dague'],
+  ['epee','glaive','sabre','lame','rapiere'],
+  ['fusil','arme','carabine','flingue','petoire'],
+  ['bombe','explosif','grenade','mine','obus'],
+  ['lumiere','clarte','lueur','eclat','brillance','luminosite'],
+  ['ombre','penombre','obscurite','tenebres'],
+  ['bruit','vacarme','tapage','boucan','tintamarre','raffut','brouhaha'],
+  ['silence','calme','quietude','tranquillite','mutisme'],
+  ['odeur','senteur','parfum','fragrance','effluve','arome'],
+  ['gout','saveur','palais'],
+  ['toucher','palper','tater','caresser','effleurer'],
+  ['temps','meteo','climat'],
+  ['jour','journee','matinee'],
+  ['nuit','soir','soiree','nuitee','crepuscule'],
+  ['pluie','averse','ondee','deluge','giboulee','crachin'],
+  ['neige','flocon','givre','verglas','blizzard'],
+  ['orage','tempete','foudre','tonnerre','eclair'],
+  ['question','interrogation','demande'],
+  ['reponse','solution','resultat','issue'],
+  ['probleme','souci','ennui','difficulte','tracas','pepin'],
+  ['idee','concept','notion','pensee','reflexion'],
+  ['mot','terme','vocable','parole','expression'],
+  ['lettre','caractere','signe','symbole','missive','courrier'],
+  ['nombre','chiffre','numero','quantite'],
+  ['image','photo','illustration','dessin','cliche','portrait'],
+  ['couleur','teinte','nuance','coloris','pigment','ton'],
+  ['forme','figure','silhouette','contour','profil'],
+  ['taille','dimension','gabarit','envergure','stature'],
+  ['poids','masse','charge','pesanteur'],
+  ['vitesse','rapidite','celerite','allure','cadence'],
+  ['chance','veine','bol','fortune','hasard'],
+  ['malchance','poisse','guigne','deveine','scoumoune'],
+  ['colere','rage','fureur','courroux','ire'],
+  ['joie','bonheur','allegresse','felicite','beatitude','liesse'],
+  ['amour','passion','tendresse','affection','sentiment'],
+  ['haine','aversion','animosite','antipathie','rancune','rancœur'],
+];
+
+// Index rapide pour lookup
+const _synonymMap=new Map();
+for(const group of SYNONYM_GROUPS){
+  for(const w of group){
+    const nw=normLetters(w);
+    if(!_synonymMap.has(nw)) _synonymMap.set(nw,new Set());
+    for(const w2 of group){
+      const nw2=normLetters(w2);
+      if(nw!==nw2) _synonymMap.get(nw).add(nw2);
+    }
+  }
+}
+
+function isSynonym(clue,secretWord){
+  const c=normLetters(clue), w=normLetters(secretWord);
+  const syns=_synonymMap.get(w);
+  if(syns && syns.has(c)) return true;
+  const syns2=_synonymMap.get(c);
+  if(syns2 && syns2.has(w)) return true;
+  return false;
+}
+
+function isSameFamily(clue,secretWord){
+  const c=normLetters(clue), w=normLetters(secretWord);
+  if(c.length<3 || w.length<3) return false;
+
+  // 1) L'un contient l'autre (ex: livre/livraison, chant/chanson, fleur/fleuriste)
+  if(c.length>=4 && w.length>=4){
+    if(c.includes(w) || w.includes(c)) return true;
+  }
+
+  // 2) Racine commune longue (≥5 lettres en commun au début)
+  let common=0;
+  const minLen=Math.min(c.length,w.length);
+  for(let i=0;i<minLen;i++){
+    if(c[i]===w[i]) common++;
+    else break;
+  }
+  // Racine commune ≥ 5 lettres OU ≥ 70% du mot le plus court
+  if(common>=5 || (common>=4 && common>=minLen*0.7)) return true;
+
+  // 3) Suffixes courants : même base + variante
+  const suffixes=['er','ir','re','eur','euse','tion','sion','ment','iste','ique','ible','able','eux','euses','ier','iere','age','ure','ence','ance','ite','isme','ien','ienne','ette','elle','al','ale','el','eux','ive','if','oire'];
+  for(const suf of suffixes){
+    if(c.endsWith(suf) && c.length>suf.length+2){
+      const cBase=c.slice(0,-suf.length);
+      if(cBase.length>=3 && w.startsWith(cBase)) return true;
+    }
+    if(w.endsWith(suf) && w.length>suf.length+2){
+      const wBase=w.slice(0,-suf.length);
+      if(wBase.length>=3 && c.startsWith(wBase)) return true;
+    }
+  }
+
+  return false;
+}
+
 function isCheatAttempt(input){
   const raw=input.trim();
   if(/\s/.test(raw)) return 'un seul mot autorisé';
@@ -3496,8 +3683,10 @@ function validateGiverClue(clue,secretWord){
   if(!raw) return {ok:false,reason:'vide'};
   const cheat=isCheatAttempt(raw);
   if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
-  if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
   if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
+  if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
+  if(isSameFamily(raw,secretWord)) return {ok:false,reason:'FAUTE : mot de la même famille'};
+  if(isSynonym(raw,secretWord)) return {ok:false,reason:'FAUTE : synonyme interdit'};
   return {ok:true};
 }
 function validateGuesserAnswer(answer){
