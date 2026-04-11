@@ -2483,6 +2483,7 @@ function consumeArrow(clueNum){
   const rEl=document.getElementById(rightIds[clueNum]);
   if(lEl) lEl.classList.add('used');
   if(rEl) rEl.classList.add('used');
+  playGameSound('son/ChronoDisplay.wav',0.7);
 }
 
 function duoSkipWord(){
