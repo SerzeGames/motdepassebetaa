@@ -1555,43 +1555,24 @@ function rebuildLobbyList(){
   updateLobbyUI();
 }
 
-// ── Disambiguate duplicate pseudos ──
-function disambiguatePseudos(players){
-  // Count occurrences of each pseudo (case-insensitive)
-  const counts={};
-  for(const p of players){
-    const key=p.pseudo.trim().toLowerCase();
-    counts[key]=(counts[key]||0)+1;
-  }
-  // For any duplicated pseudo, append (1), (2), etc.
-  const seen={};
-  for(const p of players){
-    const key=p.pseudo.trim().toLowerCase();
-    if(counts[key]>1){
-      seen[key]=(seen[key]||0)+1;
-      p.pseudo=p.pseudo.trim()+' ('+seen[key]+')';
-    }
-  }
-  return players;
-}
-
 // ── Host: broadcast roster ──
 function broadcastRoster(){
   if(!isHost)return;
   const players=[{id:peer.id,pseudo:myPseudo,isHost:true},...conns.map(p=>({id:p.id,pseudo:p.pseudo,isHost:false}))];
-  // Disambiguate duplicate pseudos
-  disambiguatePseudos(players);
-  // Update local pseudo if it was changed
+  // Disambiguate duplicate pseudos for display
+  const counts={};
+  for(const p of players){ const k=p.pseudo.trim().toLowerCase(); counts[k]=(counts[k]||0)+1; }
+  const seen={};
+  for(const p of players){
+    const k=p.pseudo.trim().toLowerCase();
+    if(counts[k]>1){ seen[k]=(seen[k]||0)+1; p.pseudo=p.pseudo.trim()+' ('+seen[k]+')'; }
+  }
+  // Update local pseudo
   const me=players.find(p=>p.isHost);
   if(me) myPseudo=me.pseudo;
-  // Update conns pseudos
-  for(const p of players){
-    if(p.isHost) continue;
-    const c=conns.find(c=>c.id===p.id);
-    if(c) c.pseudo=p.pseudo;
-  }
+  for(const p of players){ if(p.isHost) continue; const c=conns.find(c=>c.id===p.id); if(c) c.pseudo=p.pseudo; }
   sendData({type:'roster',players,mode:gameMode});
-  // Also send updated pseudos to each client so they update their own myPseudo
+  // Send updated pseudos so clients update their myPseudo
   for(const p of players){
     if(p.isHost) continue;
     const c=conns.find(c=>c.id===p.id);
@@ -1632,7 +1613,6 @@ function onData(data,fromConn){
     updateLobbyUI();
   }
   else if(data.type==='pseudoUpdate'){
-    // Host has renamed us to disambiguate duplicates
     if(peer && data.id===peer.id){
       myPseudo=data.pseudo;
     }
@@ -2744,15 +2724,15 @@ function refreshDireInputState(){
     g.disabled=true;
     if(actions) actions.style.display='none';
 
-    const myTurn=roundOpen && chronoOn && turn==='guesser';
-    u.disabled=!myTurn;
+    // Le guesser peut toujours taper dès que le chrono tourne,
+    // même si turn !== 'guesser' (la synchro réseau peut être en retard)
+    const canType=roundOpen && chronoOn;
+    u.disabled=!canType;
     if(!chronoOn){
       u.placeholder='En attente du 1er indice\u2026';
-    }else if(turn==='guesser'){
-      u.placeholder='Devinez le mot\u2026';
-      u.focus();
     }else{
-      u.placeholder='En attente de l\'indice\u2026';
+      u.placeholder='Devinez le mot\u2026';
+      if(turn==='guesser') u.focus();
     }
   }
 
@@ -3113,7 +3093,6 @@ function validateGiverClue(clue,secretWord){
 function validateGuesserAnswer(answer){
   const raw=answer.trim();
   if(!raw) return {ok:false,reason:'vide'};
-  // Le guesser peut taper n'importe quel mot sans restriction anti-triche
   return {ok:true};
 }
 function applyFault(reason,fromNetwork){
@@ -3245,7 +3224,8 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   if(!isLocalGuesser()||e.key!=='Enter') return;
   e.preventDefault();
   if(!mancheState.started || !mancheState.wordsPhase) return;
-  if(mancheState.turn!=='guesser') return;
+  // Ne PAS bloquer si turn!=='guesser' — la synchro réseau peut être en retard.
+  // On accepte toujours la réponse du guesser tant que le chrono tourne.
   const raw=document.getElementById('direGuesser').value.trim();
   if(!raw) return;
 
