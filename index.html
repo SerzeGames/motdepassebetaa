@@ -3684,52 +3684,63 @@ function initShoutbox(){
   });
 
   chatPeer.on('open',()=>{
-    // Try to join existing chat rooms
-    let joined=false;
-    for(let i=0;i<CHAT_ROOMS;i++){
-      const roomId=CHAT_PREFIX+'room-'+i;
-      let c;
-      try{ c=chatPeer.connect(roomId,{reliable:true}); }catch(e){ continue; }
-      c.on('open',()=>{
-        if(joined) { try{c.close()}catch(e){} return; }
-        joined=true; chatIsHost=false;
-        chatConns.push({conn:c,pseudo:'Hôte'});
-        c.on('data',d=>chatOnData(d,c));
-        c.on('close',()=>{
-          chatConns=chatConns.filter(p=>p.conn!==c);
-          chatUpdateOnline();
-        });
-        c.send({type:'chatJoin',pseudo:chatGetPseudo()});
-        chatUpdateOnline();
-      });
-      c.on('error',()=>{});
-      setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},2000);
-    }
-    // If no room found, become host
-    setTimeout(()=>{
-      if(!joined) chatBecomeHost();
-    },2500);
+    chatTryJoin(0);
   });
 }
 
-function chatBecomeHost(){
-  const roomIdx=Math.floor(Math.random()*CHAT_ROOMS);
+function chatTryJoin(startIdx){
+  if(!chatPeer||chatPeer.destroyed) return;
+  let joined=false;
+  let tried=0;
+
+  for(let i=0;i<CHAT_ROOMS;i++){
+    const idx=(startIdx+i)%CHAT_ROOMS;
+    const roomId=CHAT_PREFIX+'room-'+idx;
+    let c;
+    try{ c=chatPeer.connect(roomId,{reliable:true}); }catch(e){ tried++; continue; }
+
+    c.on('open',()=>{
+      if(joined){try{c.close()}catch(e){}return;}
+      joined=true; chatIsHost=false;
+      chatConns.push({conn:c,pseudo:'Hôte'});
+      c.on('data',d=>chatOnData(d,c));
+      c.on('close',()=>{
+        chatConns=chatConns.filter(p=>p.conn!==c);
+        chatUpdateOnline();
+        // Hôte perdu → devenir hôte ou reconnecter après un délai
+        setTimeout(()=>{
+          if(!chatIsHost && chatConns.length===0) chatBecomeHost(0);
+        },2000);
+      });
+      c.send({type:'chatJoin',pseudo:chatGetPseudo()});
+      chatUpdateOnline();
+    });
+
+    c.on('error',()=>{ tried++; });
+    setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},2000);
+  }
+
+  // Si aucune room trouvée → devenir hôte sur la room 0
+  setTimeout(()=>{
+    if(!joined) chatBecomeHost(0);
+  },2500);
+}
+
+function chatBecomeHost(roomIdx){
   const roomId=CHAT_PREFIX+'room-'+roomIdx;
   if(chatPeer) try{chatPeer.destroy()}catch(e){}
   chatPeer=new Peer(roomId);
+
   chatPeer.on('error',err=>{
     if(err.type==='unavailable-id'){
-      // Room taken, try another
-      setTimeout(()=>{
-        const altId=CHAT_PREFIX+'room-'+((roomIdx+1)%CHAT_ROOMS);
-        if(chatPeer) try{chatPeer.destroy()}catch(e){}
-        chatPeer=new Peer(altId);
-        chatPeer.on('open',()=>{ chatIsHost=true; chatUpdateOnline(); });
-        chatPeer.on('connection',chatHandleConnection);
-        chatPeer.on('error',()=>{});
-      },500);
+      // Room déjà prise → essayer de la rejoindre en tant que client
+      if(chatPeer) try{chatPeer.destroy()}catch(e){}
+      chatPeer=new Peer(CHAT_PREFIX+'u-'+Math.random().toString(36).substr(2,8));
+      chatPeer.on('error',err2=>{ if(err2.type!=='peer-unavailable') console.warn('Chat error:',err2); });
+      chatPeer.on('open',()=>{ chatTryJoin(roomIdx); });
     }
   });
+
   chatPeer.on('open',()=>{
     chatIsHost=true;
     chatUpdateOnline();
