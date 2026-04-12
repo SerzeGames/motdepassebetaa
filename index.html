@@ -1039,6 +1039,59 @@
     opacity: 0; pointer-events: none; transition: opacity 0.5s;
   }
   .seq-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  /* ===== RÉSULTAT MANCHE OVERLAY ===== */
+  .manche-result-overlay {
+    position: absolute; inset: 0; z-index: 45;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.75);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .manche-result-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  .manche-result-banner {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 40px 60px; border-radius: 20px;
+    animation: resultPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform: scale(0.5); opacity: 0;
+  }
+  .manche-result-overlay.visible .manche-result-banner { transform: scale(1); opacity: 1; }
+  @keyframes resultPop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  .manche-result-banner.win {
+    background: linear-gradient(180deg, rgba(0,60,20,0.85) 0%, rgba(0,30,10,0.92) 100%);
+    border: 2px solid rgba(0,255,80,0.4);
+    box-shadow: 0 0 60px rgba(0,255,80,0.2), 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .manche-result-banner.lose {
+    background: linear-gradient(180deg, rgba(60,0,0,0.85) 0%, rgba(30,0,0,0.92) 100%);
+    border: 2px solid rgba(255,50,50,0.4);
+    box-shadow: 0 0 60px rgba(255,50,50,0.2), 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .manche-result-icon {
+    font-size: 3.5rem; line-height: 1;
+    animation: resultIconBounce 0.8s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0; transform: scale(0);
+  }
+  @keyframes resultIconBounce { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+  .manche-result-text {
+    font-family: 'Russo One', sans-serif; font-size: 1.8rem;
+    letter-spacing: 5px; text-transform: uppercase;
+    animation: resultTextSlide 0.6s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0; transform: translateY(15px);
+  }
+  @keyframes resultTextSlide { 0% { transform: translateY(15px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+  .manche-result-banner.win .manche-result-text {
+    color: #00ff55; text-shadow: 0 0 20px rgba(0,255,80,0.6), 0 0 40px rgba(0,255,80,0.3);
+  }
+  .manche-result-banner.lose .manche-result-text {
+    color: #ff4444; text-shadow: 0 0 20px rgba(255,50,50,0.6), 0 0 40px rgba(255,50,50,0.3);
+  }
   .seq-title {
     font-family: 'Russo One', sans-serif; font-size: 2.05rem; color: var(--red-bright);
     text-shadow: 0 0 15px rgba(255,26,26,0.4); letter-spacing: 4px; margin-bottom: 10px;
@@ -1357,6 +1410,14 @@
   <div class="seq-overlay" id="seqOverlay">
     <div class="seq-title" id="seqTitle">SÉQUENCE 1</div>
     <div class="seq-detail" id="seqDetail"></div>
+  </div>
+
+  <!-- Résultat manche overlay -->
+  <div class="manche-result-overlay" id="mancheResultOverlay">
+    <div class="manche-result-banner" id="mancheResultBanner">
+      <div class="manche-result-icon" id="mancheResultIcon"></div>
+      <div class="manche-result-text" id="mancheResultText"></div>
+    </div>
   </div>
 </div>
 </div>
@@ -2943,6 +3004,25 @@ function onPassWord(fromNetwork){
   }
 }
 
+function showMancheResult(type){
+  const ov=document.getElementById('mancheResultOverlay');
+  const banner=document.getElementById('mancheResultBanner');
+  const icon=document.getElementById('mancheResultIcon');
+  const text=document.getElementById('mancheResultText');
+
+  banner.className='manche-result-banner '+(type==='win'?'win':'lose');
+  icon.textContent=type==='win'?'🏆':'💔';
+  text.textContent=type==='win'?'Manche victorieuse !':'Manche perdue !';
+
+  // Reset animations
+  banner.style.animation='none'; icon.style.animation='none'; text.style.animation='none';
+  void banner.offsetWidth;
+  banner.style.animation=''; icon.style.animation=''; text.style.animation='';
+
+  ov.classList.add('visible');
+  setTimeout(()=>{ ov.classList.remove('visible'); },2800);
+}
+
 function endSequence(){
   mancheState.started=false;
   mancheState.wordsPhase=false;
@@ -2951,22 +3031,21 @@ function endSequence(){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-  // Arrêter bedfinale si elle tourne encore
   if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
   mancheState.audioBed=null;
 
-  // Son de fin selon le résultat
+  // Son + overlay de fin selon le résultat
   const seq=mancheState.sequences[mancheState.currentSeq];
   if(seq){
     const skips=seq.skipsCount||0;
     if(skips>=3){
-      // 3 rouges = manche perdue (son déjà joué par duoSkipWord)
+      showMancheResult('lose');
     }else if(seq.lightsLit>=3){
-      // 3+ bonnes réponses = victoire
       playGameSound('son/victoire.wav',0.7);
+      showMancheResult('win');
     }else if(mancheState.timeLeft<=0){
-      // Temps écoulé sans assez de bonnes réponses
       playGameSound('son/perdu.wav',0.7);
+      showMancheResult('lose');
     }
   }
 
@@ -2976,9 +3055,9 @@ function endSequence(){
   const nextSeq=mancheState.currentSeq+1;
   const maxSeq=gameMode==='duo'?2:4;
   if(nextSeq>=maxSeq){
-    setTimeout(()=>{ showMancheResults(); },1500);
+    setTimeout(()=>{ showMancheResults(); },3200);
   }else{
-    setTimeout(()=>{ startSequence(nextSeq); },1500);
+    setTimeout(()=>{ startSequence(nextSeq); },3200);
   }
 }
 
@@ -3938,14 +4017,169 @@ function isSameFamily(clue,secretWord){
   return false;
 }
 
+// ── Set de mots acceptés comme indices (jeu + synonymes + traductions + mots courants) ──
+const _allowedClueWords=new Set();
+(function(){
+  for(const arr of [WORDS_EASY,WORDS_MEDIUM,WORDS_HARD])
+    for(const w of arr) _allowedClueWords.add(normLetters(w));
+  for(const group of SYNONYM_GROUPS)
+    for(const w of group) _allowedClueWords.add(normLetters(w));
+  for(const eng of Object.keys(ENGLISH_TRANSLATIONS)) _allowedClueWords.add(normLetters(eng));
+  // Mots français courants utilisables comme indices
+  const extra=(
+    'absurde adorable agreable amer amusant ancien atroce aveugle banal bizarre bon brave brillant '+
+    'brutal calme capable celebre charmant cher clair comique content correct cruel curieux '+
+    'dangereux delicat delicieux different difficile digne discret doux drole dur efficace elegant '+
+    'ennuyeux enorme epais etrange etroit exact excellent exceptionnel extraordinaire facile faible '+
+    'familier fantastique fatal favorable feroce fidele fier fin fixe flou formidable fragile frais '+
+    'franc frequent froid furieux genereux gentil glacial gourmand gracieux grave gros habile heureux '+
+    'horrible humble humide identique immense immobile important impossible incroyable independant '+
+    'infini injuste innocent inquiet intelligent interessant inutile invisible ironique jaloux joli '+
+    'joyeux juste laid large lent libre lisse lointain lourd lumineux magnifique maigre malade '+
+    'maladroit malin massif mauvais mechant mediocre mignon minuscule mobile moderne modeste '+
+    'monstrueux morne mortel mou moyen mysterieux naif naturel necessaire nerveux neuf noble normal '+
+    'nouveau nu nul obscur officiel oppose ordinaire original paisible pale parfait paresseux '+
+    'particulier passionnant patient pauvre penible personnel peureux physique pire plaisant plat '+
+    'poli populaire positif possible precieux premier present pret principal prive probable profond '+
+    'propre prudent public puissant pur quelconque quotidien raisonnable rapide rare ravi ravissant '+
+    'reel regulier remarquable responsable riche ridicule rigide rigolo robuste romantique rude sage '+
+    'sale satisfait sauvage savant secret serieux severe silencieux soigneux solide solitaire souple '+
+    'special splendide sportif strict stupide sublime subtil suffisant superieur supreme surprenant '+
+    'sympathique tendre terrible timide tiede tolerant total traditionnel tranquille transparent '+
+    'triste tropical typique unique universel urgent utile vague vaillant variable vaste veritable '+
+    'vide vieux vif vigoureux violent visible vivant voisin volontaire vulgaire '+
+    'abandonner accepter accompagner accorder acheter admettre admirer adopter adorer affirmer agir '+
+    'aider ajouter allumer amener analyser annoncer apercevoir apparaitre appeler apporter apprendre '+
+    'approcher approuver arranger arriver assister assurer attacher atteindre attendre attirer '+
+    'attraper augmenter avancer avouer baisser batir battre blesser bloquer bouger briller briser '+
+    'bruler calculer calmer causer cesser charger chasser choisir circuler coller combattre commander '+
+    'communiquer comparer completer composer comprendre compter concentrer conclure conduire confirmer '+
+    'connaitre conquerir consacrer conseiller conserver considerer constituer construire consulter '+
+    'contenir continuer contribuer controler convaincre correspondre coucher couler couper couvrir '+
+    'craindre creer critiquer croire cueillir decider decouvrir decrire defendre definir degager '+
+    'delivrer demander demeurer demolir depasser dependre deposer desirer dessiner detacher determiner '+
+    'detester detruire developper devenir deviner diriger disposer distinguer distribuer dominer '+
+    'embrasser emmener empecher employer emporter encourager engager enlever enseigner entrainer '+
+    'envisager envoyer eprouver esperer essayer etablir etendre eteindre etudier evaluer eviter '+
+    'exagerer examiner exclure executer exercer exiger exister expliquer exploiter explorer exprimer '+
+    'fabriquer faciliter fixer fonctionner fonder forcer former fournir franchir gagner garder gener '+
+    'glisser gouverner grandir guider habiller habiter hesiter identifier ignorer illustrer imaginer '+
+    'imposer imprimer indiquer informer inquieter inscrire insister installer interdire interesser '+
+    'interpreter intervenir introduire inventer inviter jeter juger justifier lancer liberer lier '+
+    'limiter livrer loger louer maintenir manquer marquer meler menacer meriter mesurer modifier '+
+    'multiplier negliger noter nourrir observer obtenir occuper offrir opposer organiser orner oublier '+
+    'participer parvenir penetrer percevoir perdre permettre peser placer plaindre plaire planter '+
+    'plonger posseder poursuivre pousser preciser preferer preparer presenter preserver presser '+
+    'pretendre prevenir prevoir prier priver procurer produire profiter projeter promettre prononcer '+
+    'proposer proteger prouver provoquer publier punir quitter raconter ramasser ramener ranger '+
+    'rappeler rassembler rassurer realiser recevoir rechercher reclamer recommander reconnaitre '+
+    'recueillir reculer rediger reduire reflechir refleter refuser regagner regler regretter rejeter '+
+    'rejoindre relever remarquer remercier remettre remplacer rencontrer rendre renoncer renouveler '+
+    'rentrer renverser reparer repeter repondre reposer representer reproduire resoudre respecter '+
+    'respirer ressembler ressentir retenir retirer retourner retrouver reunir reveler revenir rever '+
+    'rire risquer rompre rouler saisir satisfaire sauver secher selectionner sembler sentir separer '+
+    'serrer servir siffler signaler signifier situer soigner sonner souhaiter soumettre soupconner '+
+    'sourire soutenir suffire suggerer suivre supporter supposer surprendre surveiller survivre '+
+    'suspendre tenter terminer toucher trainer transformer traverser trembler tromper troubler tuer '+
+    'utiliser vaincre verifier verser visiter vivre voler voyager '+
+    'absolument actuellement ailleurs apparemment certainement completement constamment correctement '+
+    'davantage debout deliberement desormais directement doucement effectivement egalement enormement '+
+    'ensuite entierement environ essentiellement evidemment extremement facilement finalement fortement '+
+    'franchement frequemment generalement gentiment gratuitement habituellement heureusement '+
+    'immediatement intensement justement legerement lentement librement logiquement malheureusement '+
+    'naturellement necessairement normalement notamment nullement officiellement parfaitement '+
+    'particulierement personnellement poliment pratiquement precisement premierement principalement '+
+    'probablement profondement progressivement proprement prudemment rarement rapidement reellement '+
+    'regulierement relativement remarquablement serieusement simplement sincerement specialement '+
+    'strictement suffisamment totalement tranquillement uniquement veritablement vivement vraiment '+
+    'accessoire acier adolescent adversaire agent aliment ambiance analyse angle apparence application '+
+    'article aspect association atmosphere attention attitude avantage avis base bibliotheque bord '+
+    'bout branche cabinet cadre campagne capital caractere categorie centre chaine changement chapitre '+
+    'charge chef choix circulation client coin collection combat commerce communaute compagnie comparaison '+
+    'comportement concentration condition conference conflit consequence construction contact contexte '+
+    'contraire controle corps costume couche coup creation crise critique culture danger decision '+
+    'decouverte defaut definition degre demande depart deplacement description desir detail '+
+    'developpement difference direction discussion distance division document domaine dossier doute '+
+    'droite duree echec education effet effort element emotion emploi emplacement ennemi ensemble entree '+
+    'environnement episode equilibre equipement espace espoir esprit essai estime etape etranger '+
+    'evidence evolution exemple exercice existence experience expression face facon facteur faiblesse '+
+    'faveur fenetre fiction figure finance fonction fondement formation front frontiere garantie garde '+
+    'gauche generation gloire gouvernement gout grade grain grandeur groupe guide habitude heritage '+
+    'histoire honneur horizon identite ignorance importance indication individu influence information '+
+    'initiative instant instruction instrument intention interet interpretation introduction issue '+
+    'journal jugement justice laboratoire lancement langage largeur lecon liaison ligne limite liste '+
+    'litterature longueur machine maniere marche masse matiere medecine memoire menace mention mesure '+
+    'methode milieu ministere minute mission modele moment monde mouvement moyen musee nation nature '+
+    'necessite negociation norme notion objectif observation occupation offre opinion opposition option '+
+    'organisation orientation origine ouverture page paire papier parole participation parti passage '+
+    'patience patron pays pensee perception performance periode permission perspective phase phrase '+
+    'piece placement plan plaisir poche pointe politique population portion position possibilite poste '+
+    'pratique precision preference preparation presence pression preuve principe priorite procedure '+
+    'processus production profession profit programme projet promotion proportion proposition protection '+
+    'qualite quantite quartier quotidien rang reaction realite recherche recommandation record reduction '+
+    'reference reflexion reforme regard regime relation religion remarque rencontre renseignement '+
+    'reponse representation reputation reserve resistance resolution respect responsabilite ressource '+
+    'resultat retour revolution richesse risque role routine rupture satisfaction scene science section '+
+    'securite selection sens sensation sentiment serie service signe simplicite societe solution somme '+
+    'source souvenir spectacle strategie structure sujet superficie support surface surprise systeme '+
+    'tache talent technique tendance tension terme terrain territoire theme theorie titre total '+
+    'tradition trait traitement transport triomphe trouble unite univers usage utilisation valeur '+
+    'variete version victime violence vision visite volume volonte zone '+
+    'maquillage costume vetement jouet outil appareil instrument machine moteur volant roue '+
+    'bijouterie parfumerie boulot taf emploi poste metier profession carriere '+
+    'copain pote camarade collègue voisin habitant resident locataire proprietaire '+
+    'probleme souci ennui difficulte trace pepin galere embrouille situation '+
+    'superbe sublime magnifique splendide remarquable formidable extraordinaire fantastique '+
+    'maquillage rimmel fard cosmetique rouge teint fond poudre vernis '+
+    'croquer grignoter deguster savourer tremper secouer agiter melanger remuer '+
+    'grimper escalader descendre monter chuter tomber glisser rouler rebondir '+
+    'siffler murmurer chuchoter hurler crier appeler interpeller questionner '+
+    'peindre sculpter graver photographier filmer tourner realiser produire '+
+    'conduire piloter naviguer pagayer ramer pedaler accelerer freiner ralentir '+
+    'decorer amenager installer ranger nettoyer laver repasser bricoler '+
+    'jardiner planter arroser recolter semer cueillir tailler couper tondre '+
+    'tricoter coudre broder tisser enfiler deboutonner attacher nouer '+
+    'telephoner appeler contacter prevenir avertir informer signaler annoncer '+
+    'decoller atterrir amerrir survoler planer flotter couler sombrer '+
+    'emprunter preter rembourser economiser depenser investir gagner parier '+
+    'bizarre etrange curieux drole comique hilarant marrant amusant divertissant '+
+    'energique dynamique actif passif calme tranquille serein paisible detendu '+
+    'anxieux stresse inquiet preoccupe soucieux pensif reveur distrait concentre '+
+    'minuscule microscopique gigantesque colossal immense enorme monumental titanesque '+
+    'pratique commode fonctionnel utile indispensable essentiel crucial vital fondamental '+
+    'provisoire temporaire permanent definitif eternel infini illimite absolu total '+
+    'parallele perpendiculaire diagonal horizontal vertical oblique transversal '+
+    'rugueux lisse doux soyeux veloute satine brillant mat terne eclatant '+
+    'transparent opaque translucide fluorescent phosphorescent lumineux sombre obscur '+
+    'bruyant silencieux discret assourdissant tonitruant strident aigu grave sourd '+
+    'parfume odorant puant fetide nauseabond aromatique epicé sucre amer acide sale '+
+    'tiede chaud brulant bouillant glacial froid frais tempere doux clément '+
+    'mouille trempe humide sec aride desseche hydrate imbibe sature '+
+    'souple flexible rigide raide tendu elastique maleable cassant fragile solide '+
+    'neuf usager usage ancien moderne contemporain futuriste retro vintage classique '+
+    'creux profond superficiel plat bombé convexe concave arrondi pointu tranchant '+
+    'coupant affute emousse aiguise piquant mordant cinglant percutant '+
+    'premier dernier suivant precedent prochain final ultime initial intermediate'
+  ).split(/\s+/).map(w=>normLetters(w)).filter(w=>w.length>=2);
+  for(const w of extra) _allowedClueWords.add(w);
+})();
+
 function isCheatAttempt(input){
   const raw=input.trim();
   if(/\s/.test(raw)) return 'un seul mot autorisé';
   if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'lettres uniquement';
   const norm=normLetters(raw);
   if(norm.length<1) return false;
-  if(norm.length>15) return 'mot trop long';
-  return false;
+  if(norm.length>20) return 'mot trop long';
+
+  // Mot connu → autorisé
+  if(_allowedClueWords.has(norm)) return false;
+
+  // Mots courts (≤4 lettres) → laisser passer (trop de petits mots légitimes)
+  if(norm.length<=4) return false;
+
+  // Mot inconnu de 5+ lettres → probablement phrase collée ou mot inventé
+  return 'mot non reconnu';
 }
 function validateGiverClue(clue,secretWord){
   const raw=clue.trim();
