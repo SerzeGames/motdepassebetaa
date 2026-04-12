@@ -46,41 +46,20 @@
     -webkit-overflow-scrolling: none;
   }
 
-  /* Permettre le scroll sur l'accueil */
-  body.scrollable {
-    overflow-y: auto;
-    position: static;
-    align-items: flex-start;
-    justify-content: center;
-    height: auto;
-    min-height: 100dvh;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
-  }
-  body.scrollable html { overflow: auto; }
-
+  /* ===== ANIMATED BACKGROUND ===== */
   /* ===== GLOBAL VIDEO BACKGROUND ===== */
   .global-bg-video {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    z-index: -2;
-    pointer-events: none;
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; object-position: center;
+    z-index: -2; pointer-events: none;
   }
   .global-bg-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background:
       radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 70%),
       linear-gradient(180deg, rgba(10,0,0,0.4) 0%, rgba(0,0,0,0.55) 100%);
   }
 
-  /* ===== ANIMATED BACKGROUND ===== */
   .bg-layer { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
   .bg-layer::before {
     content: ''; position: absolute; inset: -50%;
@@ -106,10 +85,6 @@
   /* ===== SCREENS ===== */
   .screen { position: relative; z-index: 10; width: 900px; max-width: 95vw; display: none; }
   .screen.active { display: block; }
-
-  #screenAccueil.active {
-    padding: 20px 0 40px;
-  }
 
   /* Écran de jeu : occupe presque tout le viewport à 100 % zoom (marges fines + safe area) */
   #screenManche {
@@ -146,19 +121,18 @@
 
   /* ===== MAIN CONTAINER ===== */
   .game-container {
-    background: linear-gradient(180deg, rgba(20,5,5,0.82) 0%, rgba(8,2,2,0.88) 40%, rgba(20,5,5,0.82) 100%);
-    border: 2px solid rgba(196,30,30,0.6); border-radius: 20px;
-    box-shadow: 0 0 50px rgba(196,30,30,0.25), 0 0 100px rgba(139,0,0,0.15), 0 25px 60px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #1a0808 0%, #0d0505 40%, #1a0808 100%);
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3), 0 0 80px rgba(139,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.5);
     padding: 0; overflow: hidden;
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     animation: containerAppear 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.9);
   }
   @keyframes containerAppear { to { opacity: 1; transform: scale(1); } }
 
-  .top-bar { height: 50px; background: linear-gradient(180deg, rgba(50,18,18,0.9) 0%, rgba(20,6,6,0.95) 100%); border-bottom: 1px solid rgba(196,30,30,0.5); display: flex; align-items: center; justify-content: center; position: relative; backdrop-filter: blur(10px); }
-  .top-bar::before, .top-bar::after { content: ''; position: absolute; top: 10px; width: 24px; height: 24px; background: linear-gradient(135deg, rgba(120,120,120,0.3), rgba(60,60,60,0.3)); border-radius: 4px; border: 1px solid rgba(120,120,120,0.2); }
-  .top-bar::before { left: 14px; }
-  .top-bar::after { right: 14px; }
+  .top-bar { height: 50px; background: linear-gradient(180deg, #3a1515 0%, #1a0808 100%); border-bottom: 2px solid var(--red-main); display: flex; align-items: center; justify-content: center; position: relative; }
+  .top-bar::before, .top-bar::after { content: ''; position: absolute; top: 5px; width: 30px; height: 30px; background: linear-gradient(135deg, #666, #333); border-radius: 4px; border: 1px solid #555; }
+  .top-bar::before { left: 12px; }
+  .top-bar::after { right: 12px; }
   .top-bar-text { font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 1.1rem; color: var(--silver-light); letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,100,100,0.5); animation: textGlow 3s ease-in-out infinite alternate; }
   @keyframes textGlow { 0% { text-shadow: 0 0 10px rgba(255,100,100,0.3); } 100% { text-shadow: 0 0 20px rgba(255,100,100,0.6), 0 0 40px rgba(255,50,50,0.2); } }
 
@@ -166,135 +140,25 @@
 
   .logo-container { position: relative; width: 100%; max-width: 550px; animation: logoSlide 1s 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(-30px); }
   @keyframes logoSlide { to { opacity: 1; transform: translateY(0); } }
-  .logo-frame { background: linear-gradient(180deg, rgba(10,2,2,0.85) 0%, rgba(20,5,5,0.9) 50%, rgba(10,2,2,0.85) 100%); border: 2px solid rgba(196,30,30,0.5); border-radius: 16px; padding: 30px 45px; text-align: center; position: relative; box-shadow: inset 0 0 40px rgba(139,0,0,0.25), 0 0 30px rgba(196,30,30,0.15), 0 15px 40px rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-  .logo-frame::before { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(196,30,30,0.2); border-radius: 12px; pointer-events: none; }
-  .logo-title { font-family: 'Russo One', sans-serif; font-size: 3.5rem; color: var(--red-bright); text-shadow: 0 0 15px rgba(255,26,26,0.9), 0 0 40px rgba(255,26,26,0.5), 0 0 80px rgba(255,26,26,0.25), 3px 3px 0 rgba(60,0,0,0.8); letter-spacing: 8px; line-height: 1.1; animation: titlePulse 4s ease-in-out infinite alternate; }
+  .logo-frame { background: linear-gradient(180deg, #0a0202 0%, #150505 50%, #0a0202 100%); border: 3px solid var(--red-main); border-radius: 12px; padding: 25px 40px; text-align: center; position: relative; box-shadow: inset 0 0 30px rgba(139,0,0,0.3), 0 0 20px rgba(196,30,30,0.2); }
+  .logo-frame::before { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(196,30,30,0.3); border-radius: 8px; pointer-events: none; }
+  .logo-title { font-family: 'Russo One', sans-serif; font-size: 3.5rem; color: var(--red-bright); text-shadow: 0 0 10px rgba(255,26,26,0.8), 0 0 30px rgba(255,26,26,0.4), 0 0 60px rgba(255,26,26,0.2), 2px 2px 0 #400; letter-spacing: 6px; line-height: 1.1; animation: titlePulse 4s ease-in-out infinite alternate; }
   @keyframes titlePulse { 0% { filter: brightness(1); } 50% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
-  .logo-subtitle { font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: var(--gold); letter-spacing: 6px; margin-top: 8px; text-transform: uppercase; text-shadow: 0 0 12px rgba(212,168,67,0.4); }
+  .logo-subtitle { font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: var(--gold); letter-spacing: 4px; margin-top: 5px; text-transform: uppercase; }
 
   .prize-banner { position: relative; width: 100%; max-width: 480px; text-align: center; animation: prizeAppear 0.8s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.8); }
   @keyframes prizeAppear { to { opacity: 1; transform: scale(1); } }
-  .prize-ribbon { background: linear-gradient(90deg, transparent 0%, rgba(139,0,0,0.85) 15%, rgba(196,30,30,0.9) 50%, rgba(139,0,0,0.85) 85%, transparent 100%); padding: 12px 40px; clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); backdrop-filter: blur(6px); }
-  .prize-text { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: 700; color: white; text-shadow: 0 0 15px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.5); letter-spacing: 3px; }
+  .prize-ribbon { background: linear-gradient(90deg, transparent 0%, var(--red-deep) 15%, var(--red-main) 50%, var(--red-deep) 85%, transparent 100%); padding: 10px 40px; clip-path: polygon(5% 0%, 95% 0%, 100% 50%, 95% 100%, 5% 100%, 0% 50%); }
+  .prize-text { font-family: 'Orbitron', sans-serif; font-size: 1.3rem; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5); letter-spacing: 3px; }
 
-  .word-count {
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
-    animation: badgePop 0.7s 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    opacity: 0; transform: scale(0.8);
-  }
+  .word-count { position: absolute; top: 20px; right: 20px; background: linear-gradient(135deg, #222, #111); border: 2px solid #555; border-radius: 8px; padding: 8px 14px; text-align: center; animation: badgePop 0.6s 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; opacity: 0; transform: scale(0.5); z-index: 20; }
   @keyframes badgePop { to { opacity: 1; transform: scale(1); } }
-  .wc-main {
-    display: flex; align-items: baseline; gap: 6px;
-    background: linear-gradient(135deg, rgba(212,168,67,0.12) 0%, rgba(255,215,0,0.06) 50%, rgba(212,168,67,0.12) 100%);
-    border: 1px solid rgba(212,168,67,0.3); border-radius: 30px;
-    padding: 8px 28px;
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  }
-  .wc-plus { font-family: 'Orbitron', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--gold); }
-  .wc-de { font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; font-weight: 600; color: rgba(212,168,67,0.7); letter-spacing: 2px; text-transform: uppercase; }
-  .wc-number { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; color: var(--gold); text-shadow: 0 0 15px rgba(212,168,67,0.5); line-height: 1; }
-  .wc-mots { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; font-weight: 700; color: rgba(212,168,67,0.8); letter-spacing: 3px; text-transform: uppercase; }
-  .wc-detail {
-    display: flex; align-items: center; gap: 6px;
-    font-family: 'Rajdhani', sans-serif; font-size: 0.7rem; font-weight: 500;
-    color: rgba(255,255,255,0.4); letter-spacing: 1px;
-  }
-  .wc-dot {
-    display: inline-block; width: 6px; height: 6px;
-    background: var(--gold); border-radius: 50%;
-    box-shadow: 0 0 8px rgba(212,168,67,0.6);
-    animation: dotBlink 2.5s ease-in-out infinite;
-  }
-  @keyframes dotBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-  /* ===== SHOUTBOX ===== */
-  .shoutbox {
-    width: 100%; max-width: 600px;
-    background: linear-gradient(180deg, rgba(15,5,5,0.75) 0%, rgba(8,2,2,0.85) 100%);
-    border: 1px solid rgba(196,30,30,0.25); border-radius: 16px;
-    overflow: hidden;
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-    animation: fadeIn 0.8s 1.4s forwards; opacity: 0;
-  }
-  .shoutbox-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 18px;
-    background: linear-gradient(180deg, rgba(40,12,12,0.6) 0%, rgba(20,6,6,0.4) 100%);
-    border-bottom: 1px solid rgba(196,30,30,0.15);
-  }
-  .shoutbox-title {
-    font-family: 'Orbitron', sans-serif; font-size: 0.8rem; font-weight: 700;
-    color: rgba(255,255,255,0.6); letter-spacing: 3px; text-transform: uppercase;
-  }
-  .shoutbox-online {
-    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 600;
-    color: rgba(0,255,68,0.7); letter-spacing: 1px;
-  }
-  .shoutbox-messages {
-    height: 200px; overflow-y: auto; padding: 14px 18px;
-    display: flex; flex-direction: column; gap: 10px;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-  }
-  .shoutbox-messages::-webkit-scrollbar { width: 4px; }
-  .shoutbox-messages::-webkit-scrollbar-track { background: transparent; }
-  .shoutbox-messages::-webkit-scrollbar-thumb { background: rgba(196,30,30,0.3); border-radius: 2px; }
-
-  .shoutbox-msg {
-    display: flex; align-items: flex-start; gap: 8px;
-    animation: msgSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  @keyframes msgSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-  .shoutbox-msg-avatar {
-    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-    background: rgba(196,30,30,0.2); border: 1.5px solid rgba(196,30,30,0.35);
-    display: flex; align-items: center; justify-content: center; overflow: hidden;
-    margin-top: 2px;
-  }
-  .shoutbox-msg-avatar img { width: 28px; height: 28px; object-fit: contain; opacity: 0.85; }
-
-  .shoutbox-msg-body { flex: 1; min-width: 0; }
-  .shoutbox-msg-pseudo {
-    font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700;
-    color: var(--gold); letter-spacing: 1px; margin-right: 6px;
-  }
-  .shoutbox-msg-text {
-    font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 500;
-    color: rgba(255,255,255,0.88); line-height: 1.4; word-break: break-word;
-  }
-  .shoutbox-msg-time {
-    font-family: 'Rajdhani', sans-serif; font-size: 0.8rem;
-    color: rgba(255,255,255,0.25); margin-left: 8px; flex-shrink: 0; align-self: flex-end;
-  }
-
-  .shoutbox-system {
-    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 500;
-    color: rgba(255,255,255,0.3); text-align: center; padding: 6px 0;
-    font-style: italic; letter-spacing: 0.5px;
-  }
-
-  .shoutbox-input-row {
-    display: flex; gap: 0;
-    border-top: 1px solid rgba(196,30,30,0.15);
-  }
-  .shoutbox-input {
-    flex: 1; padding: 14px 18px;
-    background: rgba(255,255,255,0.03); border: none; outline: none;
-    color: rgba(255,255,255,0.85); font-family: 'Rajdhani', sans-serif; font-size: 1.15rem;
-    font-weight: 500; letter-spacing: 0.5px;
-  }
-  .shoutbox-input::placeholder { color: rgba(255,255,255,0.15); }
-  .shoutbox-input:focus { background: rgba(255,255,255,0.05); }
-  .shoutbox-send {
-    padding: 10px 16px; background: rgba(196,30,30,0.3);
-    border: none; border-left: 1px solid rgba(196,30,30,0.15);
-    color: var(--red-bright); font-size: 1.1rem; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .shoutbox-send:hover { background: rgba(196,30,30,0.5); color: white; }
-  .shoutbox-send:active { transform: scale(0.95); }
+  .word-count .number { font-family: 'Orbitron', sans-serif; font-size: 1.6rem; font-weight: 900; color: white; line-height: 1; }
+  .word-count .plus { color: var(--red-bright); font-size: 0.9rem; vertical-align: super; }
+  .word-count .label { font-family: 'Rajdhani', sans-serif; font-size: 0.65rem; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
+  .word-count .dot { display: inline-block; width: 8px; height: 8px; background: #00ff44; border-radius: 50%; margin-right: 4px; box-shadow: 0 0 6px #00ff44; animation: dotBlink 2s ease-in-out infinite; }
+  .word-count .setting { font-size: 0.55rem; color: #888; margin-top: 4px; }
+  @keyframes dotBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
   .team-row { display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 700px; animation: fadeIn 0.8s 1s forwards; opacity: 0; }
   @keyframes fadeIn { to { opacity: 1; } }
@@ -304,12 +168,11 @@
 
   .search-btn {
     width: 100%; max-width: 600px; padding: 20px 40px;
-    background: linear-gradient(180deg, rgba(40,14,14,0.9) 0%, rgba(22,6,6,0.95) 50%, rgba(40,14,14,0.9) 100%);
-    border: 2px solid rgba(196,30,30,0.6); border-radius: 14px; color: white;
+    background: linear-gradient(180deg, #2a1212 0%, #1a0808 50%, #2a1212 100%);
+    border: 2px solid var(--red-main); border-radius: 12px; color: white;
     font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; letter-spacing: 5px;
     text-transform: uppercase; cursor: pointer; position: relative; overflow: hidden;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 20px rgba(196,30,30,0.15), 0 8px 25px rgba(0,0,0,0.3);
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 0 15px rgba(196,30,30,0.2);
   }
   .search-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,50,50,0.1), transparent); transform: translateX(-100%); transition: transform 0.6s; }
   .search-btn:hover { transform: scale(1.05); border-color: var(--red-bright); box-shadow: 0 0 30px rgba(255,26,26,0.4), 0 0 60px rgba(255,26,26,0.2), inset 0 0 20px rgba(255,26,26,0.1); text-shadow: 0 0 15px rgba(255,255,255,0.5); }
@@ -318,11 +181,10 @@
   .search-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
   .secondary-btn {
-    padding: 12px 35px; background: linear-gradient(180deg, rgba(25,8,8,0.8) 0%, rgba(12,4,4,0.85) 100%);
-    border: 1px solid rgba(196,30,30,0.3); border-radius: 10px; color: var(--silver);
+    padding: 12px 35px; background: linear-gradient(180deg, #1e0a0a 0%, #120505 100%);
+    border: 2px solid var(--red-deep); border-radius: 8px; color: var(--silver);
     font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 3px;
     text-transform: uppercase; cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   }
   .secondary-btn::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 2px; background: var(--red-bright); transition: all 0.3s; transform: translateX(-50%); box-shadow: 0 0 8px var(--red-bright); }
   .secondary-btn:hover { transform: scale(1.08); border-color: var(--red-main); color: white; box-shadow: 0 0 20px rgba(196,30,30,0.3); }
@@ -334,21 +196,19 @@
 
   .pseudo-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 5px; animation: fadeIn 0.6s 0.5s forwards; opacity: 0; }
   .pseudo-input {
-    padding: 12px 20px; border: 2px solid rgba(120,120,120,0.3); border-radius: 12px; font-size: 1.05rem;
-    text-align: center; background: rgba(255,255,255,0.05); color: #fff; outline: none; width: 260px;
-    font-family: 'Rajdhani', sans-serif; letter-spacing: 2px; transition: all 0.4s;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 10px 18px; border: 2px solid #555; border-radius: 10px; font-size: 1rem;
+    text-align: center; background: rgba(255,255,255,0.06); color: #fff; outline: none; width: 240px;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; transition: border-color 0.3s;
   }
-  .pseudo-input::placeholder { color: rgba(255,255,255,0.2); }
-  .pseudo-input:focus { border-color: var(--red-main); box-shadow: 0 0 20px rgba(196,30,30,0.25), inset 0 0 10px rgba(196,30,30,0.05); background: rgba(255,255,255,0.08); }
+  .pseudo-input::placeholder { color: rgba(255,255,255,0.25); }
+  .pseudo-input:focus { border-color: var(--red-main); box-shadow: 0 0 12px rgba(196,30,30,0.2); }
 
   /* ===== LOBBY ===== */
   .lobby-container {
-    background: linear-gradient(180deg, rgba(20,5,5,0.82) 0%, rgba(8,2,2,0.88) 40%, rgba(20,5,5,0.82) 100%);
-    border: 2px solid rgba(196,30,30,0.5); border-radius: 20px;
-    box-shadow: 0 0 50px rgba(196,30,30,0.2), 0 25px 60px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #1a0808 0%, #0d0505 40%, #1a0808 100%);
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3), 0 0 80px rgba(139,0,0,0.2);
     padding: 0; overflow: hidden;
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.9);
   }
   .lobby-content { padding: 30px 40px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
@@ -358,13 +218,12 @@
   .player-list { width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
   .player-slot {
     display: flex; align-items: center; gap: 14px;
-    background: linear-gradient(135deg, rgba(30,10,10,0.6), rgba(15,5,5,0.7));
-    border: 1px solid rgba(80,80,80,0.2); border-radius: 14px; padding: 12px 18px;
+    background: linear-gradient(135deg, rgba(30,10,10,0.8), rgba(15,5,5,0.9));
+    border: 2px solid #333; border-radius: 12px; padding: 12px 18px;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); position: relative;
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
   }
-  .player-slot.filled { border-color: rgba(196,30,30,0.4); animation: slotAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-  .player-slot.filled.host-slot { border-color: rgba(212,168,67,0.5); }
+  .player-slot.filled { border-color: var(--red-deep); animation: slotAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+  .player-slot.filled.host-slot { border-color: var(--gold); }
   .player-slot.empty { border-style: dashed; opacity: 0.4; }
   @keyframes slotAppear { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
@@ -392,14 +251,16 @@
 
   .sound-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; width: 50px; height: 50px; border-radius: 50%; background: rgba(30,10,10,0.9); border: 2px solid var(--red-deep); color: var(--silver); font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; backdrop-filter: blur(10px); }
   .sound-toggle:hover { transform: scale(1.1); border-color: var(--red-main); box-shadow: 0 0 15px rgba(196,30,30,0.3); }
-  /* Masquer les décos pendant la manche */
-  #screenManche.active ~ .sound-toggle,
+  .sound-toggle.muted { opacity: 0.5; }
+  /* Masquer le bouton son pendant la manche */
+  #screenManche.active ~ .sound-toggle { display: none; }
   body.in-manche .sound-toggle { display: none; }
   body.in-manche .bg-layer,
   body.in-manche .dot-matrix,
   body.in-manche .circle-deco,
   body.in-manche .particles,
-  body.in-manche .global-bg-overlay { display: none; }
+  body.in-manche .global-bg-overlay,
+  body.in-manche .global-bg-video { display: none; }
 
   .particles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
   .particle { position: absolute; width: 3px; height: 3px; background: var(--red-bright); border-radius: 50%; opacity: 0; animation: particleFloat linear infinite; }
@@ -407,7 +268,7 @@
 
   .modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
   .modal-overlay.active { display: flex; }
-  .modal { background: linear-gradient(180deg, rgba(20,5,5,0.95), rgba(8,2,2,0.97)); border: 2px solid rgba(196,30,30,0.4); border-radius: 20px; padding: 40px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; color: var(--silver-light); position: relative; box-shadow: 0 0 60px rgba(196,30,30,0.2), 0 30px 60px rgba(0,0,0,0.6); animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .modal { background: linear-gradient(180deg, #1a0808, #0d0505); border: 2px solid var(--red-main); border-radius: 16px; padding: 40px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; color: var(--silver-light); position: relative; box-shadow: 0 0 60px rgba(196,30,30,0.3); animation: modalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
   @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .modal h2 { font-family: 'Russo One', sans-serif; font-size: 1.6rem; color: var(--red-bright); text-shadow: 0 0 15px rgba(255,26,26,0.4); margin-bottom: 20px; text-align: center; letter-spacing: 3px; }
   .modal p, .modal li { font-size: 0.95rem; line-height: 1.7; color: #ccc; margin-bottom: 10px; }
@@ -418,11 +279,10 @@
 
   /* ===== SCREEN: INTERDITS ===== */
   .interdits-container {
-    background: linear-gradient(180deg, rgba(20,5,5,0.82) 0%, rgba(8,2,2,0.88) 30%, rgba(20,5,5,0.82) 100%);
-    border: 2px solid rgba(196,30,30,0.5); border-radius: 20px;
-    box-shadow: 0 0 50px rgba(196,30,30,0.2), 0 25px 60px rgba(0,0,0,0.5);
+    background: linear-gradient(180deg, #1a0808 0%, #0d0505 30%, #1a0808 100%);
+    border: 3px solid var(--red-main); border-radius: 16px;
+    box-shadow: 0 0 40px rgba(196,30,30,0.3), 0 0 80px rgba(139,0,0,0.2);
     padding: 0; overflow: hidden;
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: scale(0.9);
     position: relative;
   }
@@ -1199,6 +1059,59 @@
     opacity: 0; pointer-events: none; transition: opacity 0.5s;
   }
   .seq-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  /* ===== RÉSULTAT MANCHE OVERLAY ===== */
+  .manche-result-overlay {
+    position: absolute; inset: 0; z-index: 45;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.75);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.5s ease;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .manche-result-overlay.visible { opacity: 1; pointer-events: auto; }
+
+  .manche-result-banner {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 40px 60px; border-radius: 20px;
+    animation: resultPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    transform: scale(0.5); opacity: 0;
+  }
+  .manche-result-overlay.visible .manche-result-banner { transform: scale(1); opacity: 1; }
+  @keyframes resultPop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  .manche-result-banner.win {
+    background: linear-gradient(180deg, rgba(0,60,20,0.85) 0%, rgba(0,30,10,0.92) 100%);
+    border: 2px solid rgba(0,255,80,0.4);
+    box-shadow: 0 0 60px rgba(0,255,80,0.2), 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .manche-result-banner.lose {
+    background: linear-gradient(180deg, rgba(60,0,0,0.85) 0%, rgba(30,0,0,0.92) 100%);
+    border: 2px solid rgba(255,50,50,0.4);
+    box-shadow: 0 0 60px rgba(255,50,50,0.2), 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .manche-result-icon {
+    font-size: 3.5rem; line-height: 1;
+    animation: resultIconBounce 0.8s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0; transform: scale(0);
+  }
+  @keyframes resultIconBounce { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+  .manche-result-text {
+    font-family: 'Russo One', sans-serif; font-size: 1.8rem;
+    letter-spacing: 5px; text-transform: uppercase;
+    animation: resultTextSlide 0.6s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0; transform: translateY(15px);
+  }
+  @keyframes resultTextSlide { 0% { transform: translateY(15px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+  .manche-result-banner.win .manche-result-text {
+    color: #00ff55; text-shadow: 0 0 20px rgba(0,255,80,0.6), 0 0 40px rgba(0,255,80,0.3);
+  }
+  .manche-result-banner.lose .manche-result-text {
+    color: #ff4444; text-shadow: 0 0 20px rgba(255,50,50,0.6), 0 0 40px rgba(255,50,50,0.3);
+  }
   .seq-title {
     font-family: 'Russo One', sans-serif; font-size: 2.05rem; color: var(--red-bright);
     text-shadow: 0 0 15px rgba(255,26,26,0.4); letter-spacing: 4px; margin-bottom: 10px;
@@ -1214,74 +1127,6 @@
   }
   .role-tag.giver { background: rgba(212,168,67,0.2); color: var(--gold); border: 1px solid rgba(212,168,67,0.3); }
   .role-tag.guesser { background: rgba(192,192,192,0.15); color: var(--silver); border: 1px solid rgba(192,192,192,0.2); }
-
-  /* ===== RÉSULTAT MANCHE OVERLAY ===== */
-  .manche-result-overlay {
-    position: absolute; inset: 0; z-index: 45;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(0,0,0,0.75);
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.5s ease;
-    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  }
-  .manche-result-overlay.visible { opacity: 1; pointer-events: auto; }
-
-  .manche-result-banner {
-    display: flex; flex-direction: column; align-items: center; gap: 12px;
-    padding: 40px 60px;
-    border-radius: 20px;
-    animation: resultPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    transform: scale(0.5); opacity: 0;
-  }
-  .manche-result-overlay.visible .manche-result-banner {
-    transform: scale(1); opacity: 1;
-  }
-  @keyframes resultPop {
-    0% { transform: scale(0.5); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .manche-result-banner.win {
-    background: linear-gradient(180deg, rgba(0,60,20,0.85) 0%, rgba(0,30,10,0.92) 100%);
-    border: 2px solid rgba(0,255,80,0.4);
-    box-shadow: 0 0 60px rgba(0,255,80,0.2), 0 0 120px rgba(0,200,60,0.1), 0 20px 60px rgba(0,0,0,0.5);
-  }
-  .manche-result-banner.lose {
-    background: linear-gradient(180deg, rgba(60,0,0,0.85) 0%, rgba(30,0,0,0.92) 100%);
-    border: 2px solid rgba(255,50,50,0.4);
-    box-shadow: 0 0 60px rgba(255,50,50,0.2), 0 0 120px rgba(200,30,30,0.1), 0 20px 60px rgba(0,0,0,0.5);
-  }
-
-  .manche-result-icon {
-    font-size: 3.5rem; line-height: 1;
-    animation: resultIconBounce 0.8s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-    opacity: 0; transform: scale(0);
-  }
-  @keyframes resultIconBounce {
-    0% { transform: scale(0); opacity: 0; }
-    60% { transform: scale(1.3); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .manche-result-text {
-    font-family: 'Russo One', sans-serif; font-size: 1.8rem;
-    letter-spacing: 5px; text-transform: uppercase;
-    animation: resultTextSlide 0.6s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    opacity: 0; transform: translateY(15px);
-  }
-  @keyframes resultTextSlide {
-    0% { transform: translateY(15px); opacity: 0; }
-    100% { transform: translateY(0); opacity: 1; }
-  }
-
-  .manche-result-banner.win .manche-result-text {
-    color: #00ff55;
-    text-shadow: 0 0 20px rgba(0,255,80,0.6), 0 0 40px rgba(0,255,80,0.3);
-  }
-  .manche-result-banner.lose .manche-result-text {
-    color: #ff4444;
-    text-shadow: 0 0 20px rgba(255,50,50,0.6), 0 0 40px rgba(255,50,50,0.3);
-  }
 
   @media (max-width: 768px) {
     .content { padding: 25px 20px; gap: 20px; }
@@ -1350,71 +1195,24 @@
   }
   .mode-pick .search-btn.mode-friend:hover { border-color: #66cc88; box-shadow: 0 0 28px rgba(80,200,120,0.35); }
 
-  /* ===== FRIEND MODAL ===== */
   .friend-modal { max-width: 480px; }
-  .friend-tabs {
-    display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .friend-tab {
-    flex: 1; padding: 12px; background: rgba(255,255,255,0.03);
-    border: none; color: #777; font-family: 'Rajdhani', sans-serif; font-size: 1rem;
-    font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
-    transition: all 0.3s;
-  }
+  .friend-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+  .friend-tab { flex: 1; padding: 12px; background: rgba(255,255,255,0.03); border: none; color: #777; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
   .friend-tab.active { background: rgba(196,30,30,0.25); color: white; }
   .friend-tab:hover:not(.active) { background: rgba(255,255,255,0.06); color: #aaa; }
-
-  .friend-mode-select {
-    display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
-  }
-  .friend-mode-btn {
-    padding: 10px 24px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.04); color: #888; font-family: 'Rajdhani', sans-serif;
-    font-size: 0.95rem; font-weight: 600; letter-spacing: 1px; cursor: pointer; transition: all 0.3s;
-  }
+  .friend-mode-select { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .friend-mode-btn { padding: 10px 24px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #888; font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
   .friend-mode-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(212,168,67,0.1); }
-
-  .friend-code-display {
-    display: flex; flex-direction: column; align-items: center; gap: 8px;
-    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px; padding: 20px; margin-bottom: 20px;
-  }
-  .friend-code-label {
-    font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; font-weight: 600;
-    color: #666; letter-spacing: 3px; text-transform: uppercase;
-  }
-  .friend-code-value {
-    font-family: 'Orbitron', sans-serif; font-size: 2.8rem; font-weight: 900;
-    color: var(--gold); letter-spacing: 12px; text-shadow: 0 0 20px rgba(212,168,67,0.4);
-    user-select: all; -webkit-user-select: all;
-  }
-  .friend-code-copy {
-    padding: 6px 18px; border-radius: 6px; border: 1px solid rgba(212,168,67,0.3);
-    background: rgba(212,168,67,0.1); color: var(--gold); font-family: 'Rajdhani', sans-serif;
-    font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: all 0.3s;
-  }
+  .friend-code-display { display: flex; flex-direction: column; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 20px; margin-bottom: 20px; }
+  .friend-code-label { font-family: 'Rajdhani', sans-serif; font-size: 0.75rem; font-weight: 600; color: #666; letter-spacing: 3px; text-transform: uppercase; }
+  .friend-code-value { font-family: 'Orbitron', sans-serif; font-size: 2.8rem; font-weight: 900; color: var(--gold); letter-spacing: 12px; text-shadow: 0 0 20px rgba(212,168,67,0.4); user-select: all; }
+  .friend-code-copy { padding: 6px 18px; border-radius: 6px; border: 1px solid rgba(212,168,67,0.3); background: rgba(212,168,67,0.1); color: var(--gold); font-family: 'Rajdhani', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; }
   .friend-code-copy:hover { background: rgba(212,168,67,0.25); }
-
-  .friend-create-btn { margin-top: 5px; }
-
-  .friend-join-row {
-    display: flex; justify-content: center; margin-bottom: 20px;
-  }
-  .friend-code-input {
-    width: 200px; padding: 16px 20px; border: 2px solid rgba(212,168,67,0.3); border-radius: 14px;
-    background: rgba(0,0,0,0.3); color: var(--gold); font-family: 'Orbitron', sans-serif;
-    font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 10px;
-    text-transform: uppercase; outline: none; transition: all 0.3s;
-  }
+  .friend-join-row { display: flex; justify-content: center; margin-bottom: 20px; }
+  .friend-code-input { width: 200px; padding: 16px 20px; border: 2px solid rgba(212,168,67,0.3); border-radius: 14px; background: rgba(0,0,0,0.3); color: var(--gold); font-family: 'Orbitron', sans-serif; font-size: 2rem; font-weight: 900; text-align: center; letter-spacing: 10px; text-transform: uppercase; outline: none; }
   .friend-code-input::placeholder { color: rgba(212,168,67,0.2); font-size: 1rem; letter-spacing: 4px; }
   .friend-code-input:focus { border-color: var(--gold); box-shadow: 0 0 20px rgba(212,168,67,0.2); }
-
-  .friend-status {
-    font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 600;
-    color: #888; text-align: center; margin-top: 10px; min-height: 24px; letter-spacing: 1px;
-  }
-
+  .friend-status { font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; font-weight: 600; color: #888; text-align: center; margin-top: 10px; min-height: 24px; }
   .results-duo-wrap { max-width: 640px; margin: 0 auto; }
   .results-duo-title { font-family: 'Russo One', sans-serif; font-size: 1.6rem; color: var(--red-bright); text-align: center; margin-bottom: 8px; letter-spacing: 3px; }
   .results-duo-sub { text-align: center; color: #888; font-size: 0.95rem; margin-bottom: 22px; }
@@ -1442,6 +1240,12 @@
 <div class="screen active" id="screenAccueil">
 <div class="game-container">
   <div class="top-bar"><span class="top-bar-text" id="accueilTopText">Choisissez un mode de jeu</span></div>
+  <div class="word-count">
+    <div><span class="plus">+</span> <span class="label">DE</span></div>
+    <div class="number">2.500</div>
+    <div class="label">MOTS</div>
+    <div class="setting"><span class="dot"></span> 1er mot visible avant chrono</div>
+  </div>
   <div class="content">
     <div class="logo-container">
       <div class="logo-frame">
@@ -1451,14 +1255,6 @@
     </div>
     <div class="prize-banner">
       <div class="prize-ribbon"><span class="prize-text">50 000 &amp; 100 000 EUROS</span></div>
-    </div>
-    <div class="word-count">
-      <div class="wc-main">
-        <span class="wc-plus">+</span><span class="wc-de">DE</span>
-        <span class="wc-number">2.500</span>
-        <span class="wc-mots">MOTS</span>
-      </div>
-      <div class="wc-detail"><span class="wc-dot"></span>1er mot visible avant chrono</div>
     </div>
     <div class="pseudo-row">
       <input type="text" id="pseudoInput" class="pseudo-input" placeholder="Votre pseudo..." maxlength="16" />
@@ -1477,22 +1273,6 @@
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
       <button class="secondary-btn" onclick="showModal('about')">À propos</button>
     </div>
-
-    <!-- ══════ SHOUTBOX ══════ -->
-    <div class="shoutbox" id="shoutbox">
-      <div class="shoutbox-header">
-        <span class="shoutbox-title">💬 TCHAT GLOBAL</span>
-        <span class="shoutbox-online" id="shoutboxOnline">0 en ligne</span>
-      </div>
-      <div class="shoutbox-messages" id="shoutboxMessages">
-        <div class="shoutbox-system">Bienvenue dans le tchat ! Entrez un pseudo et discutez.</div>
-      </div>
-      <div class="shoutbox-input-row">
-        <input type="text" class="shoutbox-input" id="shoutboxInput" placeholder="Votre message..." maxlength="120" />
-        <button class="shoutbox-send" id="shoutboxSend">▸</button>
-      </div>
-    </div>
-
     <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.0 BÊTA</span></div>
   </div>
 </div>
@@ -1763,7 +1543,7 @@
         <span class="friend-code-value" id="friendCodeValue">——</span>
         <button class="friend-code-copy" id="friendCodeCopy" onclick="copyFriendCode()">COPIER</button>
       </div>
-      <button type="button" class="search-btn friend-create-btn" id="btnFriendCreate">CRÉER LA PARTIE</button>
+      <button type="button" class="search-btn" id="btnFriendCreate">CRÉER LA PARTIE</button>
       <p class="friend-status" id="friendCreateStatus"></p>
     </div>
     <div class="friend-panel" id="panelJoin" style="display:none">
@@ -1771,7 +1551,7 @@
       <div class="friend-join-row">
         <input type="text" class="friend-code-input" id="friendCodeInput" placeholder="Code..." maxlength="6" spellcheck="false" autocomplete="off" />
       </div>
-      <button type="button" class="search-btn friend-create-btn" id="btnFriendJoin">REJOINDRE</button>
+      <button type="button" class="search-btn" id="btnFriendJoin">REJOINDRE</button>
       <p class="friend-status" id="friendJoinStatus"></p>
     </div>
   </div>
@@ -1825,13 +1605,6 @@ function resumeAccueilMusic(){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  // Toggle body class for manche-specific styling
-  document.body.classList.toggle('in-manche', id==='screenManche');
-  // Permettre le scroll sur l'accueil
-  const scrollable = id==='screenAccueil';
-  document.body.classList.toggle('scrollable', scrollable);
-  document.documentElement.style.overflow = scrollable ? 'auto' : 'hidden';
-  if(!scrollable) window.scrollTo(0,0);
   const bgv=document.getElementById('mancheBgVideo');
   if(bgv){
     if(id==='screenManche'){
@@ -1944,6 +1717,7 @@ function broadcastRoster(){
   if(me) myPseudo=me.pseudo;
   for(const p of players){ if(p.isHost) continue; const c=conns.find(c=>c.id===p.id); if(c) c.pseudo=p.pseudo; }
   sendData({type:'roster',players,mode:gameMode});
+  // Send pseudoUpdate to each client so they know their new pseudo
   for(const p of players){
     if(p.isHost) continue;
     const c=conns.find(c=>c.id===p.id);
@@ -2042,7 +1816,6 @@ function onData(data,fromConn){
     }
   }
   else if(data.type==='syncCorrect'){
-
     if(data.seqIdx!==mancheState.currentSeq) return;
     const seq=mancheState.sequences[data.seqIdx];
     if(!seq || seq.found[data.wordIdx]) return;
@@ -2106,7 +1879,7 @@ function startSearch(){
   myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
-  document.getElementById('btnPlayFriend').disabled=true;
+  const bf=document.getElementById('btnPlayFriend'); if(bf) bf.disabled=true;
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='Connexion...';
   connected=false;conns=[];lobbyPlayers=[];
@@ -2726,7 +2499,6 @@ function startSequence(idx){
   mancheState.turn='giver'; // giver commence toujours
   const seq=mancheState.sequences[idx];
 
-
   for(let i=0;i<5;i++){
     const s=document.getElementById('sphere'+i);
     if(s) s.classList.remove('lit');
@@ -3241,14 +3013,10 @@ function startTimer(){
 }
 
 function onCorrectAnswer(fromNetwork){
-  if(!mancheState.started){
-    return;
-  }
+  if(!mancheState.started) return;
   const seq=mancheState.sequences[mancheState.currentSeq];
   const wi=seq.currentWordIdx;
-  if(seq.found[wi]){
-    return;
-  }
+  if(seq.found[wi]) return;
 
   seq.found[wi]=true;
   seq.lightsLit++;
@@ -3358,20 +3126,12 @@ function showMancheResult(type){
   text.textContent=type==='win'?'Manche victorieuse !':'Manche perdue !';
 
   // Reset animations
-  banner.style.animation='none';
-  icon.style.animation='none';
-  text.style.animation='none';
+  banner.style.animation='none'; icon.style.animation='none'; text.style.animation='none';
   void banner.offsetWidth;
-  banner.style.animation='';
-  icon.style.animation='';
-  text.style.animation='';
+  banner.style.animation=''; icon.style.animation=''; text.style.animation='';
 
   ov.classList.add('visible');
-
-  // Auto-hide
-  setTimeout(()=>{
-    ov.classList.remove('visible');
-  },2800);
+  setTimeout(()=>{ ov.classList.remove('visible'); },2800);
 }
 
 function endSequence(){
@@ -3382,23 +3142,19 @@ function endSequence(){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-  // Arrêter bedfinale si elle tourne encore
   if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
   mancheState.audioBed=null;
 
-  // Son de fin selon le résultat
+  // Son + overlay de fin selon le résultat
   const seq=mancheState.sequences[mancheState.currentSeq];
   if(seq){
     const skips=seq.skipsCount||0;
     if(skips>=3){
-      // 3 rouges = manche perdue (son déjà joué par duoSkipWord)
       showMancheResult('lose');
     }else if(seq.lightsLit>=3){
-      // 3+ bonnes réponses = victoire
       playGameSound('son/victoire.wav',0.7);
       showMancheResult('win');
     }else if(mancheState.timeLeft<=0){
-      // Temps écoulé sans assez de bonnes réponses
       playGameSound('son/perdu.wav',0.7);
       showMancheResult('lose');
     }
@@ -3479,136 +3235,842 @@ function sameFirst3(clue,secretWord){
   return c.length>=3 && w.length>=3 && c.slice(0,3)===w.slice(0,3);
 }
 
-// ── Détection mot de la même famille ──
-
-// Dictionnaire de synonymes / traductions courantes (normalisés sans accents, minuscules)
+// ── Synonymes ──
 const SYNONYM_GROUPS=[
-  ['livre','bouquin','ouvrage','roman','manuscrit','recueil'],
-  ['niveau','level','echelon','palier','etage','stade'],
-  ['maison','habitation','domicile','demeure','logement','logis','foyer','baraque'],
-  ['voiture','auto','automobile','vehicule','bagnole','caisse'],
-  ['argent','monnaie','fric','thune','oseille','pognon','sous','tune'],
-  ['manger','bouffer','devorer','engloutir','grignoter'],
-  ['beau','joli','magnifique','splendide','superbe'],
-  ['grand','immense','enorme','geant','gigantesque','colossal'],
-  ['petit','minuscule','minime','infime','microscopique'],
-  ['rapide','vite','veloce','prompt','celere','furtif'],
-  ['lent','lentement','tardif','paresseux'],
-  ['ami','copain','pote','camarade','compagnon'],
-  ['enfant','gosse','gamin','mome','bambin','mioche','garnement'],
-  ['travail','boulot','taf','emploi','job','labeur','besogne'],
-  ['dormir','roupiller','pioncer','sommeiller'],
-  ['content','heureux','joyeux','ravi','satisfait','enchante'],
-  ['triste','malheureux','chagrin','morose','melancolique','abattu'],
-  ['peur','frayeur','crainte','terreur','angoisse','effroi','frousse','trouille'],
-  ['crier','hurler','gueuler','brailler','vociférer'],
-  ['parler','causer','discuter','bavarder','jaser','papoter'],
-  ['regarder','observer','contempler','examiner','scruter','mater'],
-  ['marcher','avancer','deambuler','arpenter'],
-  ['courir','sprinter','galoper','foncer','cavaler','detaler'],
-  ['tomber','chuter','trebucher','degringoler','basculer'],
-  ['frapper','taper','cogner','battre','assener'],
-  ['vetement','habit','fringue','tenue','accoutrement'],
-  ['chapeau','couvre-chef','coiffure','beret','casquette'],
-  ['chaussure','soulier','godasse','basket','pompe'],
-  ['chemin','route','sentier','piste','voie','passage'],
-  ['montagne','mont','sommet','pic','colline'],
-  ['riviere','fleuve','cours','ruisseau','torrent'],
-  ['mer','ocean','flot','vague'],
-  ['foret','bois','bosquet','futaie'],
-  ['soleil','astre','etoile'],
-  ['nourriture','aliment','repas','pitance','bouffe','victuaille'],
-  ['chien','clebs','cabot','clébard','toutou','molosse'],
-  ['chat','minou','matou','felin','greffier'],
-  ['oiseau','piaf','volatile','passereau'],
-  ['bateau','navire','embarcation','vaisseau','barque','canot'],
-  ['avion','aeronef','aeroplane','zinc','coucou'],
-  ['terre','sol','terrain','parcelle','plancher'],
-  ['ciel','firmament','voute','azur'],
-  ['eau','flotte','aqua'],
-  ['feu','flamme','brasier','incendie','foyer'],
-  ['vent','brise','souffle','bourrasque','rafale','tempete'],
-  ['froid','glacial','gele','frigide','hivernal'],
-  ['chaud','brulant','torride','caniculaire','bouillant'],
-  ['rouge','ecarlate','vermillon','cramoisi','pourpre','carmin'],
-  ['bleu','azur','indigo','cobalt','cyan','saphir'],
-  ['blanc','immacule','ivoire','neigeux','laiteux'],
-  ['noir','sombre','obscur','tenebreux','ebene'],
-  ['roi','monarque','souverain','sire','majeste'],
-  ['reine','souveraine','imperatrice'],
-  ['guerre','combat','bataille','conflit','lutte','affrontement'],
-  ['paix','armistice','cessez','treve','accord'],
-  ['medecin','docteur','toubib','praticien','clinicien'],
-  ['ecole','college','lycee','etablissement','institution'],
-  ['professeur','enseignant','prof','instituteur','maitre','pedagogue'],
-  ['eleve','etudiant','apprenant','ecolier','lyceen','collegien'],
-  ['musique','melodie','chanson','air','morceau','refrain','tube'],
-  ['film','cinema','movie','pellicule','long-metrage'],
-  ['prison','geole','cachot','penitencier','bagne','taule'],
-  ['police','flic','gendarme','agent','keuf','poulet'],
-  ['voleur','cambrioleur','brigand','bandit','malfrat','escroc'],
-  ['mentir','menteur','mensonge','bobard','bluff'],
-  ['mort','deces','trepas','fin','disparition'],
-  ['vie','existence','vivant'],
-  ['debut','commencement','depart','amorce','entame'],
-  ['fin','terme','conclusion','achèvement','denouement'],
-  ['force','puissance','vigueur','robustesse','energie'],
-  ['faible','fragile','debile','chetif','frele'],
-  ['riche','fortune','aise','opulent','nanti'],
-  ['pauvre','miserable','demuni','indigent','necessiteux'],
-  ['vieux','ancien','age','vetuste','antique','archaique'],
-  ['jeune','juvenile','cadet','adolescent','nouveau'],
-  ['facile','simple','aise','elementaire','basique'],
-  ['difficile','dur','ardu','complique','complexe','penible'],
-  ['dormir','sommeil','somme','sieste','dodo','repos'],
-  ['lit','couche','couchette','pieu','plumard','pageot'],
-  ['pierre','roche','caillou','galet','rocher'],
-  ['arbre','arbuste','vegetation'],
-  ['fleur','floraison','bouquet'],
-  ['fruit','baie','recolte'],
-  ['pain','baguette','miche','croute'],
-  ['lait','lacte','creme'],
-  ['viande','bidoche','barbaque','steak'],
-  ['poisson','peche','friture'],
-  ['couteau','lame','canif','poignard','dague'],
-  ['epee','glaive','sabre','lame','rapiere'],
-  ['fusil','arme','carabine','flingue','petoire'],
-  ['bombe','explosif','grenade','mine','obus'],
-  ['lumiere','clarte','lueur','eclat','brillance','luminosite'],
-  ['ombre','penombre','obscurite','tenebres'],
-  ['bruit','vacarme','tapage','boucan','tintamarre','raffut','brouhaha'],
-  ['silence','calme','quietude','tranquillite','mutisme'],
-  ['odeur','senteur','parfum','fragrance','effluve','arome'],
-  ['gout','saveur','palais'],
-  ['toucher','palper','tater','caresser','effleurer'],
-  ['temps','meteo','climat'],
-  ['jour','journee','matinee'],
-  ['nuit','soir','soiree','nuitee','crepuscule'],
-  ['pluie','averse','ondee','deluge','giboulee','crachin'],
-  ['neige','flocon','givre','verglas','blizzard'],
-  ['orage','tempete','foudre','tonnerre','eclair'],
-  ['question','interrogation','demande'],
-  ['reponse','solution','resultat','issue'],
-  ['probleme','souci','ennui','difficulte','tracas','pepin'],
-  ['idee','concept','notion','pensee','reflexion'],
-  ['mot','terme','vocable','parole','expression'],
-  ['lettre','caractere','signe','symbole','missive','courrier'],
-  ['nombre','chiffre','numero','quantite'],
-  ['image','photo','illustration','dessin','cliche','portrait'],
-  ['couleur','teinte','nuance','coloris','pigment','ton'],
-  ['forme','figure','silhouette','contour','profil'],
-  ['taille','dimension','gabarit','envergure','stature'],
-  ['poids','masse','charge','pesanteur'],
-  ['vitesse','rapidite','celerite','allure','cadence'],
-  ['chance','veine','bol','fortune','hasard'],
-  ['malchance','poisse','guigne','deveine','scoumoune'],
-  ['colere','rage','fureur','courroux','ire'],
-  ['joie','bonheur','allegresse','felicite','beatitude','liesse'],
-  ['amour','passion','tendresse','affection','sentiment'],
-  ['haine','aversion','animosite','antipathie','rancune','rancœur'],
+  ['chien','chiot','caniche'],['chat','chaton','felin'],['oiseau','piaf'],['cochon','porc'],['vache','boeuf'],
+  ['cheval','jument'],['mouton','brebis','agneau'],['singe','chimpanze','gorille','primate'],
+  ['serpent','vipere','cobra'],['grenouille','crapaud'],['tortue','carapace'],
+  ['aigle','faucon','epervier','busard','vautour'],['baleine','cachalot'],['requin','squall'],['crocodile','alligator'],
+  ['papillon','chrysalide'],['abeille','guepe','bourdon','frelon'],['fourmi','fourmilier'],
+  ['souris','rat','hamster'],['lapin','lievre'],['lion','leopard','guepard','tigre','panthere','jaguar'],
+  ['loup','louveteau'],['renard','goupil'],['cerf','chevreuil','biche'],['hibou','chouette'],
+  ['mouette','goeland','albatros'],['canard','oie','cygne'],['perroquet','perruche'],['moineau','rossignol','merle'],
+  ['elephant','mammouth'],['hippopotame','rhino'],['rhinoceros','pachyderme'],['bison','buffle'],
+  ['pain','baguette','brioche','croissant'],['gateau','patisserie','tarte'],['fromage','gruyere','camembert'],
+  ['viande','steak','gigot'],['confiture','marmelade','compote'],['bonbon','friandise','berlingot'],
+  ['biscuit','cookie','galette'],['chocolat','cacao'],['miel','nectar'],['sucre','saccharose'],
+  ['beurre','creme','lait'],['oeuf','omelette'],['sandwich','hamburger'],['salade','laitue'],
+  ['cafe','expresso'],['the','infusion','tisane'],['biere','houblon'],['vin','vendange'],['eau','source'],
+  ['medecin','docteur','toubib','praticien'],['hopital','clinique'],['pharmacie','apothicaire'],
+  ['infirmier','infirmiere'],['chirurgien','chirurgie'],['psychiatre','psychanalyse'],
+  ['cerveau','cervelle'],['oeil','vue','regard'],['oreille','ouie'],
+  ['maison','habitation','domicile','demeure','logement','residence','batiment','immeuble','edifice'],
+  ['appartement','studio'],['toit','toiture'],['porte','portail','portiere'],['fenetre','vitre','hublot'],
+  ['armoire','placard','penderie'],['chaise','fauteuil','tabouret','banquette','canape','banc'],
+  ['lit','couchette','matelas','berceau'],['lampe','ampoule','bougie','lanterne','lustre'],['miroir','glace'],
+  ['vetement','habit','tenue'],['chapeau','casquette','beret','bicorne'],
+  ['chaussure','botte','sandale','babouche','chausson'],['pantalon','jean','short','bermuda'],
+  ['manteau','pardessus','veste','gilet','pull'],['robe','jupe'],['ceinture','bretelle'],
+  ['voiture','automobile','vehicule'],['bus','autobus','tramway'],['train','locomotive','wagon'],
+  ['velo','bicyclette','cyclisme'],['avion','aeronef'],['helicoptere','heliport'],
+  ['bateau','navire','vaisseau','barque','voilier','yacht','embarcation','goelette','fregate','corvette','pirogue','galion','catamaran'],
+  ['brouette','chariot'],['montagne','colline','mont','sommet','pic'],['riviere','fleuve','ruisseau','torrent'],
+  ['lac','etang','lagune'],['mer','ocean'],['ile','atoll','archipel','peninsule'],['foret','bois','bosquet'],
+  ['desert','oasis','dune','steppe','toundra','taiga'],['marais','marecage','tourbiere'],['grotte','caverne','crypte'],
+  ['volcan','eruption','magma'],['rocher','pierre','caillou','galet','roche','granite','basalte'],
+  ['glacier','banquise','iceberg'],['soleil','astre','aurore'],['etoile','constellation'],
+  ['pluie','averse','ondee','deluge','giboulee','crachin'],['neige','flocon','givre','blizzard'],
+  ['orage','tempete','foudre','tonnerre','eclair','bourrasque','tornade','typhon','cyclone','tsunami'],
+  ['vent','brise','souffle','rafale'],['musique','melodie','chanson','air','refrain','sonate','symphonie','concerto'],
+  ['piano','pianiste','clavecin'],['guitare','mandoline','banjo','ukulele'],['violon','violoncelle','archet'],
+  ['flute','clarinette','hautbois'],['trompette','clairon'],['tambour','tambourin','batterie'],
+  ['harpe','lyre'],['accordeon','bandoneon'],['chant','chanson','chorale'],['orchestre','fanfare'],
+  ['peinture','peintre','tableau','toile','aquarelle','fresque','gouache'],['sculpture','sculpteur','statue'],
+  ['dessin','esquisse','croquis'],['photo','photographie','portrait'],['cinema','film','pellicule'],
+  ['theatre','comedie','tragedie','spectacle','comedien'],['danse','danseur','ballet','choregraphie'],
+  ['roman','livre','nouvelle','conte','fable','manuscrit','ouvrage','recueil','bouquin'],
+  ['eglise','chapelle','cathedrale','basilique','clocher'],['chateau','donjon','forteresse','citadelle','rempart'],
+  ['palais','temple','pagode','sanctuaire'],['prison','cachot','geole','bagne'],
+  ['ecole','college','lycee','universite'],['bibliotheque','librairie'],['musee','galerie'],
+  ['restaurant','brasserie','auberge','bar','cantine'],['magasin','boutique','epicerie','commerce'],
+  ['professeur','enseignant','instituteur','precepteur'],['eleve','etudiant','ecolier','apprenti'],
+  ['facteur','messager','courrier','livreur'],['policier','gendarme','commissaire'],
+  ['avocat','magistrat','procureur','juge'],['boulanger','patissier'],['soldat','militaire','brigadier'],
+  ['pere','papa'],['mere','maman'],['enfant','gosse','gamin','bebe','nourrisson','bambin'],
+  ['ami','copain','camarade','compagnon'],['homme','garcon'],['femme','fille','dame'],
+  ['amour','passion','tendresse','affection'],['joie','bonheur','allegresse'],
+  ['tristesse','chagrin','melancolie','nostalgie'],['peur','frayeur','effroi','terreur','angoisse','crainte'],
+  ['colere','fureur','rage'],['courage','bravoure','audace'],['surprise','stupeur','etonnement'],
+  ['argent','monnaie','devise','fortune','tresor'],['banque','bourse'],['billet','piece','monnaie'],
+  ['guerre','combat','bataille','conflit','affrontement','lutte'],['epee','glaive','sabre','cimeterre','lame'],
+  ['fusil','arme','carabine'],['bombe','explosif','grenade','obus','dynamite'],
+  ['bouclier','armure','cuirasse'],['fleche','arc','arbalete','javelot'],
+  ['victoire','triomphe','exploit'],['defaite','reddition','capitulation'],['armistice','paix','treve'],
+  ['roi','monarque','souverain','empereur','monarchie'],['reine','imperatrice'],
+  ['democratie','republique','suffrage','scrutin'],['dictature','tyrannie','totalitarisme'],
+  ['atome','molecule','electron','proton','neutron'],['telescope','microscope','lunettes','loupe'],
+  ['ordinateur','machine','processeur','calculateur'],['logiciel','programme'],
+  ['lumiere','clarte','lueur','eclat','etincelle'],['ombre','penombre','obscurite','tenebres'],
+  ['noir','sombre','ebene'],['blanc','ivoire'],['rouge','ecarlate','vermillon','cramoisi','pourpre'],
+  ['bleu','azur','indigo','cobalt','turquoise'],['vert','emeraude'],['jaune','dore','ocre'],
+  ['jour','journee','matinee'],['nuit','soir','soiree','crepuscule'],['debut','commencement','prelude'],
+  ['fin','terme','conclusion','denouement'],['lettre','courrier','missive','enveloppe'],
+  ['journal','magazine','gazette','presse'],['annonce','affiche','publicite'],
+  ['livre','bouquin','ouvrage','manuscrit','recueil','roman','nouvelle'],
+  ['question','interrogation','devinette','enigme','charade'],['entretien','interview','entrevue'],
+  ['couteau','lame','canif','poignard','bistouri','couperet','ciseaux'],['marteau','enclume'],
+  ['cle','clef','serrure'],['balai','brosse','aspirateur'],['corde','ficelle','cable','chaine'],
+  ['parapluie','ombrelle'],['montre','horloge','pendule','reveil','sablier'],
+  ['bouteille','flacon','carafe','cruche','gourde'],['casserole','poele','marmite'],
+  ['crayon','stylo','pinceau','fusain','plume'],['fete','celebration','festival','carnaval','ceremonie'],
+  ['cadeau','present','offrande','recompense'],['voyage','aventure','excursion','randonnee','croisiere'],
+  ['reve','songe','illusion','chimere','utopie'],['mystere','enigme','secret','intrigue'],
+  ['legende','mythe','mythologie','fable','conte'],['magie','sorcellerie','enchantement'],
+  ['tresor','fortune','richesse','prosperite'],['bruit','vacarme','tapage','tintamarre','brouhaha'],
+  ['silence','calme','quietude','serenite'],['odeur','parfum','fragrance','arome'],
+  ['niveau','echelon','palier','etage'],['erreur','faute','betise','gaffe'],
+  ['force','puissance','vigueur','energie'],['vitesse','rapidite','velocite'],
+  ['toboggan','glissade','glissoire','rampe'],['ski','luge','snowboard','bobsleigh','toboggan'],
+  ['course','marathon','sprint','galop'],
 ];
 
-// Index rapide pour lookup
+// ── Traductions anglaises ──
+const ENGLISH_TRANSLATIONS={
+  // ═══ A ═══
+  'bee':'abeille','aberration':'aberration','apricot':'abricot','abscissa':'abscisse',
+  'abstention':'abstention','abstinence':'abstinence','abstraction':'abstraction','mahogany':'acajou',
+  'accident':'accident','agreement':'accord','accordion':'accordeon','armrest':'accoudoir',
+  'accretion':'accretion','purchase':'achat','acolyte':'acolyte','acoustics':'acoustique',
+  'acquittal':'acquittement','acrimony':'acrimonie','acrobat':'acrobate','acrobatics':'acrobatie',
+  'acronym':'acronyme','acropolis':'acropole','acrylic':'acrylique','news':'actualite',
+  'acetylene':'acetylene','addition':'addition','admiration':'admiration','admonition':'admonition',
+  'address':'adresse','adult':'adulte','affair':'affaire','poster':'affiche',
+  'affidavit':'affidavit','panic':'affolement','confrontation':'affrontement','annoyance':'agacement',
+  'agency':'agence','diary':'agenda','agglomeration':'agglomeration','agnostic':'agnostique',
+  'agora':'agora','stapler':'agrafeuse','aggregation':'agregation','amazement':'ahurissement',
+  'eagle':'aigle','switching':'aiguillage','needle':'aiguille','wing':'aile',
+  'magnet':'aimant','adjustment':'ajustement','alarm':'alarme','albatross':'albatros',
+  'album':'album','alabaster':'albatre','alchemy':'alchimie','alchemist':'alchimiste',
+  'alexandrine':'alexandrin','algorithm':'algorithme','seaweed':'algue','alien':'alien',
+  'alignment':'alignement','alliance':'alliance','alliteration':'alliteration','match':'allumette',
+  'alluvion':'alluvion','allegory':'allegorie','almanac':'almanach','climber':'alpiniste',
+  'altimeter':'altimetre','altitude':'altitude','aluminum':'aluminium','amalgam':'amalgame',
+  'almond':'amande','mooring':'amarrage','amazon':'amazone','ambassador':'ambassadeur',
+  'ambrosia':'ambroisie','ambulance':'ambulance','amendment':'amendement','furnishing':'ameublement',
+  'friendship':'amitie','pileup':'amoncellement','love':'amour','amphitheater':'amphitheatre',
+  'amphora':'amphore','amplification':'amplification','bulb':'ampoule','arrangement':'amenagement',
+  'amenity':'amenite','anachronism':'anachronisme','anagram':'anagramme','illiterate':'analphabete',
+  'pineapple':'ananas','anathema':'anatheme','anchovy':'anchois','anchor':'ancre',
+  'ancestor':'ancetre','anesthetist':'anesthesiste','anguish':'angoisse','eel':'anguille',
+  'host':'animateur','birthday':'anniversaire','announcement':'annonce','directory':'annuaire',
+  'year':'annee','anomaly':'anomalie','antenna':'antenne','anthracite':'anthracite',
+  'anthropology':'anthropologie','anticyclone':'anticyclone','antelope':'antilope',
+  'antinomy':'antinomie','antithesis':'antithese','anxiety':'anxiete',
+  'annihilation':'aneantissement','anemia':'anemie','aneurysm':'anevrisme',
+  'prerogative':'apanage','pity':'apitoiement','apocryphal':'apocryphe','apex':'apogee',
+  'apologue':'apologue','apostrophe':'apostrophe','apothecary':'apothicaire','apotheosis':'apotheose',
+  'apparatchik':'apparatchik','device':'appareil','equipment':'appareillage',
+  'apartment':'appartement','impoverishment':'appauvrissement','call':'appel',
+  'applause':'applaudissement','apprentice':'apprenti','supply':'approvisionnement',
+  'appetite':'appetit','aperitif':'aperitif','watercolor':'aquarelle','aquatic':'aquatique',
+  'aqueduct':'aqueduc','spider':'araignee','crossbow':'arbalete','referee':'arbitre',
+  'arborescence':'arborescence','tree':'arbre','arcade':'arcade','archaic':'archaique',
+  'ark':'arche','bow':'archet','archipelago':'archipel','architect':'architecte',
+  'archaeologist':'archeologue','slate':'ardoise','clay':'argile','argumentation':'argumentation',
+  'aristocracy':'aristocratie','arithmetic':'arithmetique','armistice':'armistice',
+  'wardrobe':'armoire','armor':'armure','surveying':'arpentage','surveyor':'arpenteur',
+  'arpeggio':'arpege','watering':'arrosage','wateringcan':'arrosoir','artifact':'artefact',
+  'artichoke':'artichaut','artifice':'artifice','arena':'arene',
+  'elevator':'ascenseur','asparagus':'asperge','vacuum':'aspirateur','aspirin':'aspirine',
+  'sanitation':'assainissement','assembly':'assemblage','plate':'assiette',
+  'assimilation':'assimilation','insurance':'assurance','astigmatism':'astigmatisme',
+  'astronomer':'astronome','asterisk':'asterisque','asteroid':'asteroide',
+  'asymptote':'asymptote','atavism':'atavisme','workshop':'atelier',
+  'athlete':'athlete','athletics':'athletisme','atlas':'atlas','atoll':'atoll',
+  'atom':'atome','tenderness':'attendrissement','landing':'atterrissage',
+  'attraction':'attraction','trap':'attrape','attrition':'attrition',
+  'inn':'auberge','eggplant':'aubergine','daring':'audace','increase':'augmentation',
+  'dawn':'aurore','austerity':'austerite','bus':'autobus','autocrat':'autocrate',
+  'automaton':'automate','autumn':'automne','autopsy':'autopsie','authority':'autorite',
+  'highway':'autoroute','avalanche':'avalanche','greed':'avarice','adventure':'aventure',
+  'avenue':'avenue','downpour':'averse','warning':'avertissement','airplane':'avion',
+  'lawyer':'avocat','oats':'avoine','advent':'avenement','axiom':'axiome',
+  'axolotl':'axolotl','azalea':'azalee','azimuth':'azimut','nitrogen':'azote',
+  'aeronautics':'aeronautique','airport':'aeroport',
+  // ═══ B ═══
+  'slipper':'babouche','baccalaureate':'baccalaureat','bacteria':'bacterie','badge':'badge',
+  'badminton':'badminton','porter':'bagagiste','fight':'bagarre','ring':'bague',
+  'baguette':'baguette','swimming':'baignade','bathtub':'baignoire','kiss':'baiser',
+  'jester':'baladin','scar':'balafre','broom':'balai','scale':'balance',
+  'pendulum':'balancier','swing':'balancoire','stammering':'balbutiement','balcony':'balcon',
+  'canopy':'baldaquin','whale':'baleine','ballistics':'balistique','ballad':'ballade',
+  'ballet':'ballet','balloon':'ballon','runoff':'ballottage','balustrade':'balustrade',
+  'bamboo':'bambou','banana':'banane','bench':'banc','bandage':'bandage',
+  'headband':'bandeau','bandit':'bandit','bandoneon':'bandoneon','banjo':'banjo',
+  'banner':'banniere','bank':'banque','seat':'banquette','icefloe':'banquise',
+  'baobab':'baobab','baptistery':'baptistere','baptism':'bapteme','bar':'bar',
+  'smoothtalk':'baratin','beard':'barbe','barbecue':'barbecue','barbiturate':'barbituriques',
+  'shingle':'bardeau','barometer':'barometre','baroque':'baroque','boat':'barque',
+  'barracuda':'barracuda','barrier':'barriere','baritone':'baryton','basalt':'basalte',
+  'baseball':'baseball','basil':'basilic','basilica':'basilique','basketball':'basket',
+  'basin':'bassin','bassoon':'basson','railing':'bastingage','ship':'bateau',
+  'entertainer':'bateleur','boatman':'batelier','battery':'batterie','bladder':'baudruche',
+  'gossip':'bavardage','bib':'bavette','bazaar':'bazar','weasel':'belette',
+  'belvedere':'belvedere','cradle':'berceau','candy':'berlingot','shorts':'bermuda',
+  'chore':'besogne','need':'besoin','beetroot':'betterave','butter':'beurre',
+  'bibliophile':'bibliophile','library':'bibliotheque','bicorn':'bicorne',
+  'shantytown':'bidonville','charity':'bienfaisance','benefactor':'bienfaiteur',
+  'fork':'bifurcation','jewel':'bijou','cuprball':'bilboquet','marble':'bille',
+  'ticket':'billet','biweekly':'bimensuel','biologist':'biologiste','biosphere':'biosphere',
+  'bison':'bison','scalpel':'bistouri','bivouac':'bivouac','beer':'biere',
+  'joke':'blague','badger':'blaireau','white':'blanc','laundry':'blanchisserie',
+  'coatofarms':'blason','blasphemy':'blaspheme','wound':'blessure','blue':'bleu',
+  'blizzard':'blizzard','bunker':'blockhaus','blockade':'blocus','spool':'bobine',
+  'bobsled':'bobsleigh','jar':'bocal','beef':'boeuf','bohemian':'boheme',
+  'bombardment':'bombardement','candy':'bonbon','happiness':'bonheur','snowman':'bonhomme',
+  'bonus':'bonification','showman':'bonimenteur','botany':'botanique','botanist':'botaniste',
+  'boot':'botte','buccaneer':'boucanier','mouth':'bouche','butcher':'boucher',
+  'cork':'bouchon','buckle':'boucle','shield':'bouclier','buddhism':'bouddhisme',
+  'buffoon':'bouffon','buffoonery':'bouffonnerie','candlestick':'bougeoir','candle':'bougie',
+  'bouillabaisse':'bouillabaisse','kettle':'bouilloire','bubbling':'bouillonnement',
+  'baker':'boulanger','bakery':'boulangerie','meatball':'boulette','boulevard':'boulevard',
+  'upheaval':'bouleversement','bouquet':'bouquet','bumblebee':'bourdon','buzzing':'bourdonnement',
+  'bourgeoisie':'bourgeoisie','budding':'bourgeonnement','squall':'bourrasque',
+  'executioner':'bourreau','stockbroker':'boursier','compass':'boussole',
+  'bottle':'bouteille','shop':'boutique','button':'bouton','buoy':'bouee',
+  'boxing':'boxe','box':'boite','bracelet':'bracelet','stretcherbearer':'brancardier',
+  'arm':'bras','brewery':'brasserie','bravado':'bravade','bravery':'bravoure',
+  'suspender':'bretelle','beverage':'breuvage','brigadier':'brigadier','brigandage':'brigandage',
+  'hazing':'brimade','bun':'brioche','dealer':'brocanneur','brooch':'broche',
+  'pike':'brochet','skewer':'brochette','brochure':'brochure','broccoli':'brocoli',
+  'brush':'brosse','wheelbarrow':'brouette','jamming':'brouillage','fog':'brouillard',
+  'drizzle':'bruine','rustling':'bruissement','breviary':'brevaire','firebrand':'brulot',
+  'burn':'brulure','logging':'bucheronnage','bucolic':'bucolique','buffet':'buffet',
+  'buffalo':'buffle','bush':'buisson','office':'bureau','burlesque':'burlesque',
+  'bus':'bus','buzzard':'busard','goal':'but','foraging':'butinage',
+  'building':'batiment','bearnaise':'bearnaise','baby':'bebe','woodcock':'becasse',
+  'bechamel':'bechamel','ram':'belier','flat':'bemol','blessing':'benediction',
+  'volunteer':'benevole','spade':'beche','bleating':'belement','stupidity':'betise',
+  // ═══ C ═══
+  'kabbalist':'cabaliste','hut':'cabane','cod':'cabillaud','cabin':'cabine',
+  'coasting':'cabotage','peanut':'cacahuete','spermwhale':'cachalot','stamp':'cachet',
+  'secrecy':'cachotterie','cacophony':'cacophonie','cactus':'cactus','cadastre':'cadastre',
+  'gift':'cadeau','rhythm':'cadence','dial':'cadran','frame':'cadre',
+  'caduceus':'caducee','cockroach':'cafard','coffeepot':'cafetiere','coffee':'cafe',
+  'cage':'cage','notebook':'cahier','gravel':'caillasse','quail':'caille',
+  'cashbox':'caisse','disaster':'calamite','limestone':'calcaire','calculator':'calculateur',
+  'pun':'calembour','calendar':'calendrier','underpants':'calecon','chalice':'calice',
+  'calligrapher':'calligraphe','calligraphy':'calligraphie','carriage':'caleche',
+  'burglary':'cambriolage','truck':'camion','camouflage':'camouflage','countryman':'campagnard',
+  'belltower':'campanile','bluebell':'campanule','camping':'camping','camellia':'camelia',
+  'chameleon':'cameleon','camera':'camera','rascal':'canaille','canal':'canal',
+  'sofa':'canape','duck':'canard','candidacy':'candidature','candelabrum':'candelabre',
+  'cinnamon':'canelle','duckling':'caneton','poodle':'caniche','heatwave':'canicule',
+  'canoe':'canoe','canteen':'cantine','cantonment':'cantonnement','canyon':'canyon',
+  'captain':'capitaine','surrender':'capitulation','corporal':'caporal','hood':'capot',
+  'whim':'caprice','capricorn':'capricorne','hood':'capuchon','billiards':'carambole',
+  'caramel':'caramel','caravel':'caravelle','carbon':'carbone','cardiologist':'cardiologue',
+  'cardamom':'cardamome','chime':'carillon','crimson':'carmin','carnival':'carnaval',
+  'carnivore':'carnivore','carrot':'carotte','carp':'carpe','rug':'carpette',
+  'crossroads':'carrefour','carousel':'carrousel','square':'carre','satchel':'cartable',
+  'card':'carte','cartography':'cartographie','fortuneteller':'cartomancien','cardboard':'carton',
+  'waterfall':'cascade','bunker':'casemate','locker':'casier','cap':'casquette',
+  'saucepan':'casserole','cassoulet':'cassoulet','catalogue':'catalogue','catamaran':'catamaran',
+  'cataclysm':'cataclysme','catacombs':'catacombes','catalepsy':'catalepsie',
+  'catalysis':'catalyse','catalyst':'catalyseur','catharsis':'catharsis',
+  'cathedral':'cathedrale','catechism':'catechisme','cauterization':'cauterisation',
+  'nightmare':'cauchemar','cavalcade':'cavalcade','rider':'cavalier','belt':'ceinture',
+  'cell':'cellule','cellulose':'cellulose','ash':'cendre','ashtray':'cendrier',
+  'censorship':'censure','hundred':'centaine','centaur':'centaure','centrifuge':'centrifuge',
+  'centurion':'centurion','circle':'cercle','deer':'cerf','cherry':'cerise',
+  'brain':'cerveau','brains':'cervelle','chair':'chaise','room':'chambre',
+  'chamois':'chamois','champion':'champion','luck':'chance','chancellery':'chancellerie',
+  'song':'chanson','singer':'chansonnier','singing':'chant','chanterelle':'chanterelle',
+  'worksite':'chantier','hat':'chapeau','chapel':'chapelle','bigtop':'chapiteau',
+  'chapter':'chapitre','riddle':'charade','weevil':'charancon','coal':'charbon',
+  'deli':'charcuterie','delicatessen':'charcutier','cart':'chariot','commotion':'charivari',
+  'charlatanism':'charlatanisme','carter':'charretier','charterhouse':'chartreuse',
+  'hunting':'chasse','cat':'chat','shimmer':'chatoiement','kitten':'chaton',
+  'boiler':'chaudiere','driver':'chauffeur','sock':'chaussette','slipper':'chausson',
+  'shoe':'chaussure','chain':'chaine','path':'chemin','progression':'cheminement',
+  'chimney':'cheminee','shirt':'chemise','rogue':'chenapan','kennel':'chenil',
+  'caterpillar':'chenille','horse':'cheval','chivalry':'chevalerie','easel':'chevalet',
+  'knight':'chevalier','hair':'cheveux','roedeer':'chevreuil','dog':'chien',
+  'rag':'chiffon','chemotherapy':'chimiotherapie','chemist':'chimiste','chimpanzee':'chimpanze',
+  'chimera':'chimere','surgery':'chirurgie','surgeon':'chirurgien','chlorine':'chlore',
+  'chlorophyll':'chlorophylle','chocolate':'chocolat','choir':'chorale','chorister':'choriste',
+  'choreography':'choregraphie','cabbage':'chou','owl':'chouette','chromosome':'chromosome',
+  'chronicle':'chronique','chronology':'chronologie','chronometer':'chronometre',
+  'chrysalis':'chrysalide','chrysanthemum':'chrysantheme','whisper':'chuchotement',
+  'chestnut':'chataigne','castle':'chateau','honeysuckle':'chevrefeuille','oak':'chene',
+  'chive':'ciboule','sky':'ciel','cicada':'cigale','cigar':'cigare',
+  'cigarette':'cigarette','stork':'cigogne','scimitar':'cimeterre','hanger':'cintre',
+  'cinema':'cinema','circumstance':'circonstance','circus':'cirque','scissors':'ciseaux',
+  'citadel':'citadelle','citizen':'citadin','lemon':'citron','lemonade':'citronnade',
+  'pumpkin':'citrouille','clafoutis':'clafoutis','clamor':'clameur','clarinet':'clarinette',
+  'ranking':'classement','folder':'classeur','confinement':'claustration','harpsichord':'clavecin',
+  'key':'clef','clergy':'clerge','customer':'clientele','blinker':'clignotant',
+  'steeple':'clocher','partitioning':'cloisonnement','nail':'clou','clown':'clown',
+  'cloister':'cloitre','clematis':'clematite','coalition':'coalition','cobalt':'cobalt',
+  'ladybug':'coccinelle','pig':'cochon','cocktail':'cocktail','cocoon':'cocon',
+  'coconut':'cocotier','casserole':'cocotte','heart':'coeur','chest':'coffre',
+  'casket':'coffret','cohabitation':'cohabitation','hairdresser':'coiffeur','hairstyle':'coiffure',
+  'hummingbird':'colibri','snack':'collation','necklace':'collier','hill':'colline',
+  'college':'college','colonel':'colonel','colony':'colonie','column':'colonne',
+  'dye':'colorant','anger':'colere','combination':'combinaison','fuel':'combustible',
+  'order':'commande','commandment':'commandement','commando':'commando',
+  'beginning':'commencement','comment':'commentaire','trade':'commerce',
+  'commissioner':'commissaire','commissariat':'commissariat','dresser':'commode',
+  'convenience':'commodite','community':'communaute','commemoration':'commemoration',
+  'companion':'compagnon','companionship':'compagnonnage','compass':'compas',
+  'compassion':'compassion','compatriot':'compatriote','compensation':'compensation',
+  'complexity':'complexite','complication':'complication','composer':'compositeur',
+  'composition':'composition','compost':'compost','compote':'compote','compromise':'compromis',
+  'counter':'comptoir','competition':'competition','comet':'comete','comedy':'comedie',
+  'actor':'comedien','conception':'conception','concert':'concert','concerto':'concerto',
+  'concession':'concession','janitor':'concierge','conclave':'conclave','cucumber':'concombre',
+  'concordance':'concordance','competition':'concurrence','condiment':'condiment',
+  'conditioning':'conditionnement','condor':'condor','confetti':'confetti','trust':'confiance',
+  'confession':'confidence','jam':'confiture','confrontation':'confrontation',
+  'confederation':'confederation','conference':'conference','congregation':'congregation',
+  'conjugation':'conjugaison','conjecture':'conjecture','knowledge':'connaissance',
+  'conqueror':'conquerant','conquest':'conquete','conscience':'conscience',
+  'consent':'consentement','instruction':'consigne','consumption':'consommation',
+  'constellation':'constellation','constitution':'constitution','consultation':'consultation',
+  'consecration':'consecration','tale':'conte','contemplation':'contemplation',
+  'protest':'contestation','continent':'continent','constraint':'contrainte','contract':'contrat',
+  'smuggling':'contrebande','bass':'contrebasse','counterfeit':'contrefacon',
+  'buttress':'contrefort','counterpoint':'contrepoint','contribution':'contribution',
+  'conversation':'conversation','conviction':'conviction','summons':'convocation',
+  'cooperation':'cooperation','coordination':'coordination','poppy':'coquelicot',
+  'shell':'coquillage','coral':'corail','crow':'corbeau','rope':'corde',
+  'mountainrange':'cordillere','cord':'cordon','coriander':'coriandre','horn':'corne',
+  'corner':'corner','ledge':'corniche','pickle':'cornichon','corollary':'corollaire',
+  'corolla':'corolle','correspondence':'correspondance','procession':'cortege',
+  'corvette':'corvette','cosmogony':'cosmogonie','cosmopolitan':'cosmopolite',
+  'cosmetics':'cosmetique','cotton':'coton','sleeping':'couchage','sunset':'coucher',
+  'berth':'couchette','wings':'coulisse','corridor':'couloir','guilty':'coupable',
+  'cleaver':'couperet','couple':'couple','dome':'coupole','courage':'courage',
+  'current':'courant','zucchini':'courgette','crown':'couronne','coronation':'couronnement',
+  'mail':'courrier','race':'course','courtier':'courtisan','courtesan':'courtisane',
+  'courtesy':'courtoisie','couscous':'couscous','cousin':'cousine','cushion':'coussin',
+  'knife':'couteau','sewing':'couture','lid':'couvercle','blanket':'couverture',
+  'roofer':'couvreur','teammate':'coequipier','coincidence':'coincidence',
+  'crab':'crabe','drizzle':'crachin','chalk':'craie','crampon':'crampon',
+  'toad':'crapaud','cracking':'craquement','whip':'cravache','tie':'cravate',
+  'pencil':'crayon','crescendo':'crescendo','shrimp':'crevette','cricket':'criquet',
+  'eighthnote':'croche','hook':'crochet','crocodile':'crocodile','crusade':'croisade',
+  'crossing':'croisement','cruise':'croisiere','growth':'croissance','croissant':'croissant',
+  'crust':'croute','jug':'cruche','crypt':'crypte','cryptography':'cryptographie',
+  'nursery':'creche','cream':'creme','credulity':'credulite','battlements':'creneaux',
+  'crackling':'crepitement','twilight':'crepuscule','pancake':'crepe',
+  'cube':'cube','cubism':'cubisme','picking':'cueillette','spoon':'cuillere',
+  'leather':'cuir','kitchen':'cuisine','cook':'cuisinier','cooking':'cuisson',
+  'copper':'cuivre','underpants':'culotte','cuneiform':'cuneiforme','turmeric':'curcuma',
+  'cycling':'cyclisme','cyclone':'cyclone','cyclops':'cyclope','swan':'cygne',
+  'cylinder':'cylindre','cymbal':'cymbale','cable':'cable','cedar':'cedre',
+  'cedilla':'cedille','celery':'celeri','cenotaph':'cenotaphe','ceramics':'ceramique',
+  'ceremony':'ceremonie','caesura':'cesure',
+  // ═══ D ═══
+  'dadaism':'dadaisme','dahlia':'dahlia','checkers':'dames','dance':'danse','dancer':'danseur',
+  'date':'datte','dolphin':'dauphin','delta':'delta','hangglider':'deltaplane',
+  'tooth':'dent','lace':'dentelle','dermatologist':'dermatologue','dervish':'derviche',
+  'drawing':'dessin','destination':'destination','riddle':'devinette','motto':'devise',
+  'homework':'devoir','tiara':'diademe','dialect':'dialecte','dialectics':'dialectique',
+  'diamond':'diamant','tuningfork':'diapason','dichotomy':'dichotomie',
+  'dictatorship':'dictature','dictionary':'dictionnaire','diffraction':'diffraction',
+  'digestive':'digestif','dike':'digue','dimorphism':'dimorphisme','dinosaur':'dinosaure',
+  'diplomat':'diplomate','director':'directeur','discordance':'discordance',
+  'speech':'discours','disappearance':'disparition','argument':'dispute',
+  'dissertation':'dissertation','dissolution':'dissolution','dissonance':'dissonance',
+  'distinction':'distinction','distribution':'distribution','dithyramb':'dithyrambe',
+  'divergence':'divergence','dividend':'dividende','sharp':'diese',
+  'doctor':'docteur','dogmatism':'dogmatisme','finger':'doigt','dolmen':'dolmen',
+  'domination':'domination','domino':'domino','tamer':'dompteur','dungeon':'donjon',
+  'bream':'dorade','back':'dos','file':'dossier','customs':'douane',
+  'officer':'douanier','shower':'douche','moat':'douves','dragon':'dragon',
+  'candy':'dragee','dramatic':'dramatique','sheet':'drap','flag':'drapeau',
+  'drapery':'draperie','dribble':'dribble','humor':'drolerie','dualism':'dualisme',
+  'duel':'duel','dune':'dune','dynamite':'dynamite','dystopia':'dystopie',
+  'tanktop':'debardeur','deforestation':'deboisement','overflow':'debordement',
+  'debris':'debris','decadence':'decadence','opener':'decapsuleur',
+  'decibel':'decibel','decision':'decision','declamation':'declamation','takeoff':'decollage',
+  'decor':'decor','discouragement':'decouragement','decree':'decret','deduction':'deduction',
+  'defense':'defense','breaker':'deferlante','deflation':'deflation',
+  'clearing':'defrichement','disgust':'degout','degradation':'degradation',
+  'tumble':'degringolade','disguise':'deguisement','damage':'degat','lunch':'dejeuner',
+  'deliberation':'deliberation','flood':'deluge','demiurge':'demiurge',
+  'democracy':'democratie','demolition':'demolition','demonstration':'demonstration',
+  'outcome':'denouement','deontology':'deontologie','depression':'depression',
+  'depot':'depot','skid':'derapage','derivative':'derivee','desert':'desert',
+  'disillusion':'desillusion','detective':'detective','determinism':'determinisme',
+  'detonation':'detonation','strait':'detroit','deterioration':'deterioration',
+  'devotion':'devouement',
+  // ═══ E ═══
+  'water':'eau','bruise':'ecchymose','effervescence':'effervescence','collapse':'effondrement',
+  'fright':'effroi','ellipse':'ellipse','embargo':'embargo','embarkation':'embarquement',
+  'embolism':'embolie','traffic':'embouteillage','blaze':'embrasement','ambush':'embuscade',
+  'packaging':'empaquetage','empathy':'empathie','empire':'empire','empiricism':'empirisme',
+  'employee':'employe','poisoning':'empoisonnement','enclosure':'enceinte',
+  'enchantment':'enchantement','tangle':'enchevetrement','pen':'enclos',
+  'ink':'encre','inkwell':'encrier','encyclopedia':'encyclopedie','endive':'endive',
+  'place':'endroit','child':'enfant','numbness':'engourdissement','gear':'engrenage',
+  'illumination':'enluminure','investigation':'enquete','enrichment':'enrichissement',
+  'sign':'enseigne','enthusiasm':'enthousiasme','entomology':'entomologie',
+  'funnel':'entonnoir','entropy':'entropie','invader':'envahisseur','envelope':'enveloppe',
+  'wingspan':'envergure','desire':'envie','enzyme':'enzyme','hermit':'ermite',
+  'error':'erreur','squadron':'escadron','climbing':'escalade','staircase':'escalier',
+  'snail':'escargot','skirmish':'escarmouche','fencing':'escrime','swordfish':'espadon',
+  'spy':'espion','hope':'esperance','eskimo':'esquimau','fuel':'essence',
+  'print':'estampe','aesthetics':'esthetique','stomach':'estomac','estuary':'estuaire',
+  'euphoria':'euphorie','euphemism':'euphemisme','exam':'examen','excursion':'excursion',
+  'existentialism':'existentialisme','expatriation':'expatriation','exploit':'exploit',
+  'explosion':'explosion','export':'exportation','exhibition':'exposition',
+  'impressionism':'expressionnisme','exegesis':'exegese',
+  // ═══ F ═══
+  'fable':'fable','mailman':'facteur','factorial':'factorielle','invoice':'facture',
+  'pheasant':'faisan','cliff':'falaise','brass':'fanfare','fantasy':'fantaisie',
+  'ghost':'fantome','joke':'farce','flour':'farine','fascination':'fascination',
+  'falcon':'faucon','armchair':'fauteuil','fauvism':'fauvisme','earthenware':'faience',
+  'woman':'femme','fennel':'fenouil','window':'fenetre','fermentation':'fermentation',
+  'lock':'fermeture','farmer':'fermier','fire':'feu','foliage':'feuillage',
+  'fireworks':'feux','carriage':'fiacre','fiber':'fibre','string':'ficelle',
+  'pride':'fierte','party':'fiesta','fig':'figue','figurine':'figurine',
+  'spinning':'filature','net':'filet','filigree':'filigrane','daughter':'fille',
+  'taxation':'fiscalite','fjord':'fjord','flamingo':'flamant','torch':'flambeau',
+  'flame':'flamme','flannel':'flanelle','flower':'fleur','snowflake':'flocon',
+  'anthology':'florilege','fluctuation':'fluctuation','fluorescence':'fluorescence',
+  'arrow':'fleche','scourge':'fleau','flute':'flute','folklore':'folklore',
+  'background':'fond','foundation':'fondation','fondue':'fondue','football':'football',
+  'blacksmith':'forgeron','formula':'formule','fortune':'fortune','forum':'forum',
+  'forest':'foret','fossil':'fossile','ditch':'fosse','lightning':'foudre',
+  'fern':'fougere','marten':'fouine','oven':'four','fork':'fourchette',
+  'ant':'fourmi','anteater':'fourmilier','supply':'fourniture','fragment':'fragment',
+  'strawberry':'fraise','raspberry':'framboise','franchise':'franchise','fright':'frayeur',
+  'brake':'freins','hornet':'frelon','fresco':'fresque','fridge':'frigo',
+  'fries':'frites','frying':'friture','cheese':'fromage','cheeseshop':'fromagerie',
+  'border':'frontiere','pediment':'fronton','brother':'frere','frigate':'fregate',
+  'frequency':'frequence','ash':'frene','fugitive':'fugitif','fugue':'fugue',
+  'smoke':'fumee','tightrope':'funambule','charcoal':'fusain','shooting':'fusillade',
+  'rocket':'fusee','fairy':'fee','feudalism':'feodalite','february':'fevrier','feast':'fete',
+  // ═══ G ═══
+  'galaxy':'galaxie','gallery':'galerie','pancake':'galette','galleon':'galion',
+  'gallop':'galop','galvanization':'galvanisation','galley':'galere','range':'gamme',
+  'glove':'gant','garage':'garage','mechanic':'garagiste','guardian':'gardien',
+  'station':'gare','brat':'garnement','boy':'garcon','gastronomy':'gastronomie',
+  'gaul':'gaulois','gazelle':'gazelle','jelly':'gelee','policeman':'gendarme',
+  'knee':'genou','gentian':'gentiane','kindness':'gentillesse',
+  'germination':'germination','geyser':'geyser','game':'gibier','flurry':'giboulee',
+  'leg':'gigot','vest':'gilet','ginger':'gingembre','giraffe':'girafe',
+  'weathervane':'girouette','frost':'givre','ice':'glace','glacier':'glacier',
+  'gladiator':'gladiateur','glaze':'glacure','glossary':'glossaire','glutton':'glouton',
+  'glucose':'glucide','glycine':'glycine','cup':'gobelet','golf':'golf',
+  'eraser':'gomme','gong':'gong','throat':'gorge','gorilla':'gorille',
+  'gouache':'gouache','abyss':'gouffre','gourd':'gourde','gutter':'gouttiere',
+  'rudder':'gouvernail','governance':'gouvernance','governor':'gouverneur',
+  'seagull':'goeland','schooner':'goelette','tier':'gradin','granite':'granit',
+  'gratin':'gratin','gratitude':'gratitude','gravel':'gravillon','gravity':'gravite',
+  'engraving':'gravure','clerk':'greffier','grenade':'grenade','attic':'grenier',
+  'frog':'grenouille','claw':'griffe','grill':'grille','cricket':'grillon',
+  'grimace':'grimace','creaking':'grincement','gray':'gris','growl':'grognement',
+  'gooseberry':'groseille','cave':'grotte','crane':'grue','sandstone':'gres',
+  'hail':'grele','lookout':'guetteur','quotation':'guillemet','guillotine':'guillotine',
+  'garland':'guirlande','guitar':'guitare','cheetah':'guepard','pedestal':'gueridon',
+  'guerrilla':'guerilla','healing':'guerison','wasp':'guepe','gym':'gymnase',
+  'cake':'gateau','gemini':'gemeaux','genius':'genie','genealogy':'genealogie',
+  'geologist':'geologue',
+  // ═══ H ═══
+  'hagiography':'hagiographie','rags':'haillon','halloween':'halloween',
+  'hallucination':'hallucination','hammock':'hamac','hamburger':'hamburger','hamster':'hamster',
+  'handball':'handball','hangar':'hangar','herring':'hareng','bean':'haricot',
+  'harness':'harnais','harp':'harpe','harpoon':'harpon','chance':'hasard',
+  'haiku':'haiku','oboe':'hautbois','grass':'herbe','hercules':'hercule',
+  'hermeneutics':'hermeneutique','hour':'heure','heuristic':'heuristique','owl':'hibou',
+  'seahorse':'hippocampe','hippopotamus':'hippopotame','swallow':'hirondelle',
+  'hieroglyph':'hieroglyphe','winter':'hiver','hockey':'hockey',
+  'hologram':'hologramme','lobster':'homard','man':'homme','homeostasis':'homeostasie',
+  'clock':'horloge','hydrangea':'hortensia','hops':'houblon','porthole':'hublot',
+  'bailiff':'huissier','mood':'humeur','humility':'humilite','humus':'humus',
+  'howl':'hurlement','oyster':'huitre','hydrogen':'hydrogene','mead':'hydromel',
+  'hyperbole':'hyperbole','mortgage':'hypotheque','hypothesis':'hypothese',
+  'hegemony':'hegemonie','helicopter':'helicoptere','helium':'helium',
+  'hedgehog':'herisson','heritage':'heritage','heron':'heron','heresy':'heresie',
+  'beech':'hetre','hospital':'hopital','hostess':'hotesse',
+  // ═══ I ═══
+  'icarus':'icare','iceberg':'iceberg','iconoclast':'iconoclaste','icon':'icone',
+  'idealism':'idealisme','ideogram':'ideogramme','ideology':'ideologie',
+  'igloo':'igloo','iguana':'iguane','illusion':'illusion','building':'immeuble',
+  'impartiality':'impartialite','deadend':'impasse','import':'importation',
+  'impression':'impression','printing':'imprimerie','improvisation':'improvisation',
+  'impunity':'impunite','incandescence':'incandescence','incantation':'incantation',
+  'fire':'incendie','incubation':'incubation','stranger':'inconnu','clue':'indice',
+  'indigo':'indigo','industry':'industrie','inflation':'inflation','nurse':'infirmier',
+  'infusion':'infusion','ingredient':'ingredient','engineer':'ingenieur',
+  'injustice':'injustice','flood':'inondation','inquisition':'inquisition','insect':'insecte',
+  'insignia':'insigne','teacher':'instituteur','insurrection':'insurrection',
+  'stewardship':'intendance','intention':'intention','intermittence':'intermittence',
+  'interval':'intervalle','intrigue':'intrigue','invasion':'invasion',
+  'inventory':'inventaire','ionosphere':'ionosphere','iridescence':'iridescence',
+  'iris':'iris','irony':'ironie','isthmus':'isthme','isotope':'isotope',
+  // ═══ J ═══
+  'fallow':'jachere','jacuzzi':'jacuzzi','jaguar':'jaguar','gush':'jaillissement',
+  'jealousy':'jalousie','leg':'jambe','ham':'jambon','january':'janvier',
+  'garden':'jardin','gardener':'jardinier','jasmine':'jasmin','yellow':'jaune',
+  'javelin':'javelot','jetty':'jetee','jewelry':'joaillerie','joy':'joie',
+  'junction':'jonction','juggler':'jongleur','junk':'jonque','enjoyment':'jouissance',
+  'newspaper':'journal','judo':'judo','twin':'jumeau','binoculars':'jumelles',
+  'skirt':'jupe','jurisprudence':'jurisprudence','juice':'jus','vigilante':'justicier',
+  // ═══ K ═══
+  'kabbalah':'kabbale','kaleidoscope':'kaleidoscope','kayak':'kayak','fair':'kermesse',
+  'ketchup':'ketchup','kidnapping':'kidnapping','kiosk':'kiosque','kiwi':'kiwi',
+  'knack':'knack','koala':'koala',
+  // ═══ L ═══
+  'label':'label','labyrinth':'labyrinthe','lake':'lac','lace':'lacet',
+  'lagoon':'lagune','wool':'laine','milk':'lait','lettuce':'laitue',
+  'lamp':'lampe','lantern':'lampion','spear':'lance','lobster':'langouste',
+  'prawn':'langoustine','language':'langue','lantern':'lanterne',
+  'rabbit':'lapin','lackey':'laquais','tear':'larme','larva':'larve',
+  'laser':'laser','latitude':'latitude','laurel':'laurier','laureate':'laureat',
+  'lavender':'lavande','secularism':'laicite','reading':'lecture','legato':'legato',
+  'lens':'lentille','leukemia':'leucemie','lever':'levier','lexicon':'lexique',
+  'link':'liaison','dragonfly':'libellule','freedom':'liberte','bookshop':'librairie',
+  'liberalism':'liberalisme','lichen':'lichen','slug':'limace','lemonade':'limonade',
+  'ingot':'lingot','lion':'lion','lipid':'lipide','liqueur':'liqueur',
+  'liquid':'liquide','bed':'lit','lithography':'lithographie','lawsuit':'litige',
+  'understatement':'litote','liturgy':'liturgie','delivery':'livraison','book':'livre',
+  'deliveryman':'livreur','locomotive':'locomotive','housing':'logement','software':'logiciel',
+  'longitude':'longitude','diamond':'losange','lottery':'loterie','lotto':'loto',
+  'ladle':'louche','wolf':'loup','magnifier':'loupe','otter':'loutre',
+  'cub':'louveteau','firefly':'luciole','glow':'lueur','sled':'luge',
+  'lunar':'lunaire','monday':'lundi','moon':'lune','glasses':'lunettes',
+  'polishing':'lustrage','chandelier':'lustre','legend':'legende','lemur':'lemur',
+  'leopard':'leopard','lizard':'lezard',
+  // ═══ M ═══
+  'macaroon':'macaron','machiavellianism':'machiavelisme','machine':'machine',
+  'madrigal':'madrigal','maestro':'maestro','store':'magasin','magazine':'magazine',
+  'magenta':'magenta','wizard':'magicien','magistrate':'magistrat','magma':'magma',
+  'magnificent':'magnifique','magnolia':'magnolia','magnetism':'magnetisme',
+  'swimsuit':'maillot','hand':'main','house':'maison','majority':'majorite',
+  'curse':'malediction','mammoth':'mammouth','mandate':'mandat','mandolin':'mandoline',
+  'mangrove':'mangrove','mango':'mangue','crank':'manivelle','maneuver':'manoeuvre',
+  'clemency':'mansuetude','mantis':'mante','coat':'manteau','mantilla':'mantille',
+  'manuscript':'manuscrit','merrygoround':'manege','mackerel':'maquereau','thicket':'maquis',
+  'maracas':'maracas','swamp':'marais','marathon':'marathon','merchandise':'marchandise',
+  'tuesday':'mardi','daisy':'marguerite','marriage':'mariage','marinade':'marinade',
+  'puppet':'marionnette','marmalade':'marmelade','pot':'marmite','groundhog':'marmotte',
+  'marl':'marne','marquetry':'marqueterie','hammer':'marteau','marsh':'marecage',
+  'tide':'maree','mascara':'mascara','masquerade':'mascarade','mask':'masque',
+  'mattress':'matelas','morning':'matin','matrix':'matrice','materialism':'materialisme',
+  'equipment':'materiel','mausoleum':'mausolee','mayonnaise':'mayonnaise','mason':'macon',
+  'corn':'mais','melon':'melon','beggar':'mendiant','menhir':'menhir',
+  'mint':'menthe','carpenter':'menuisier','sea':'mer','mercantilism':'mercantilisme',
+  'mercury':'mercure','meringue':'meringue','blackbird':'merle','wonder':'merveille',
+  'messenger':'messager','measurement':'mesure','meow':'miaulement','mica':'mica',
+  'microphone':'micro','microscope':'microscope','noon':'midi','honey':'miel',
+  'migratory':'migrateur','millefeuille':'millefeuille','vintage':'millesime','mimosa':'mimosa',
+  'minaret':'minaret','minimalism':'minimalisme','minority':'minorite','minotaur':'minotaure',
+  'midnight':'minuit','minute':'minute','timer':'minuteur','plum':'mirabelle',
+  'miraculous':'miraculeux','mirror':'miroir','mixer':'mixeur',
+  'modulation':'modulation','sparrow':'moineau','month':'mois','mold':'moisissure',
+  'molecule':'molecule','monarchy':'monarchie','monarchist':'monarchiste','monarch':'monarque',
+  'instructor':'moniteur','currency':'monnaie','monograph':'monographie','monopoly':'monopole',
+  'monster':'monstre','mountain':'montagne','hotairballoon':'montgolfiere',
+  'watch':'montre','moraine':'moraine','pieces':'morceaux','mortar':'mortier',
+  'mortuary':'mortuaire','cod':'morue','mosaic':'mosaique','engine':'moteur',
+  'motorcycle':'moto','fly':'mouche','handkerchief':'mouchoir','gull':'mouette',
+  'mitten':'moufle','mussel':'moule','mousse':'mousse','monsoon':'mousson',
+  'mustache':'moustache','mosquito':'moustique','mustard':'moutarde','sheep':'mouton',
+  'movement':'mouvement','multiple':'multiple','wall':'mur','whisper':'murmure',
+  'moray':'murene','snout':'museau','music':'musique','museum':'musee',
+  'mycelium':'mycelium','mystery':'mystere','mythology':'mythologie','mast':'mat',
+  'mother':'mere','meter':'metre','mechanics':'mecanique','patronage':'mecenat',
+  'medal':'medaille','medallion':'medaillon','mediator':'mediateur','jellyfish':'meduse',
+  'megalomania':'megalomanie','melancholy':'melancolie','mixture':'melange',
+  'melanoma':'melanome','melody':'melodie','memory':'memoire','meningitis':'meningite',
+  'contempt':'mepris','meridian':'meridien','chickadee':'mesange',
+  'metabolism':'metabolisme','metamorphosis':'metamorphose','metaphor':'metaphore',
+  'metaphysics':'metaphysique','metonymy':'metonymie','subway':'metro','meteor':'meteore',
+  // ═══ N ═══
+  'nadir':'nadir','nanotechnology':'nanotechnologie','narcissus':'narcisse','swimming':'natation',
+  'naturalism':'naturalisme','shipwreck':'naufrage','turnip':'navet','navigator':'navigateur',
+  'nectar':'nectar','snow':'neige','neurologist':'neurologue','neutrality':'neutralite',
+  'neutron':'neutron','nose':'nez','niche':'niche','nest':'nid',
+  'nihilism':'nihilisme','level':'niveau','nobility':'noblesse','nocturne':'nocturne',
+  'christmas':'noel','black':'noir','hazelnut':'noisette','walnut':'noix',
+  'nomination':'nomination','nostalgia':'nostalgie','notary':'notaire','note':'note',
+  'newborn':'nourrisson','novel':'nouvelle','cloud':'nuage','nuisance':'nuisance',
+  'numismatics':'numismatique','nymph':'nymphe','nebula':'nebuleuse',
+  'necessary':'necessaire','necropolis':'necropole','negotiation':'negociation',
+  'neologism':'neologisme',
+  // ═══ O ═══
+  'oasis':'oasis','obligation':'obligation','obscurantism':'obscurantisme',
+  'obsession':'obsession','obsidian':'obsidienne','obsolescence':'obsolescence',
+  'obstacle':'obstacle','obedience':'obeissance','obelisk':'obelisque',
+  'occasion':'occasion','ochre':'ocre','octave':'octave','ocean':'ocean',
+  'eye':'oeil','egg':'oeuf','warhead':'ogive','goose':'oie',
+  'onion':'oignon','bird':'oiseau','oligarchy':'oligarchie','olive':'olive',
+  'omelette':'omelette','omniscience':'omniscience','shower':'ondee',
+  'fingernail':'ongle','ontology':'ontologie','opposition':'opposition',
+  'opera':'opera','operation':'operation','storm':'orage','orange':'orange',
+  'oratory':'oratoire','orbit':'orbite','orchid':'orchidee','computer':'ordinateur',
+  'prescription':'ordonnance','ear':'oreille','pillow':'oreiller',
+  'goldsmithing':'orfevrerie','organ':'orgue','oregano':'origan',
+  'ornithology':'ornithologie','orphan':'orphelin','skeleton':'ossature',
+  'ostracism':'ostracisme','osteoporosis':'osteoporose','bear':'ours','urchin':'oursin',
+  'tooling':'outillage','opening':'ouverture','oval':'ovale','ovation':'ovation',
+  'oxygen':'oxygene','oxymoron':'oxymore',
+  // ═══ P ═══
+  'mess':'pagaille','pagoda':'pagode','doormat':'paillasse','sequin':'paillette',
+  'bread':'pain','palace':'palais','palette':'palette','palimpsest':'palimpseste',
+  'palindrome':'palindrome','fence':'palissade','rosewood':'palissandre','palm':'palme',
+  'clam':'palourde','paleontology':'paleontologie','pamphlet':'pamphlet',
+  'grapefruit':'pamplemousse','plume':'panache','panacea':'panacee','sign':'pancarte',
+  'panda':'panda','panel':'panneau','panorama':'panorama','pants':'pantalon',
+  'pantheism':'pantheisme','pantheon':'pantheon','pantomime':'pantomime',
+  'stationery':'papeterie','butterfly':'papillon','papyrus':'papyrus',
+  'parachute':'parachute','paracetamol':'paracetamol','paradigm':'paradigme',
+  'paradise':'paradis','paradox':'paradoxe','umbrella':'parapluie',
+  'parasitism':'parasitisme','screen':'paravent','park':'parc','parchment':'parchemin',
+  'overcoat':'pardessus','parenthesis':'parenthese','sloth':'paresseux',
+  'perfume':'parfum','perfumery':'parfumerie','parking':'parking','parliament':'parlement',
+  'paroxysm':'paroxysme','godfather':'parrain','passage':'passage','pass':'passe',
+  'passport':'passeport','strainer':'passoire','pastel':'pastel','watermelon':'pasteque',
+  'skate':'patin','skating':'patinage','patriarch':'patriarche','heritage':'patrimoine',
+  'boss':'patron','sponsorship':'patronage','paw':'patte','pavilion':'pavillon',
+  'comb':'peigne','painter':'peintre','painting':'peinture','fur':'pelage',
+  'film':'pellicule','ball':'pelote','platoon':'peloton','lawn':'pelouse',
+  'penalty':'penalty','pendant':'pendentif','closet':'penderie','pendulum':'pendule',
+  'pension':'pension','pentagram':'pentagramme','drill':'perceuse','perch':'perche',
+  'partridge':'perdrix','perfection':'perfection','pergola':'pergola','pearl':'perle',
+  'permission':'permission','permutation':'permutation','search':'perquisition',
+  'parrot':'perroquet','parsley':'persil','perspective':'perspective','fear':'peur',
+  'pharaoh':'pharaon','lighthouse':'phare','pharmacy':'pharmacie',
+  'philanthropy':'philanthropie','philosopher':'philosophe','philosophy':'philosophie',
+  'phonetics':'phonetique','seal':'phoque','phosphorescence':'phosphorescence',
+  'photo':'photo','photocopy':'photocopie','photography':'photographie',
+  'photosynthesis':'photosynthese','phenomenon':'phenomene','pianissimo':'pianissimo',
+  'piano':'piano','pictogram':'pictogramme','magpie':'pie','foot':'pied',
+  'octopus':'pieuvre','pigeon':'pigeon','pilaster':'pilastre','pillar':'pilier',
+  'pestle':'pilon','pilot':'pilote','pliers':'pince','paintbrush':'pinceau',
+  'penguin':'pingouin','guineafowl':'pintade','piranha':'piranha','pirate':'pirate',
+  'dugout':'pirogue','pirouette':'pirouette','pool':'piscine','dandelion':'pissenlit',
+  'pistachio':'pistache','pistil':'pistil','peony':'pivoine','pizza':'pizza',
+  'pizzicato':'pizzicato','coin':'piece','placebo':'placebo','beach':'plage',
+  'plea':'plaidoirie','advocacy':'plaidoyer','plain':'plaine','joke':'plaisanterie',
+  'board':'planche','plankton':'plancton','glider':'planeur','plantation':'plantation',
+  'planet':'planete','platelet':'plaquette','plastic':'plastique','dish':'plat',
+  'plateau':'plateau','turntable':'platine','plumber':'plombier','dive':'plongeon',
+  'diving':'plongee','rain':'pluie','plumage':'plumage','feather':'plume',
+  'plebiscite':'plebiscite','fullness':'plenitude','pleonasm':'pleonasme',
+  'tire':'pneu','pneumatic':'pneumatique','pocket':'pochette','dagger':'poignard',
+  'pear':'poire','leek':'poireau','fish':'poisson','fishmarket':'poissonnerie',
+  'pepper':'poivre','police':'police','policeman':'policier','scamp':'polisson',
+  'pollination':'pollinisation','controversy':'polemique','ointment':'pommade',
+  'apple':'pomme','firefighter':'pompier','punctuation':'ponctuation','bridge':'pont',
+  'pontifical':'pontifical','popular':'populaire','pork':'porc','porcelain':'porcelaine',
+  'gate':'portail','door':'porte','wallet':'portefeuille','portiere':'portiere',
+  'portrait':'portrait','range':'portee','mail':'poste','postulate':'postulat',
+  'posterity':'posterite','pottery':'poterie','potion':'potion','pumpkin':'potiron',
+  'trashcan':'poubelle','henhouse':'poulailler','hen':'poule','chicken':'poulet',
+  'pulley':'poulie','stern':'poupe','purple':'pourpre','dust':'poussiere',
+  'pan':'poele','saucepan':'poelon','pragmatism':'pragmatisme',
+  'prestidigitation':'prestidigitation','prestige':'prestige','primrose':'primevere',
+  'primordial':'primordial','spring':'printemps','prism':'prisme','prison':'prison',
+  'probability':'probabilite','processor':'processeur','procession':'procession',
+  'procrastination':'procrastination','prosecutor':'procureur','prodigious':'prodigieux',
+  'professor':'professeur','profiterole':'profiterole','stroll':'promenade',
+  'promise':'promesse','promulgation':'promulgation','prometheus':'promethee',
+  'prophecy':'prophetie','prosperity':'prosperite','protocol':'protocole',
+  'proton':'proton','protein':'proteine','prow':'proue','prowess':'prouesse',
+  'origin':'provenance','providence':'providence','provision':'provision',
+  'plum':'prune','pupil':'prunelle','preamble':'preambule','tutor':'precepteur',
+  'cliff':'precipice','precipitation':'precipitation','predator':'predateur',
+  'predestination':'predestination','prelude':'prelude','prerogative':'prerogative',
+  'president':'president','prevention':'prevention','psychoanalysis':'psychanalyse',
+  'psychiatrist':'psychiatre','pterodactyl':'pterodactyle','advertising':'publicite',
+  'flea':'puce','power':'puissance','sweater':'pull','pulsar':'pulsar',
+  'punishment':'punition','purgatory':'purgatoire','purification':'purification',
+  'puzzle':'puzzle','pajamas':'pyjama','pyramid':'pyramide','pyrotechnics':'pyrotechnie',
+  'easter':'paques','pasta':'pates','pastry':'patisserie','pasture':'paturage',
+  'pilgrimage':'pelerinage','father':'pere','toll':'peage','pedagogy':'pedagogie',
+  'pedal':'pedale','pediatrician':'pediatre','pegasus':'pegase','pelican':'pelican',
+  'peninsula':'peninsule','penance':'penitence','shadow':'penombre',
+  'perigee':'perigee','periscope':'periscope','petal':'petale','petition':'petition',
+  'fishing':'peche',
+  // ═══ Q ═══
+  'grid':'quadrillage','wharf':'quai','neighborhood':'quartier','quasar':'quasar',
+  'quatrain':'quatrain','dumpling':'quenelle','quarrel':'querelle',
+  'questionnaire':'questionnaire','tail':'queue','quiche':'quiche',
+  'pin':'quille','hardware':'quincaillerie','quintessence':'quintessence',
+  'receipt':'quittance','daily':'quotidien',
+  // ═══ R ═══
+  'plane':'rabot','shortcut':'raccourci','raclette':'raclette','radar':'radar',
+  'raft':'radeau','radiation':'radiation','radiologist':'radiologue','radish':'radis',
+  'refinement':'raffinement','stew':'ragout','ray':'raie','grape':'raisin',
+  'reasonable':'raisonnable','hiking':'randonnee','storage':'rangement',
+  'protractor':'rapporteur','racket':'raquette','razor':'rasoir',
+  'gathering':'rassemblement','ratatouille':'ratatouille','rationalism':'rationalisme',
+  'delight':'ravissement','radiance':'rayonnement','recipe':'recette',
+  'resurgence':'recrudescence','rectangle':'rectangle','surrender':'reddition',
+  'referendum':'referendum','relativism':'relativisme','relief':'relief',
+  'religious':'religieux','reliquary':'reliquaire','refund':'remboursement',
+  'trailer':'remorque','rampart':'rempart','renaissance':'renaissance','fox':'renard',
+  'meeting':'rencontre','reinforcement':'renforcement','information':'renseignement',
+  'representation':'representation','reptile':'reptile','requiem':'requiem',
+  'shark':'requin','respect':'respect','spring':'ressort','restaurant':'restaurant',
+  'retirement':'retraite','reunion':'retrouvaille','rhapsody':'rhapsodie',
+  'rhinoceros':'rhinoceros','rhizome':'rhizome','rhododendron':'rhododendron',
+  'rhetoric':'rhetorique','curtain':'rideau','ridiculous':'ridicule',
+  'retort':'riposte','shore':'rivage','river':'riviere','rice':'riz',
+  'dress':'robe','faucet':'robinet','robot':'robot','rock':'rocher',
+  'rocky':'rocheux','rococo':'rococo','novel':'roman','rosemary':'romarin',
+  'round':'ronde','washer':'rondelle','rosette':'rosace','rose':'rose',
+  'nightingale':'rossignol','dew':'rosee','rotation':'rotation','red':'rouge',
+  'mullet':'rouget','roller':'rouleau','rumbling':'roulement','road':'route',
+  'rubato':'rubato','beehive':'ruche','rugby':'rugby','stream':'ruisseau',
+  'breakup':'rupture','rhythm':'rythme','rake':'rateau','rule':'regle',
+  'reception':'reception','recession':'recession','reef':'recif',
+  'harvest':'recolte','reward':'recompense','recess':'recreation',
+  'recurrence':'recurrence','redemption':'redemption','refrigerator':'refrigerateur',
+  'refutation':'refutation','regency':'regence','regiment':'regiment',
+  'regulation':'reglementation','reminiscence':'reminiscence','repertoire':'repertoire',
+  'republic':'republique','requisition':'requisition','indictment':'requisitoire',
+  'network':'reseau','residence':'residence','resilience':'resilience','resin':'resine',
+  'resistance':'resistance','reunion':'reunion','alarm':'reveil',
+  'streetlamp':'reverbere','revolution':'revolution','dream':'reve',
+  // ═══ S ═══
+  'sand':'sable','hourglass':'sablier','sabotage':'sabotage','clogs':'sabots',
+  'bag':'sac','sucrose':'saccharose','priesthood':'sacerdoce','sacrifice':'sacrifice',
+  'saffron':'safran','wisdom':'sagesse','sagittarius':'sagittaire','salad':'salade',
+  'salary':'salaire','salamander':'salamandre','livingroom':'salon','samurai':'samourai',
+  'sanctuary':'sanctuaire','sandal':'sandale','sandwich':'sandwich','boar':'sanglier',
+  'pine':'sapin','sarcasm':'sarcasme','sarcophagus':'sarcophage','sardine':'sardine',
+  'satellite':'satellite','satin':'satin','satire':'satire','satisfaction':'satisfaction',
+  'sausage':'saucisse','salmon':'saumon','grasshopper':'sauterelle','savanna':'savane',
+  'soap':'savon','soapdish':'savonnette','saxophone':'saxophone','scandal':'scandale',
+  'beetle':'scarabee','seal':'sceau','skepticism':'scepticisme','schist':'schiste',
+  'saw':'scie','sclerosis':'sclerose','scoliosis':'scoliose','scooter':'scooter',
+  'scorpion':'scorpion','scrabble':'scrabble','ballot':'scrutin','sculptor':'sculpteur',
+  'sculpture':'sculpture','screenplay':'scenario','second':'seconde',
+  'secretary':'secretaire','salt':'sel','week':'semaine','seed':'semence',
+  'trail':'sentier','sentinel':'sentinelle','septicemia':'septicemie','snake':'serpent',
+  'coil':'serpentin','greenhouse':'serre','locksmith':'serrurier','waiter':'serveur',
+  'sextant':'sextant','sfumato':'sfumato','shampoo':'shampooing','shorts':'short',
+  'whistle':'sifflet','signature':'signature','flint':'silex','silhouette':'silhouette',
+  'simplification':'simplification','monkey':'singe','disaster':'sinistre',
+  'seismograph':'sismographe','situation':'situation','century':'siecle',
+  'ski':'ski','snowboard':'snowboard','sister':'soeur','silk':'soie',
+  'evening':'soir','sole':'sole','sun':'soleil','solemnity':'solennite',
+  'soloist':'soliste','sleep':'sommeil','sleepwalker':'somnambule',
+  'sumptuous':'somptueux','sonar':'sonar','sonata':'sonate','survey':'sondage',
+  'sonnet':'sonnet','sophism':'sophisme','soprano':'soprano',
+  'witchcraft':'sorcellerie','witch':'sorciere','jolt':'soubresaut',
+  'saucer':'soucoupe','souffle':'souffle','soup':'soupe','tureen':'soupiere',
+  'suspicion':'soupcon','source':'source','smile':'sourire','mouse':'souris',
+  'memory':'souvenir','sovereignty':'souverainete','spatula':'spatule',
+  'show':'spectacle','spectrometry':'spectrometrie','sphinx':'sphinx','sphere':'sphere',
+  'sport':'sport','speculation':'speculation','skeleton':'squelette',
+  'staccato':'staccato','stadium':'stade','stalactite':'stalactite',
+  'stalagmite':'stalagmite','station':'station','steppe':'steppe',
+  'stoicism':'stoicisme','stratagem':'stratageme','stratification':'stratification',
+  'stratosphere':'stratosphere','strategy':'strategie','stanza':'strophe',
+  'stupor':'stupeur','pen':'stylo','stele':'stele','subduction':'subduction',
+  'subordination':'subordination','subterfuge':'subterfuge','subsidy':'subvention',
+  'sugar':'sucre','suffrage':'suffrage','suggestion':'suggestion','supernova':'supernova',
+  'superstition':'superstition','supplement':'supplement','supremacy':'suprematie',
+  'surfing':'surf','surrealism':'surrealisme','surveillance':'surveillance',
+  'guard':'surveillant','suspension':'suspension','syllogism':'syllogisme',
+  'symbiosis':'symbiose','sympathy':'sympathie','symphony':'symphonie',
+  'synagogue':'synagogue','synapse':'synapse','syncretism':'syncretisme',
+  'synesthesia':'synesthesie','pruner':'secateur','drought':'secheresse',
+  'secular':'seculaire','security':'securite','sediment':'sediment',
+  'seduction':'seduction','earthquake':'seisme','selection':'selection',
+  'semantics':'semantique','semaphore':'semaphore','senator':'senateur',
+  'sequoia':'sequoia','serendipity':'serendipite','silkscreen':'serigraphie',
+  'serenity':'serenite',
+  // ═══ T ═══
+  'tabasco':'tabasco','tabernacle':'tabernacle','table':'table','painting':'tableau',
+  'tablet':'tablette','apron':'tablier','stool':'tabouret','tachycardia':'tachycardie',
+  'tackle':'tacle','drum':'tambour','tambourine':'tambourin','sieve':'tamis',
+  'tangent':'tangente','den':'taniere','tannin':'tannin','carpet':'tapis',
+  'tapestry':'tapisserie','rate':'tarif','pricing':'tarification','pie':'tarte',
+  'tartiflette':'tartiflette','armadillo':'tatou','tattoo':'tatoue','bull':'taureau',
+  'tautology':'tautologie','taxi':'taxi','taxonomy':'taxinomie','taiga':'taiga',
+  'teak':'teck','tectonics':'tectonique','dye':'teinture','tempo':'tempo',
+  'temporality':'temporalite','temperature':'temperature','storm':'tempete',
+  'tenderness':'tendresse','tennis':'tennis','terminus':'terminus','field':'terrain',
+  'terrace':'terrasse','earth':'terre','soil':'terreau','terrier':'terrier',
+  'tureen':'terrine','territory':'territoire','textiles':'textiles',
+  'baths':'thermes','thermodynamics':'thermodynamique','thermometer':'thermometre',
+  'tuna':'thon','thyme':'thym','tea':'the','teapot':'theiere',
+  'theocracy':'theocratie','theorem':'theoreme','thesaurus':'thesaurus','theater':'theatre',
+  'tiger':'tigre','stamp':'timbre','shooting':'tir','tiramisu':'tiramisu',
+  'piggybank':'tirelire','drawer':'tiroir','titanium':'titane',
+  'toboggan':'toboggan','canvas':'toile','toilet':'toilettes','roof':'toit',
+  'tomato':'tomate','tonality':'tonalite','mower':'tondeuse','thunder':'tonnerre',
+  'topography':'topographie','dishcloth':'torchon','tornado':'tornade','torpedo':'torpille',
+  'torrent':'torrent','turtle':'tortue','totalitarianism':'totalitarisme','toucan':'toucan',
+  'touch':'touche','tundra':'toundra','peatbog':'tourbiere','turret':'tourelle',
+  'torment':'tourmente','tournament':'tournament','sunflower':'tournesol',
+  'screwdriver':'tournevis','tractor':'tracteur','tradition':'tradition',
+  'tragedy':'tragedie','betrayal':'trahison','train':'train','treaty':'traite',
+  'trajectory':'trajectoire','trampoline':'trampoline','streetcar':'tramway',
+  'transcendence':'transcendance','transept':'transept','transhumance':'transhumance',
+  'transmission':'transmission','transmutation':'transmutation',
+  'trapper':'trappeur','trapeze':'trapeze','crossing':'traversee','triangle':'triangle',
+  'tribulation':'tribulation','court':'tribunal','knitting':'tricot',
+  'trigonometry':'trigonometrie','triumph':'triomphe','trumpet':'trompette',
+  'trophy':'trophee','tropic':'tropique','scooter':'trottinette','sidewalk':'trottoir',
+  'troubadour':'troubadour','kit':'trousse','trousseau':'trousseau','trout':'truite',
+  'tremolo':'tremolo','treasure':'tresor','throne':'trone','tsunami':'tsunami',
+  'tuba':'tuba','tuber':'tubercule','tulip':'tulipe','tunnel':'tunnel',
+  'turbot':'turbot','turbulence':'turbulence','turquoise':'turquoise',
+  'tutor':'tuteur','pipe':'tuyau','typhoon':'typhon','typography':'typographie',
+  'telescope':'telescope','phone':'telephone','television':'television',
+  'tenor':'tenor','head':'tete',
+  // ═══ U-V ═══
+  'ubiquity':'ubiquite','ukulele':'ukulele','ulysses':'ulysse','unanimity':'unanimite',
+  'uniform':'uniforme','uranium':'uranium','urbanization':'urbanisation',
+  'urbanist':'urbaniste','emergency':'urgence','utensil':'ustensile',
+  'utilitarianism':'utilitarisme','utopia':'utopie','vacation':'vacances',
+  'cow':'vache','vagabond':'vagabond','wave':'vague','ship':'vaisseau',
+  'suitcase':'valise','valley':'vallee','vampire':'vampire','vanilla':'vanille',
+  'boasting':'vantardise','variation':'variation','vulture':'vautour','vector':'vecteur',
+  'velvet':'velours','harvest':'vendange','revenge':'vengeance','wind':'vent',
+  'belly':'ventre','ventriloquism':'ventriloquie','verdict':'verdict',
+  'vermilion':'vermillon','glass':'verre','versatility':'versatilite',
+  'aquarius':'verseau','green':'vert','cloakroom':'vestiaire','viaduct':'viaduc',
+  'vibraphone':'vibraphone','vibrato':'vibrato','victory':'victoire',
+  'vigilance':'vigilance','winemaker':'vigneron','viking':'viking','village':'village',
+  'wine':'vin','vinegar':'vinaigre','vinaigrette':'vinaigrette',
+  'purple':'violet','violet':'violette','violin':'violon','cello':'violoncelle',
+  'comma':'virgule','virtuoso':'virtuose','virtuosity':'virtuosite','virus':'virus',
+  'screw':'vis','visitor':'visiteur','stainedglass':'vitrail',
+  'vocabulary':'vocabulaire','sail':'voile','sailboat':'voilier',
+  'neighborhood':'voisinage','car':'voiture','steering':'volant','volcano':'volcan',
+  'volcanology':'volcanologie','volleyball':'volleyball','volunteer':'volontaire',
+  'acrobatics':'voltige','scroll':'volute','trip':'voyage','traveler':'voyageur',
+  'rumble':'vrombissement','vulcanization':'vulcanisation','vehemence':'vehemence',
+  'bicycle':'velo','velocity':'velocite','veneration':'veneration','veranda':'veranda',
+  'genuine':'veritable','veterinarian':'veterinaire',
+  // ═══ W-X-Y-Z ═══
+  'wagon':'wagon','wasabi':'wasabi','xylophone':'xylophone','xenophobia':'xenophobie',
+  'sherry':'xeres','yacht':'yacht','yogurt':'yaourt','zeugma':'zeugme',
+  'zoology':'zoologie','zebra':'zebre','stripe':'zebrure','zenith':'zenith',
+  // ═══ É- ═══
+  'dazzle':'eblouissement','landslide':'eboulement','boiling':'ebullition','ebony':'ebene',
+  'scarlet':'ecarlate','scarf':'echarpe','chess':'echecs','ladder':'echelle',
+  'splash':'eclaboussure','sparkle':'eclat','eclipse':'eclipse','lock':'ecluse',
+  'school':'ecole','economy':'economie','crayfish':'ecrevisse','writing':'ecriture',
+  'collapse':'ecroulement','squirrel':'ecureuil','edifice':'edifice','church':'eglise',
+  'elastic':'elastique','electrician':'electricien','electricity':'electricite',
+  'electrolysis':'electrolyse','electron':'electron','elixir':'elixir',
+  'eloquence':'eloquence','elegy':'elegie','elephant':'elephant',
+  'emancipation':'emancipation','emerald':'emeraude','amazement':'emerveillement',
+  'riot':'emeute','emigration':'emigration','broadcast':'emission','energy':'energie',
+  'thickness':'epaisseur','blossoming':'epanouissement','shoulder':'epaule',
+  'sparrowhawk':'epervier','grocery':'epicerie','spinach':'epinard','pin':'epingle',
+  'epiphany':'epiphanie','epistolary':'epistolaire','epistemology':'epistemologie',
+  'epitaph':'epitaphe','sponge':'eponge','epic':'epopee','amazing':'epoustouflant',
+  'ordeal':'epreuve','sword':'epee','equator':'equateur','setsquare':'equerre',
+  'equilibrist':'equilibriste','team':'equipe','maple':'erable','erudition':'erudition',
+  'eruption':'eruption','stable':'etable','establishment':'etablissement',
+  'shelf':'etagere','standard':'etendard','spark':'etincelle','star':'etoile',
+  'astonishment':'etonnement','etymology':'etymologie','summer':'ete',
+  'evaporation':'evaporation','sink':'evier','evolution':'evolution','event':'evenement',
+};
+
+// Index rapide synonymes
 const _synonymMap=new Map();
 for(const group of SYNONYM_GROUPS){
   for(const w of group){
@@ -3630,27 +4092,29 @@ function isSynonym(clue,secretWord){
   return false;
 }
 
+function isEnglishTranslation(clue,secretWord){
+  const c=normLetters(clue), w=normLetters(secretWord);
+  const frenchOfClue=ENGLISH_TRANSLATIONS[c];
+  if(frenchOfClue && normLetters(frenchOfClue)===w) return true;
+  for(const [eng,fr] of Object.entries(ENGLISH_TRANSLATIONS)){
+    if(normLetters(fr)===w && normLetters(eng)===c) return true;
+  }
+  return false;
+}
+
 function isSameFamily(clue,secretWord){
   const c=normLetters(clue), w=normLetters(secretWord);
   if(c.length<3 || w.length<3) return false;
-
-  // 1) L'un contient l'autre (ex: livre/livraison, chant/chanson, fleur/fleuriste)
   if(c.length>=4 && w.length>=4){
     if(c.includes(w) || w.includes(c)) return true;
   }
-
-  // 2) Racine commune longue (≥5 lettres en commun au début)
   let common=0;
   const minLen=Math.min(c.length,w.length);
   for(let i=0;i<minLen;i++){
-    if(c[i]===w[i]) common++;
-    else break;
+    if(c[i]===w[i]) common++; else break;
   }
-  // Racine commune ≥ 5 lettres OU ≥ 70% du mot le plus court
   if(common>=5 || (common>=4 && common>=minLen*0.7)) return true;
-
-  // 3) Suffixes courants : même base + variante
-  const suffixes=['er','ir','re','eur','euse','tion','sion','ment','iste','ique','ible','able','eux','euses','ier','iere','age','ure','ence','ance','ite','isme','ien','ienne','ette','elle','al','ale','el','eux','ive','if','oire'];
+  const suffixes=['er','ir','re','eur','euse','tion','sion','ment','iste','ique','ible','able','eux','ier','iere','age','ure','ence','ance','ite','isme','ien','ienne','ette','elle','al','ale','ive','if','oire'];
   for(const suf of suffixes){
     if(c.endsWith(suf) && c.length>suf.length+2){
       const cBase=c.slice(0,-suf.length);
@@ -3661,21 +4125,424 @@ function isSameFamily(clue,secretWord){
       if(wBase.length>=3 && c.startsWith(wBase)) return true;
     }
   }
+  return false;
+}
 
+// ── Set de mots acceptés comme indices (jeu + synonymes + traductions + mots courants) ──
+const _allowedClueWords=new Set();
+(function(){
+  for(const arr of [WORDS_EASY,WORDS_MEDIUM,WORDS_HARD])
+    for(const w of arr) _allowedClueWords.add(normLetters(w));
+  for(const group of SYNONYM_GROUPS)
+    for(const w of group) _allowedClueWords.add(normLetters(w));
+  for(const eng of Object.keys(ENGLISH_TRANSLATIONS)) _allowedClueWords.add(normLetters(eng));
+  // Mots français courants utilisables comme indices (~4000+ mots)
+  const extra=(
+    // ── Adjectifs (700+) ──
+    'absurde adorable agreable amer amusant ancien aplati atroce aveugle banal bizarre bon brave brillant '+
+    'brutal calme capable celebre charmant cher clair comique confortable content correct cruel curieux '+
+    'dangereux delicat delicieux desagreable different difficile digne discret doux drole dur economique '+
+    'efficace elegant ennuyeux enorme epais etrange etroit exact excellent exceptionnel extraordinaire '+
+    'facile faible familier fantastique fatal favorable feroce fidele fier fin fixe flou formidable '+
+    'fragile frais franc frequent froid furieux genereux gentil glacial gourmand gracieux grave gris gros '+
+    'habile heureux horrible humble humide identique immense immobile important impossible incroyable '+
+    'independant indispensable infini injuste innocent inquiet intelligent interessant interieur inutile '+
+    'invisible ironique jaloux joli joyeux juste laid large lent libre lisse lointain lourd lumineux '+
+    'magnifique maigre malade maladroit malin malpoli massif mauvais mechant mediocre mignon minuscule '+
+    'mobile moderne modeste moelleux monstrueux morne mortel mou moyen mysterieux naif naturel necessaire '+
+    'nerveux neuf noble normal nouveau nu nul obscur officiel oppose ordinaire original paisible pale '+
+    'parfait paresseux particulier passionnant patient pauvre penible permanent personnel peureux physique '+
+    'pire plaisant plat poli populaire positif possible precieux premier present pret principal prive '+
+    'probable profond propre prudent public puissant pur quelconque quotidien raisonnable rapide rare ravi '+
+    'ravissant reel regulier remarquable responsable riche ridicule rigide rigolo robuste romantique rude '+
+    'sage sale satisfait sauvage savant secret serieux severe silencieux soigneux solide solitaire souple '+
+    'special splendide sportif strict stupide sublime subtil suffisant superieur supreme surprenant '+
+    'sympathique tendre terrible timide tiede tolerant total traditionnel tranquille transparent triste '+
+    'tropical typique unique universel urgent utile vague vaillant valable variable vaste veritable vide '+
+    'vieux vif vigoureux violent visible vivant voisin volontaire vulgaire superbe remarquable '+
+    'fantastique bizarre etrange curieux drole comique hilarant marrant amusant divertissant '+
+    'energique dynamique actif passif serein paisible detendu anxieux stresse preoccupe soucieux pensif '+
+    'reveur distrait concentre microscopique gigantesque colossal monumental titanesque pratique commode '+
+    'fonctionnel essentiel crucial vital fondamental provisoire temporaire permanent definitif eternel '+
+    'illimite absolu parallele perpendiculaire diagonal horizontal vertical oblique transversal rugueux '+
+    'soyeux veloute satine mat terne eclatant opaque translucide fluorescent phosphorescent bruyant '+
+    'assourdissant tonitruant strident aigu sourd parfume odorant puant fetide nauseabond aromatique '+
+    'epice bouillant tempere clement mouille trempe aride desseche hydrate imbibe sature souple flexible '+
+    'raide tendu elastique maleable cassant usager usage contemporain futuriste retro vintage classique '+
+    'creux superficiel bombe convexe concave arrondi pointu tranchant coupant affute emousse aiguise '+
+    'piquant mordant cinglant percutant suivant precedent prochain final ultime initial intermediate '+
+    'aerien aquatique terrestre maritime fluvial urbain rural sauvage domestique carnivore herbivore '+
+    'omnivore nocturne diurne annuel mensuel hebdomadaire journalier matinal tardif precoce ponctuel '+
+    'regulier irregulier symetrique asymetrique equilibre desequilibre stable instable volumineux '+
+    'compact etanche impermeable poreux absorbant conducteur isolant magnetique electrique nucleaire '+
+    'chimique biologique organique synthetique artificiel numerique analogique automatique manuel '+
+    'mecanique hydraulique pneumatique thermique optique acoustique visuel auditif tactile olfactif '+
+    'gustatif cerebral musculaire osseux cutane vasculaire cardiaque pulmonaire hepatique renal digestif '+
+    'hormonal genetique hereditaire congenital chronique viral bacterien parasitaire allergique '+
+    'toxique radioactif comestible nutritif calorique proteine glucidique lipidique vitamine mineral '+
+    'feculant fibreux cremeux croquant fondant mousseux petillant gazeux alcoolise decafeine bio '+
+    'artisanal industriel prefabrique recycle biodegradable renouvelable durable ecologique polluant '+
+    'continental polaire equatorial pluvieux neigeux orageux venteux ensoleille nuageux brumeux '+
+    'couvert degage sombre terne vif pastel fluo dore argente bronze cuivre platine nacre perle '+
+    'ivoire corail turquoise emeraude saphir rubis ambre jade grenat cerise framboise abricot peche '+
+    'citron olive kaki bordeaux marine ciel lavande mauve fuchsia saumon beige taupe caramel chocolat '+
+    'noisette moutarde rouille ocre indigo cyan magenta '+
+    // ── Verbes courants (800+) ──
+    'abandonner accepter accompagner accorder accrocher acheter admettre admirer adopter adorer afficher '+
+    'affirmer agir aider ajouter allumer amener analyser annoncer apercevoir apparaitre appeler apporter '+
+    'apprendre approcher approuver appuyer arracher arranger arriver assister assurer attacher atteindre '+
+    'attendre attirer attraper augmenter avaler avancer avouer baisser batir battre blesser bloquer '+
+    'bouger briller briser bruler calculer calmer caracteriser causer cesser charger chasser choisir '+
+    'circuler coiffer collaborer coller combattre commander communiquer comparer completer composer '+
+    'comprendre compter concentrer conclure conduire confirmer confondre connaitre conquerir consacrer '+
+    'conseiller conserver considerer constituer construire consulter contenir continuer contribuer '+
+    'controler convaincre correspondre coucher couler couper couvrir craindre creer critiquer croire '+
+    'cueillir decider decouvrir decrire defendre definir degager delivrer demander demeurer demolir '+
+    'depasser dependre deposer derouler desirer dessiner detacher determiner detester detruire developper '+
+    'devenir deviner diriger disposer distinguer distribuer dominer embrasser emmener empecher employer '+
+    'emporter encourager engager enlever enseigner entrainer envisager envoyer eprouver esperer essayer '+
+    'etablir etendre eteindre etudier evaluer eviter exagerer examiner exclure executer exercer exiger '+
+    'exister expliquer exploiter explorer exprimer fabriquer faciliter fixer fonctionner fonder forcer '+
+    'former fournir franchir frotter gagner garder gaspiller gener glisser gouverner grandir guider '+
+    'habiller habiter hesiter identifier ignorer illustrer imaginer imposer imprimer indiquer informer '+
+    'inquieter inscrire insister installer interdire interesser interpreter intervenir introduire '+
+    'inventer inviter jeter juger justifier lancer liberer lier limiter livrer loger louer maintenir '+
+    'manquer marquer meler menacer meriter mesurer modifier multiplier negliger noter nourrir observer '+
+    'obtenir occuper offrir opposer organiser orner oublier participer parvenir penetrer percevoir '+
+    'perdre permettre peser photographier piquer placer plaindre plaire planter plonger posseder '+
+    'poursuivre pousser preciser preferer preparer presenter preserver presser pretendre prevenir '+
+    'prevoir prier priver procurer produire profiter projeter promettre prononcer proposer proteger '+
+    'prouver provoquer publier punir quitter raconter ramasser ramener ranger rappeler rassembler '+
+    'rassurer realiser recevoir rechercher reclamer recommander reconnaitre recueillir reculer rediger '+
+    'reduire reflechir refleter refuser regagner regler regretter rejeter rejoindre relever remarquer '+
+    'remercier remettre remplacer rencontrer rendre renoncer renouveler rentrer renverser reparer '+
+    'repeter replacer repondre reposer representer reproduire resoudre respecter respirer ressembler '+
+    'ressentir retablir retenir retirer retourner retrouver reunir reveler revenir rever rire risquer '+
+    'rompre rouler saisir satisfaire sauver secher selectionner sembler sentir separer serrer servir '+
+    'siffler signaler signifier situer soigner sonner souhaiter soumettre soupconner sourire soutenir '+
+    'suffire suggerer suivre supporter supposer surprendre surveiller survivre suspendre tenter terminer '+
+    'toucher trainer transformer traverser trembler tromper troubler tuer utiliser vaincre verifier '+
+    'verser visiter vivre voler voyager croquer grignoter deguster savourer tremper secouer agiter '+
+    'melanger remuer grimper escalader descendre monter chuter rebondir murmurer chuchoter hurler '+
+    'crier interpeller questionner peindre sculpter graver photographier filmer tourner realiser '+
+    'piloter naviguer pagayer ramer pedaler accelerer freiner ralentir decorer amenager nettoyer '+
+    'laver repasser bricoler jardiner arroser recolter semer tailler tondre tricoter coudre broder '+
+    'tisser enfiler deboutonner nouer telephoner contacter avertir decoller atterrir amerrir survoler '+
+    'planer flotter sombrer emprunter preter rembourser economiser depenser investir parier '+
+    'accueillir accumuler adapter adresser affaiblir agrandir alimenter aligner allonger ameliorer '+
+    'amplifier ancrer animer apprecier approfondir armer assembler associer assoupir assumer '+
+    'balancer basculer bercer bomber bondir border boucher boucler bourdonner brasser '+
+    'cacher camper canaliser capturer caresser centrer chatouiller claquer classer clouer '+
+    'coincer colorier compliquer confier conjuguer connecter consommer contempler contourner copier '+
+    'corriger creuser croiser cultiver deballer debattre debrouiller decharger dechiffrer dechirer '+
+    'declarer declencher decoder deconnecter decouper dedier defiler deformer degeler '+
+    'deguiser deliberer demarrer demasquer demenager demontrer denoncer depanner deplacer '+
+    'deployer deraciner deranger desactiver deshabiller designer desobserver '+
+    'desservir destabiliser detailler detecter detourner devaler devisser devoiler diffuser diminuer '+
+    'disputer dissoudre diviser documenter doubler drainer dresser durcir eblouir ecarter echanger '+
+    'echapper echouer eclairer eclater ecouter ecraser ecrire effacer effectuer effondrer '+
+    'elaborer elargir elever eliminer eloigner elucider emballer embarquer emboiter emerveiller '+
+    'emettre emmenager emparer empiler empoigner emprisonner encadrer enchainer enclencher '+
+    'endommager endormir enfermer enfouir enfreindre enfumer engendrer engloutir engraisser enjamber '+
+    'enrichir enrober enrouler entamer entendre enterrer entourer entrainer entrecouper '+
+    'enumerer envahir envelopper epargner epeler epingler eplucher epouser epousseter epuiser '+
+    'equilibrer equiper eriger essorer essuyer estimer etaler etiqueter etouffer evacuer evader '+
+    'evanouir eveiller evoquer exaucer exciter excuser experimenter exploser exposer extraire '+
+    'facher faciliter faiblir farcir fasciner fatiguer faucher fendre fertiliser feuilleter fiancer '+
+    'figurer filtrer financer fleurir fondre forger fouetter fouiller freiner froisser '+
+    'fumer fusionner gacher geler germer gifler glacer gonfler gouter gratter griller '+
+    'gronder grossir guerir hacher hanter harceler harmoniser hausser heberger heriter honorer '+
+    'humidifier humilier hydrater hypnotiser illuminer imiter immobiliser '+
+    'impressionner inaugurer incliner incorporer indexer '+
+    'influencer initier inoculer inonder inscrire insinuer inspecter inspirer '+
+    'intensifier intercepter interroger intimider intriguer ironiser irriguer irriter '+
+    'isoler jongler jaillir labourer lacerer laisser limer liquider localiser longer '+
+    'louper maigrir maltraiter manoeuvrer maquiller marchander massacrer maudire '+
+    'maximiser mediter memoriser meubler migrer mimer mobiliser '+
+    'moderniser moderer monitorer monopoliser mordre motiver mouiller mouler murir muter '+
+    'neutraliser nier niveler nommer normaliser numerer numeriser obliger '+
+    'obscurcir obstruer offenser operer optimiser orchestrer orienter osciller '+
+    'outiller oxyder pacifier paniquer paralyser parcourir parodier parsemer partager '+
+    'patrouiller peler perfectionner perforer perturber piecer pieger pivoter planifier '+
+    'plier plumer poignarder pointer polir polluer pomper poncer porter '+
+    'poser positionner pourrir precipiter prescrire '+
+    'presider privatiser proceder proclamer programmer prolonger '+
+    'propager propulser proscrire protester provoquer purifier qualifier questionner '+
+    'rabattre raccorder raccourcir raidir rajuster rallier rallonger ramollir rattraper '+
+    'ravager rayonner rebondir rechauffer reciter recoller recompenser reconcilier '+
+    'reconstituer recopier recouvrir recreer rectifier recuperer redemarrer redistribuer '+
+    'reequilibrer refermer reformuler refroidir regenerer rehabiliter reintegrer relacher relaxer '+
+    'relier relire remanier remodeler remonter remorquer remuer renaitre renflouer renforcer '+
+    'renouer renovrer repartir repeindre repousser representer '+
+    'resister resonner restaurer restructurer resumer retarder retrecir revaloriser reviser '+
+    'revolutionner rhabiller rincer rivaliser robotiser rogner ronger ronronner rotir ruiner saborder '+
+    'saboter sacrer saigner saupoudrer scandaliser sceller securiser segmenter '+
+    'sensibiliser serpenter shooter signaliser simplifier simuler '+
+    'socialiser solidifier sonder sophistiquer souder souffler souiller soulager soulever souligner '+
+    'soupeser soutirer specialiser sponsoriser stabiliser standardiser steriliser stimuler stopper '+
+    'structurer subir sublimer submerger substituer succeder surelever surmonter surnommer '+
+    'symboliser synchroniser synthetiser systematiser tabasser tamponner tapisser tartiner '+
+    'teinter temoigner temperer tester tirailler tisser toiser tolerer tordre torpiller '+
+    'totaliser tournoyer tracer traduire trahir traiter trancher transcrire transferer '+
+    'transmettre transpercer transpirer transplanter transporter travailler tresser '+
+    'triompher tripler tronquer truffer turbiner tyranniser unifier uniformiser urbaniser '+
+    'usiner vacciner vagabonder valoriser vaporiser varier vehiculer ventiler verbaliser '+
+    'verdoyer vernir verrouiller vexer vibrer vider vieillir violer virer viser visionner '+
+    'visualiser vitrifier vivifier zigzaguer '+
+    // ── Adverbes (200+) ──
+    'absolument actuellement ailleurs apparemment assurement autrefois certainement completement '+
+    'constamment correctement cependant davantage debout deliberement desormais directement doucement '+
+    'effectivement egalement enormement ensuite entierement environ essentiellement evidemment '+
+    'extremement facilement finalement fortement franchement frequemment generalement gentiment '+
+    'gratuitement habituellement heureusement immediatement intensement joliment justement legerement '+
+    'lentement librement logiquement malheureusement naturellement necessairement normalement notamment '+
+    'nullement officiellement pareillement parfaitement particulierement personnellement poliment '+
+    'potentiellement pratiquement precisement premierement principalement probablement profondement '+
+    'progressivement proprement prudemment rarement rapidement reellement regulierement relativement '+
+    'remarquablement serieusement simplement sincerement specialement strictement suffisamment totalement '+
+    'tranquillement uniquement veritablement violemment vivement volontiers vraiment '+
+    'bientot dedans dehors dessous dessus devant derriere parfois souvent toujours jamais deja encore '+
+    'beaucoup trop assez plutot presque autant guere surtout pourtant neanmoins toutefois cependant '+
+    'seulement quasiment eventuellement ulterieurement anterieurement simultanement alternativement '+
+    'exclusivement partiellement integralement majoritairement approximativement '+
+    'sensiblement considerablement significativement radicalement fondamentalement '+
+    // ── Noms courants comme indices (2000+) ──
+    'accessoire acier action activite adolescent adversaire affection agent aile aliment alliance '+
+    'ambiance ambition amelioration analyse ange angle animation apparence application appreciation '+
+    'approche arrivee article aspect association atmosphere attention attitude automatisme avantage '+
+    'avis base beaute benefice besoin bilan bloc bonheur bord branche brutalite bulletin bureau '+
+    'cabinet cadeau cadre calcul campagne candidat capacite capital caractere carriere categorie '+
+    'cause celebration centre certitude chaine chaleur champion changement chaos chapitre charge '+
+    'charme chef chemin choix circulation civilisation clan classe classification client climat '+
+    'coalition code coin collection colonie combat combinaison commentaire commerce commission '+
+    'communaute compagnie comparaison competence competition comportement concentration '+
+    'concept conception conclusion condition confiance configuration confirmation conflit confusion '+
+    'connaissance consequence conservation constellation construction consultation contact contenu '+
+    'contexte continent contradiction contraste contribution controle convention cooperation '+
+    'corps correspondance costume couche couleur coup courant courbe cours couverture creation '+
+    'creature criminel crise critere critique croissance croyance cuisine culture cycle danger '+
+    'debut decennie decision declaration decomposition decoration decouverte defaite defaut defense '+
+    'definition degre delegation demande demarche demi democratie demonstration denomination depart '+
+    'dependance deplacement depression description desaccord desastre desir desordre destination detail '+
+    'detective determination developpement deviation devise dialogue difference dimension diplomatie '+
+    'direction discipline discours discrimination discussion disparition disposition distance distinction '+
+    'diversite division doctrine document dollar domaine dommage donnee dosage douceur drame droit droite '+
+    'duree dynastie echec echelle eclairage economie ecosysteme education effet efficacite effort election '+
+    'elegance element elite emission emotion empire emploi emplacement enceinte energie engagement enigme '+
+    'enjeu ennemi enquete ensemble entente enthousiasme entourage entree entreprise entretien '+
+    'enumeration envergure environnement episode epoque equilibre equipage equipement equivalent '+
+    'erreur eruption escalier espace espece esperance espionnage esprit essai essor estimation etage '+
+    'etape eternite ethique etiquette etoffe etranger etude evaluation evasion evenement evidence '+
+    'evolution exageration examen exception exclusion excuse exemption exercice exigence '+
+    'existence expansion expedition experience experimentation expertise explication exploitation '+
+    'exploration exportation exposition expression extension exterieur extraction extreme fabrique '+
+    'facade facilite facon facteur faculte faiblesse faillite famille fantaisie fascination fatigue '+
+    'faune faveur ferme fermete festivite fiction fidelite fierte filiale filiere finance '+
+    'finesse fissure fixation flore fonction fonctionnement fondation fondement force formalite '+
+    'formation formulation fortune fraction fragilite franchise fraternite frontiere frustration '+
+    'fugue fusion galerie gamme garantie garde gauche generation genie geographie geometrie gestion '+
+    'gloire gouvernement grace gradation graduation grandeur gravite greve grossesse groupe '+
+    'habilete habitation habitude harmonie hauteur herbe heredite heroisme hierarchie histoire hobby '+
+    'honneur horizon horreur hospitalite humanite humour hygiene hypothese ideologie identite '+
+    'ignorance illustration image imagination immigration impact impasse implication importance '+
+    'impression impuissance inauguration incertitude incident incitation inclusion '+
+    'independance indication industrie inegalite infection influence information infrastructure '+
+    'initiative injection innocence innovation inscription insecurite insertion inspection inspiration '+
+    'installation instance institution instruction integration intelligence intensite intention interaction '+
+    'interdiction interet interface interpretation intervention introduction intuition investigation '+
+    'invitation ironie isolation jambe jardin jeunesse jonction jouissance journal '+
+    'jugement juridiction justesse lancement langage largeur lecture legislation lenteur '+
+    'liaison liberation licence lien limite liquidation liste litterature livraison localisation '+
+    'logement logique longueur loyaute lucidite lumiere luxe machine magistrature magnitude maintenance '+
+    'maitrise majorite manifestation manipulation marche marge marine marketing maternite matiere '+
+    'maturite mecanisme medaille medecine meditation melodie membrane menace mensonge mentalite mention '+
+    'merveille message metaphore methode metier metropole meuble migration milieu millier mine ministere '+
+    'minorite miracle misere mission mixture mobilite mode modele modification moitie molecule monarque '+
+    'monopole montagne montee morale morceau motivation mouvement moyenne municipalite musique mutation '+
+    'mystere naissance narration nationalisme navigation necessite negligence negociation neutralite '+
+    'noblesse nomination norme nostalgie notation notion nouveaute nuance nuisance numeration obligation '+
+    'observation obsession obtention occasion occupation occurrence offense oligarchie operation '+
+    'opinion opportunite opposition optimisme option ordonnance organisation orientation originalite '+
+    'oscillation ouverture paire palais palette panorama parade parasite parcours '+
+    'parenthese parfum parlement parole participation particularite partition passage passager passion '+
+    'patience patrimoine patron pause paysage pedagogie peinture pensee perception perfection performance '+
+    'peril periodicite permission personnage personnalite perte pertinence petition peuple phenomene '+
+    'philosophie photographie physiologie piece piege placement plainte plaisir planification plantation '+
+    'plastique plateau plume poche poesie poids poignee pointe politique pollution pompe ponctualite '+
+    'popularite portion position possession possibilite posterite potentiel poursuite pratique '+
+    'precaution precedent precipitation precision prediction predominance preference prejudice '+
+    'preparation prerogative prescription preservation presidence pression prestige pretention '+
+    'prevention prevision prince princesse priorite privilege probabilite probleme procedure processus '+
+    'proclamation producteur production productivite profil profondeur progression prohibition '+
+    'promesse promotion prophetie proportion proposition prosperite protection protestation '+
+    'provenance provision proximite psychologie publication puissance qualification quantite '+
+    'question racine radiation rage raison rang rapidite rapport rationalite reaction realisation '+
+    'rebellion recherche reconnaissance recommandation reconciliation reconstruction record recours '+
+    'recreation recurrence recuperation reduction reference reflexion reforme refuge regime registre '+
+    'regression regroupement rehabilitation rejet relation relaxation remarque remede remerciement '+
+    'reminiscence remontee remuneration rendement renovation reparation repas repertoire repetition '+
+    'repercussion replique representation reputation requete reservation residence resignation '+
+    'resolution resonance ressemblance ressource restauration restriction restructuration resultat '+
+    'retard retenue revelation revendication reverence revision revolution rigidite rigueur rivalite '+
+    'rotation routine royaute rupture ruse sacrifice sagesse saison sanction satisfaction sauvegarde '+
+    'scenario scepticisme science sculpture secheresse secretariat section securite seduction '+
+    'sejour selection semaine sensation sensibilite sentence separation sequence serenite session seuil '+
+    'severite signalement signification silence simplicite simulation singularite situation sobriete '+
+    'societe soiree solidarite solitude solution sommaire sommet sophistication souci '+
+    'souffrance souhait soulagement source souverainete specialisation specification spectacle spiritualite '+
+    'splendeur spontaneite sport stabilite standard station statistique statut stimulation strategie '+
+    'structure subdivision subordination subsistance substance substitution succession suggestion suite '+
+    'superiorite superstition supplement supposition suprematie surveillance survie suspension suspicion '+
+    'symbole sympathie symphonie symptome synthese systeme tactique taille taux technique technologie '+
+    'temperament temperature tendance tendresse tension terminologie terreur testament texture thematique '+
+    'theologie therapie tolerance tonalite topographie torture tournee tradition trafic '+
+    'traitement trajectoire transaction transformation transition transmission transparence travail '+
+    'traversee triomphe trouble unite univers usage utilisation valeur validation validite vanite vapeur '+
+    'variante variation variete vegetation velocite vengeance vente verite versatilite version vieillesse '+
+    'vigueur violation violence virtualite virtuosite visibilite vitalite vivacite vocation volonte '+
+    // ── Noms spécifiques utiles comme indices ──
+    'maquillage rimmel fard cosmetique teint fond poudre vernis bijouterie parfumerie costume '+
+    'jouet outil appareil instrument moteur volant roue boulot taf emploi poste metier profession '+
+    'carriere copain pote camarade collegue voisin habitant resident locataire proprietaire '+
+    'probleme souci ennui difficulte trace pepin galere embrouille situation patron directeur chef '+
+    'recette plat boisson cocktail aperitif dessert entree accompagnement garniture sauce brochette '+
+    'fondue raclette barbecue plancha rotisserie grillage fricassee ragout potee blanquette navarin '+
+    'couscous tajine paella risotto lasagne gratin quiche tourte feuillete chausson beignet gaufre '+
+    'crepe tartine toast canape tapas sushi maki tempura wok poele sauteuse faitout autocuiseur '+
+    'mixeur blender robot hachoir mandoline rape presse mortier pilon fouet spatule louche ecumoire '+
+    'passoire tamis entonnoir rouleau moule plaque grille lame couvert assiette bol ramequin tasse '+
+    'theiere cafetiere carafe pichet verre flute coupe chope canette gourde thermos glaciere seau '+
+    'bassine cuvette arrosoir tuyau robinet siphon citerne reservoir cuve tonneau baril bidon bonbonne '+
+    'besace sacoche cartable mallette valise malle coffre tiroir etagere rayonnage placard commode '+
+    'buffet vaisselier vitrine console gueridon table tabouret banc chaise fauteuil canape divan '+
+    'meridienne pouf hamac transat parasol tonnelle pergola kiosque abri cabane cabanon remise hangar '+
+    'garage atelier grange grenier cave cellier buanderie vestiaire dressing couloir palier escalier '+
+    'rampe ascenseur balcon terrasse loggia veranda patio cour allee chemin sentier impasse passage '+
+    'arcade galerie porche vestibule hall foyer salon chambre bureau cuisine salle bain toilette douche '+
+    'baignoire lavabo evier comptoir plan ilot hotte plaque four microondes refrigerateur congelateur '+
+    'lavelinge sechelinge lavevaisselle aspirateur balai serpilliere chiffon torchon eponge '+
+    'brosse pelle raclette seau bassine lessive detergent savon shampoing dentifrice deodorant parfum '+
+    'creme lotion serum masque gommage peeling soin beaute coiffure maquillage manucure pedicure '+
+    'massage relaxation meditation yoga pilates fitness musculation cardio jogging footing sprint '+
+    'marathon triathlon natation plongee surf voile kayak canoe rafting escalade alpinisme randonnee '+
+    'trekking bivouac camping caravane chalet refuge auberge hotel motel pension '+
+    'gite chambre location reservation billet visa passeport douane frontiere aeroport gare port '+
+    'quai terminal embarquement debarquement transit correspondance escale destination itineraire '+
+    'parcours circuit detour raccourci autoroute nationale departementale communale '+
+    'carrefour croisement bretelle echangeur peage station essence parking garage lavage '+
+    'revision vidange depannage remorquage fourriere amende contravention permis '+
+    'assurance mutuelle franchise sinistre expertise devis facture recu ticket quittance releve '+
+    'virement prelevement cheque espece monnaie devise taux cours bourse marche indice action '+
+    'obligation dividende rendement profit benefice marge perte deficit dette emprunt credit hypotheque '+
+    'caution loyer charge impot taxe cotisation contribution declaration formulaire dossier piece '+
+    'certificat attestation diplome titre carte permis licence autorisation habilitation agrement '+
+    'homologation certification label norme standard specification cahier exigence contrainte delai '+
+    'echeance calendrier planning agenda programme horaire emploi semainier mensuel annuaire '+
+    'vendeur acheteur client fournisseur partenaire concurrent prestataire intermediaire negociant '+
+    'grossiste detaillant artisan commercant entrepreneur createur inventeur chercheur scientifique '+
+    'medecin infirmier pharmacien dentiste veterinaire sage avocat notaire huissier greffier '+
+    'comptable banquier assureur courtier consultant expert analyste ingenieur technicien mecanicien '+
+    'electricien plombier menuisier charpentier macon peintre carreleur couvreur serrurier vitrier '+
+    'jardinier paysagiste architecte decorateur designer graphiste photographe cameraman journaliste '+
+    'redacteur editeur imprimeur libraire enseignant professeur instituteur educateur formateur '+
+    'animateur moniteur entraineur arbitre sportif athlete champion recordman medaille '+
+    'musicien chanteur danseur acteur comedien artiste peintre sculpteur ecrivain poete romancier '+
+    'cinéaste réalisateur producteur metteur scenariste dialoguiste costumier accessoiriste '+
+    'cuisinier patissier boulanger boucher charcutier fromager poissonnier traiteur serveur '+
+    'barman sommelier maitre restaurateur hotelier concierge receptionniste portier bagagiste '+
+    'chauffeur livreur coursier postier facteur garagiste mecanicien carrossier depanneur '+
+    'pilote copilote steward hotesse commandant capitaine matelot marin pecheur '+
+    'agriculteur eleveur viticulteur horticulteur apiculteur berger bucheron forestier garde '+
+    'policier gendarme douanier pompier militaire soldat officier general colonel commandant '+
+    'juge magistrat procureur avocat greffier notaire huissier commissaire detective enqueteur '+
+    'espion agent diplomate ambassadeur consul delegue depute senateur maire president ministre '+
+    'directeur gerant manager responsable coordinateur superviseur controleur inspecteur auditeur'
+  ).split(/\s+/).map(w=>normLetters(w)).filter(w=>w.length>=2);
+  for(const w of extra) _allowedClueWords.add(w);
+})();
+
+// ── Mini dictionnaire pour détection de phrases collées ──
+const _frenchSplitWords=new Set();
+(function(){
+  for(const w of _allowedClueWords) _frenchSplitWords.add(w);
+  const petits='le la les un une des du au aux mon ton son ma ta sa mes tes ses ce cet cette ces '+
+    'de en pour par sur sous dans avec sans vers chez entre contre depuis que qui quoi dont ou '+
+    'je tu il elle on nous vous ils elles me te se lui leur y moi toi soi '+
+    'j l c d n m s t qu '+
+    'et ou mais donc car ni si ne pas plus moins bien mal tres trop peu assez aussi encore '+
+    'est sont sera etait suis es sommes etes ont ai as avons avez fait fais va vais vont '+
+    'etre avoir faire aller dire voir savoir pouvoir vouloir devoir venir prendre mettre '+
+    'voit vois dit dis sait sais peut peux veut veux doit dois tient vient prend met vu';
+  for(const w of petits.split(/\s+/)) _frenchSplitWords.add(normLetters(w));
+})();
+
+function canSplitIntoWords(str, minParts){
+  if(str.length===0) return minParts<=0;
+  for(let len=1;len<=str.length;len++){
+    const part=str.slice(0,len);
+    if(_frenchSplitWords.has(part)){
+      if(canSplitIntoWords(str.slice(len), minParts-1)) return true;
+    }
+  }
   return false;
 }
 
 function isCheatAttempt(input){
   const raw=input.trim();
   if(/\s/.test(raw)) return 'un seul mot autorisé';
-  if(/[_\-0-9.,;:!?\/\\@#$%^&*()+={}[\]<>~`"']/.test(raw)) return 'lettres uniquement';
   if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'lettres uniquement';
   const norm=normLetters(raw);
   if(norm.length<1) return false;
+  if(norm.length>20) return 'mot trop long';
 
-  // (Règle "phrase déguisée" désactivée)
+  // Mot connu exact → autorisé
+  if(_allowedClueWords.has(norm)) return false;
 
-  if(norm.length>15) return 'mot trop long';
+  // Mots courts (≤5 lettres) → laisser passer
+  if(norm.length<=5) return false;
+
+  // ── Tolérance flexions grammaticales ──
+  const flexSuffixes=['s','es','x','e','ee','ees','ent','ement','ment',
+    'er','ir','re','ons','ez','ais','ait','aient','ant','ante','ants','antes',
+    'eur','eurs','euse','euses','rice','rices','tion','tions','iste','istes',
+    'ique','iques','ible','ibles','able','ables','eux','euses','ienne','iennes',
+    'ien','iens','iere','ieres','ier','iers','elle','elles','ette','ettes',
+    'ale','ales','aux','ive','ives','if','ifs'];
+  for(const suf of flexSuffixes){
+    if(norm.length > suf.length+2 && norm.endsWith(suf)){
+      const base=norm.slice(0,-suf.length);
+      if(base.length>=3 && _allowedClueWords.has(base)) return false;
+    }
+  }
+  for(const strip of ['s','x','e','es','ne','de','re','le','se','te','me','nt','er','ez','ai']){
+    if(norm.endsWith(strip) && norm.length>strip.length+2){
+      const base=norm.slice(0,-strip.length);
+      if(base.length>=3 && _allowedClueWords.has(base)) return false;
+    }
+  }
+  if(_allowedClueWords.has(norm+'e')||_allowedClueWords.has(norm+'s')||
+     _allowedClueWords.has(norm+'er')||_allowedClueWords.has(norm+'ir')||
+     _allowedClueWords.has(norm+'re')) return false;
+  // Irréguliers
+  if(norm.endsWith('euse')&&norm.length>6&&_allowedClueWords.has(norm.slice(0,-4)+'eux'))return false;
+  if(norm.endsWith('euses')&&norm.length>7&&_allowedClueWords.has(norm.slice(0,-5)+'eux'))return false;
+  if(norm.endsWith('aux')&&norm.length>5){if(_allowedClueWords.has(norm.slice(0,-3)+'al')||_allowedClueWords.has(norm.slice(0,-3)+'au'))return false;}
+  if(norm.endsWith('elle')&&norm.length>5){if(_allowedClueWords.has(norm.slice(0,-4)+'eau')||_allowedClueWords.has(norm.slice(0,-4)+'el'))return false;}
+  if(norm.endsWith('ive')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'if'))return false;
+  if(norm.endsWith('ives')&&norm.length>5&&_allowedClueWords.has(norm.slice(0,-4)+'if'))return false;
+  if(norm.endsWith('sse')&&norm.length>4){if(_allowedClueWords.has(norm.slice(0,-3)+'x')||_allowedClueWords.has(norm.slice(0,-3)+'s')||_allowedClueWords.has(norm.slice(0,-3)))return false;}
+  if(norm.endsWith('che')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'c'))return false;
+  if(norm.endsWith('lle')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'l'))return false;
+  if(norm.endsWith('nne')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'n'))return false;
+  if(norm.endsWith('tte')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'t'))return false;
+  if(norm.endsWith('ere')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'er'))return false;
+
+  // ── Détection de phrases collées : découpable en 2+ mots connus ? ──
+  if(norm.length>=6 && canSplitIntoWords(norm, 2)){
+    return 'phrase déguisée';
+  }
+
+  // Mot non découpable = probablement un vrai mot français inconnu du dico → laisser passer
   return false;
 }
 function validateGiverClue(clue,secretWord){
@@ -3687,6 +4554,7 @@ function validateGiverClue(clue,secretWord){
   if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
   if(isSameFamily(raw,secretWord)) return {ok:false,reason:'FAUTE : mot de la même famille'};
   if(isSynonym(raw,secretWord)) return {ok:false,reason:'FAUTE : synonyme interdit'};
+  if(isEnglishTranslation(raw,secretWord)) return {ok:false,reason:'FAUTE : traduction interdite'};
   return {ok:true};
 }
 function validateGuesserAnswer(answer){
@@ -3699,10 +4567,8 @@ function applyFault(reason,fromNetwork){
   applyDireBubble('giver',reason,true);
   setTimeout(()=>{
     if(gameMode==='duo'){
-      const seq=mancheState.sequences[mancheState.currentSeq];
-      const wi=seq?seq.currentWordIdx:0;
       duoSkipWord();
-      if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:wi,reason:reason});
+      if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:mancheState.sequences[mancheState.currentSeq]?.currentWordIdx||0,reason:reason});
     }
   },500);
 }
@@ -3743,12 +4609,17 @@ document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='du
 document.getElementById('btnPlayFriend').addEventListener('click',()=>{ openFriendModal(); });
 document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
 document.getElementById('btnBackMenu').addEventListener('click',backToMenu);
+document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
+  if(!e.target.closest('#btnConfirmInterdits')) return;
+  onConfirmInterdits();
+});
+document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
 
 // ══════════════════════════════════════════
 // MODE AMIS — Partie privée avec code
 // ══════════════════════════════════════════
 const FRIEND_PREFIX='motdepasse-friend-';
-let friendMode='duo'; // duo ou qualif
+let friendMode='duo';
 let friendCode='';
 
 function generateFriendCode(){
@@ -3801,17 +4672,16 @@ function startFriendCreate(){
   closeFriendModal();
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
+  document.getElementById('btnPlayFriend').disabled=true;
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='En attente de vos amis...';
   document.getElementById('lobbyTopText').textContent='Partie privée — Code : '+friendCode;
   connected=false;conns=[];lobbyPlayers=[];
 
-  // Créer une room avec le code comme ID
   const roomId=FRIEND_PREFIX+friendCode.toUpperCase();
   peer=new Peer(roomId);
 
   peer.on('error',err=>{
-    console.warn('Friend host error:',err);
     if(err.type==='unavailable-id'){
       document.getElementById('lobbyStatus').textContent='Ce code est déjà utilisé, réessayez...';
       setTimeout(backToMenu,2500);
@@ -3827,10 +4697,8 @@ function startFriendCreate(){
   peer.on('connection',c=>{
     const need=maxPlayersForMode();
     if(conns.length>=need-1){try{c.close()}catch(e){}return;}
-
     const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
     conns.push(rp);
-
     const setup=()=>{
       if(rp._listenersAttached)return;
       rp._listenersAttached=true;
@@ -3839,13 +4707,11 @@ function startFriendCreate(){
         const idx=conns.indexOf(rp);
         if(idx>=0)conns.splice(idx,1);
         for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
-        rebuildLobbyList();
-        broadcastRoster();
+        rebuildLobbyList(); broadcastRoster();
       });
       sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
       for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
-      rebuildLobbyList();
-      broadcastRoster();
+      rebuildLobbyList(); broadcastRoster();
     };
     c.on('open',setup);
     if(c.open)setup();
@@ -3864,6 +4730,7 @@ function startFriendJoin(){
   closeFriendModal();
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
+  document.getElementById('btnPlayFriend').disabled=true;
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='Connexion à la partie...';
   document.getElementById('lobbyTopText').textContent='Rejoint la partie — Code : '+code;
@@ -3873,7 +4740,6 @@ function startFriendJoin(){
   peer=new Peer(myId);
 
   peer.on('error',err=>{
-    console.warn('Friend join error:',err);
     if(err.type==='peer-unavailable'){
       document.getElementById('lobbyStatus').textContent='Partie introuvable... Vérifiez le code.';
       setTimeout(backToMenu,3000);
@@ -3883,31 +4749,25 @@ function startFriendJoin(){
   peer.on('open',()=>{
     const roomId=FRIEND_PREFIX+code;
     const c=peer.connect(roomId,{reliable:true});
-
     c.on('open',()=>{
       connected=true;isHost=false;
       const rp={id:c.peer,conn:c,pseudo:'Hôte',isRoomHost:true,_listenersAttached:true};
       conns.push(rp);
-
       c.on('data',d=>onData(d,c));
       c.on('close',()=>{
         conns=conns.filter(p=>p.conn!==c);
-        if(!connected)return;
-        connected=false;
+        if(!connected)return; connected=false;
         document.getElementById('lobbyStatus').textContent='Hôte déconnecté...';
         setTimeout(backToMenu,2000);
       });
-
       c.send({type:'pseudo',id:peer.id,pseudo:myPseudo});
       rebuildLobbyList();
       document.getElementById('lobbyStatus').textContent='Connecté ! En attente du lancement...';
     });
-
     c.on('error',()=>{
-      document.getElementById('lobbyStatus').textContent='Impossible de rejoindre... Code invalide ?';
+      document.getElementById('lobbyStatus').textContent='Impossible de rejoindre...';
       setTimeout(backToMenu,3000);
     });
-
     setTimeout(()=>{
       if(!connected){
         document.getElementById('lobbyStatus').textContent='Partie introuvable...';
@@ -3919,17 +4779,12 @@ function startFriendJoin(){
   window._mmCleanup=()=>{};
 }
 
-// Event listeners mode amis
+// Friend mode event listeners
 document.getElementById('btnFriendCreate').addEventListener('click',startFriendCreate);
 document.getElementById('btnFriendJoin').addEventListener('click',startFriendJoin);
 document.getElementById('friendCodeInput').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); startFriendJoin(); }
 });
-document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
-  if(!e.target.closest('#btnConfirmInterdits')) return;
-  onConfirmInterdits();
-});
-document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
 
 document.getElementById('direGiver').addEventListener('input',e=>{
   if(!isLocalGiver()) return;
@@ -4007,22 +4862,14 @@ document.getElementById('direGuesser').addEventListener('input',e=>{
   },100);
 });
 document.getElementById('direGuesser').addEventListener('keydown',e=>{
-  if(e.key!=='Enter') return;
+  if(!isLocalGuesser()||e.key!=='Enter') return;
   e.preventDefault();
-
-  const _isGuesser=isLocalGuesser();
-  if(!_isGuesser) return;
-  if(!mancheState.wordsPhase) return;
-  if(!mancheState.started) return;
-
-  // Bloquer si ce n'est pas le tour du guesser (anti-spam)
-  // Sauf si le champ n'est pas disabled (tolérance pour micro-désync réseau)
-  if(mancheState.turn!=='guesser' && document.getElementById('direGuesser').disabled) return;
-
+  if(!mancheState.started || !mancheState.wordsPhase) return;
+  if(mancheState.turn!=='guesser') return;
   const raw=document.getElementById('direGuesser').value.trim();
   if(!raw) return;
 
-  // ── Validation ──
+  // ── Validation anti-triche ──
   const gCheck=validateGuesserAnswer(raw);
   if(!gCheck.ok){
     sendDireBubbleNow('guesser',raw,true);
@@ -4037,21 +4884,10 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   document.getElementById('direGuesser').value='';
 
   const seq=getCurrentSeq();
-
-  if(seq){
+  if(seq && !seq.found[seq.currentWordIdx]){
+    const target=normalizeAnswer(seq.words[seq.currentWordIdx]);
     const guess=normalizeAnswer(raw);
-
-    // ── Comparer avec TOUS les mots non trouvés (pas seulement currentWordIdx) ──
-    let matchedIdx=-1;
-    for(let i=0;i<seq.words.length;i++){
-      if(!seq.found[i] && normalizeAnswer(seq.words[i])===guess){
-        matchedIdx=i;
-        break;
-      }
-    }
-
-    if(matchedIdx>=0){
-      seq.currentWordIdx=matchedIdx;
+    if(guess===target){
       onCorrectAnswer();
       mancheState.cluesGiven=0;
       resetArrows();
@@ -4063,9 +4899,8 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   }
 
   if(gameMode==='duo' && mancheState.cluesGiven>=3){
-    const wi=seq.currentWordIdx;
     duoSkipWord();
-    sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:wi});
+    sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:seq.currentWordIdx});
   }else{
     mancheState.turn='giver';
     sendData({type:'turnChange',turn:'giver'});
@@ -4089,271 +4924,6 @@ document.getElementById('btnSendGuesser').addEventListener('click',()=>{
   const inp=document.getElementById('direGuesser');
   inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
 });
-
-// ══════════════════════════════════════════
-// SHOUTBOX — Tchat global PeerJS
-// ══════════════════════════════════════════
-const CHAT_PREFIX='motdepasse-chat-';
-const CHAT_ROOMS=3;
-const CHAT_STORAGE_KEY='motdepasse-chat-history';
-const CHAT_MAX_HISTORY=80;
-let chatPeer=null;
-let chatConns=[];
-let chatIsHost=false;
-let chatMessages=[];
-let chatOnlineCount=1;
-
-function chatGetPseudo(){
-  return (document.getElementById('pseudoInput').value.trim())||'Anonyme';
-}
-
-function chatUpdateOnline(){
-  const n=chatConns.filter(c=>c.conn&&c.conn.open).length+(chatIsHost?1:0);
-  chatOnlineCount=Math.max(1,n);
-  document.getElementById('shoutboxOnline').textContent=chatOnlineCount+' en ligne';
-}
-
-// ── Persistance localStorage ──
-function chatSaveHistory(){
-  try{
-    const data=JSON.stringify(chatMessages.slice(-CHAT_MAX_HISTORY));
-    localStorage.setItem(CHAT_STORAGE_KEY,data);
-  }catch(e){}
-}
-
-function chatLoadHistory(){
-  try{
-    const raw=localStorage.getItem(CHAT_STORAGE_KEY);
-    if(!raw) return;
-    const arr=JSON.parse(raw);
-    if(!Array.isArray(arr)) return;
-    // Filtrer les messages de plus de 24h
-    const cutoff=Date.now()-24*60*60*1000;
-    chatMessages=arr.filter(m=>m.ts&&m.ts>cutoff);
-    // Afficher les messages sauvegardés
-    const box=document.getElementById('shoutboxMessages');
-    box.innerHTML='';
-    for(const m of chatMessages){
-      chatRenderMessage(m,false);
-    }
-    box.scrollTop=box.scrollHeight;
-  }catch(e){}
-}
-
-function chatRenderMessage(m,animate){
-  const box=document.getElementById('shoutboxMessages');
-  if(m.system){
-    const div=document.createElement('div');
-    div.className='shoutbox-system';
-    div.textContent=m.text;
-    box.appendChild(div);
-  }else{
-    const d=new Date(m.ts);
-    const timeStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    const div=document.createElement('div');
-    div.className='shoutbox-msg';
-    if(!animate) div.style.animation='none';
-    div.innerHTML=
-      '<div class="shoutbox-msg-avatar"><img src="images/Bonhomme.png" alt=""></div>'+
-      '<div class="shoutbox-msg-body">'+
-        '<span class="shoutbox-msg-pseudo">'+escapeHtml(m.pseudo)+'</span>'+
-        '<span class="shoutbox-msg-text">'+escapeHtml(m.text)+'</span>'+
-      '</div>'+
-      '<span class="shoutbox-msg-time">'+timeStr+'</span>';
-    box.appendChild(div);
-  }
-  while(box.children.length>CHAT_MAX_HISTORY) box.removeChild(box.firstChild);
-}
-
-function chatAddMessage(pseudo,text,isSystem){
-  const box=document.getElementById('shoutboxMessages');
-  const m={pseudo:pseudo||'',text:text,ts:Date.now(),system:!!isSystem};
-  chatMessages.push(m);
-  if(chatMessages.length>CHAT_MAX_HISTORY) chatMessages.shift();
-  chatRenderMessage(m,true);
-  box.scrollTop=box.scrollHeight;
-  chatSaveHistory();
-}
-
-function chatBroadcast(data){
-  for(const c of chatConns){
-    if(c.conn&&c.conn.open) try{c.conn.send(data)}catch(e){}
-  }
-}
-
-function chatOnData(data,fromConn){
-  if(data.type==='chatMsg'){
-    chatAddMessage(data.pseudo,data.text);
-    // Host relays to all others
-    if(chatIsHost){
-      for(const c of chatConns){
-        if(c.conn!==fromConn&&c.conn&&c.conn.open) try{c.conn.send(data)}catch(e){}
-      }
-    }
-  }
-  else if(data.type==='chatJoin'){
-    const c=chatConns.find(p=>p.conn===fromConn);
-    if(c) c.pseudo=data.pseudo;
-    chatAddMessage(null,data.pseudo+' a rejoint le tchat',true);
-    chatUpdateOnline();
-    // Host sends history to new joiner + relays join
-    if(chatIsHost){
-      // Envoyer l'historique au nouveau
-      const historyToSend=chatMessages.filter(m=>!m.system).slice(-30);
-      try{fromConn.send({type:'chatHistory',messages:historyToSend})}catch(e){}
-      for(const p of chatConns){
-        if(p.conn!==fromConn&&p.conn&&p.conn.open) try{p.conn.send(data)}catch(e){}
-      }
-      chatBroadcast({type:'chatOnline',count:chatConns.filter(c=>c.conn&&c.conn.open).length+1});
-    }
-  }
-  else if(data.type==='chatHistory'){
-    // Recevoir l'historique de l'hôte et fusionner
-    if(Array.isArray(data.messages)){
-      const box=document.getElementById('shoutboxMessages');
-      const existingTs=new Set(chatMessages.map(m=>m.ts));
-      let added=false;
-      for(const m of data.messages){
-        if(!existingTs.has(m.ts)){
-          chatMessages.push(m);
-          added=true;
-        }
-      }
-      if(added){
-        // Re-trier par timestamp et ré-afficher
-        chatMessages.sort((a,b)=>a.ts-b.ts);
-        if(chatMessages.length>CHAT_MAX_HISTORY) chatMessages=chatMessages.slice(-CHAT_MAX_HISTORY);
-        box.innerHTML='';
-        for(const m of chatMessages) chatRenderMessage(m,false);
-        box.scrollTop=box.scrollHeight;
-        chatSaveHistory();
-      }
-    }
-  }
-  else if(data.type==='chatOnline'){
-    chatOnlineCount=data.count||1;
-    document.getElementById('shoutboxOnline').textContent=chatOnlineCount+' en ligne';
-  }
-}
-
-function chatSendMessage(){
-  const inp=document.getElementById('shoutboxInput');
-  const text=inp.value.trim();
-  if(!text) return;
-  const pseudo=chatGetPseudo();
-  inp.value='';
-  chatAddMessage(pseudo,text);
-  const msg={type:'chatMsg',pseudo:pseudo,text:text};
-  chatBroadcast(msg);
-}
-
-function initShoutbox(){
-  // Charger l'historique sauvegardé
-  chatLoadHistory();
-
-  const myId=CHAT_PREFIX+'u-'+Math.random().toString(36).substr(2,8);
-  chatPeer=new Peer(myId);
-  chatPeer.on('error',err=>{
-    if(err.type==='peer-unavailable') return;
-  });
-
-  chatPeer.on('open',()=>{
-    chatTryJoin(0);
-  });
-}
-
-function chatTryJoin(startIdx){
-  if(!chatPeer||chatPeer.destroyed) return;
-  let joined=false;
-  let tried=0;
-
-  for(let i=0;i<CHAT_ROOMS;i++){
-    const idx=(startIdx+i)%CHAT_ROOMS;
-    const roomId=CHAT_PREFIX+'room-'+idx;
-    let c;
-    try{ c=chatPeer.connect(roomId,{reliable:true}); }catch(e){ tried++; continue; }
-
-    c.on('open',()=>{
-      if(joined){try{c.close()}catch(e){}return;}
-      joined=true; chatIsHost=false;
-      chatConns.push({conn:c,pseudo:'Hôte'});
-      c.on('data',d=>chatOnData(d,c));
-      c.on('close',()=>{
-        chatConns=chatConns.filter(p=>p.conn!==c);
-        chatUpdateOnline();
-        // Hôte perdu → devenir hôte ou reconnecter après un délai
-        setTimeout(()=>{
-          if(!chatIsHost && chatConns.length===0) chatBecomeHost(0);
-        },2000);
-      });
-      c.send({type:'chatJoin',pseudo:chatGetPseudo()});
-      chatUpdateOnline();
-    });
-
-    c.on('error',()=>{ tried++; });
-    setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},2000);
-  }
-
-  // Si aucune room trouvée → devenir hôte sur la room 0
-  setTimeout(()=>{
-    if(!joined) chatBecomeHost(0);
-  },2500);
-}
-
-function chatBecomeHost(roomIdx){
-  const roomId=CHAT_PREFIX+'room-'+roomIdx;
-  if(chatPeer) try{chatPeer.destroy()}catch(e){}
-  chatPeer=new Peer(roomId);
-
-  chatPeer.on('error',err=>{
-    if(err.type==='unavailable-id'){
-      // Room déjà prise → essayer de la rejoindre en tant que client
-      if(chatPeer) try{chatPeer.destroy()}catch(e){}
-      chatPeer=new Peer(CHAT_PREFIX+'u-'+Math.random().toString(36).substr(2,8));
-      chatPeer.on('error',err2=>{ if(err2.type!=='peer-unavailable') console.warn('Chat error:',err2); });
-      chatPeer.on('open',()=>{ chatTryJoin(roomIdx); });
-    }
-  });
-
-  chatPeer.on('open',()=>{
-    chatIsHost=true;
-    chatUpdateOnline();
-  });
-  chatPeer.on('connection',chatHandleConnection);
-}
-
-function chatHandleConnection(c){
-  const rp={conn:c,pseudo:'Joueur'};
-  chatConns.push(rp);
-  const setup=()=>{
-    c.on('data',d=>chatOnData(d,c));
-    c.on('close',()=>{
-      chatConns=chatConns.filter(p=>p.conn!==c);
-      chatUpdateOnline();
-      chatBroadcast({type:'chatOnline',count:chatConns.filter(p=>p.conn&&p.conn.open).length+1});
-    });
-    chatUpdateOnline();
-  };
-  c.on('open',setup);
-  if(c.open) setup();
-}
-
-// Shoutbox event listeners
-document.getElementById('shoutboxSend').addEventListener('click',chatSendMessage);
-document.getElementById('shoutboxInput').addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    e.preventDefault();
-    e.stopPropagation();
-    chatSendMessage();
-  }
-});
-
-// Init shoutbox on load
-setTimeout(initShoutbox,500);
-
-// Activer le scroll sur l'accueil au chargement
-document.body.classList.add('scrollable');
-document.documentElement.style.overflow='auto';
 </script>
 </body>
 </html>
