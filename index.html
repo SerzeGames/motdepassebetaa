@@ -1158,6 +1158,64 @@
   .manche-result-banner.lose .manche-result-text {
     color: #ff4444; text-shadow: 0 0 20px rgba(255,50,50,0.6), 0 0 40px rgba(255,50,50,0.3);
   }
+
+  /* ===== WORD RECAP PANEL (fin de tour) ===== */
+  .word-recap-panel {
+    position: absolute; top: 50%; left: 0;
+    transform: translate(-110%, -50%);
+    z-index: 50; pointer-events: none;
+    padding: 20px 28px 20px 24px;
+    background: linear-gradient(135deg, rgba(10,5,15,0.92) 0%, rgba(15,8,20,0.95) 100%);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-left: none;
+    border-radius: 0 16px 16px 0;
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    box-shadow: 4px 4px 30px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.3);
+    min-width: 220px;
+    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .word-recap-panel.visible {
+    transform: translate(0, -50%);
+  }
+  .word-recap-panel.hiding {
+    transform: translate(-110%, -50%);
+    transition: transform 0.5s cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  .word-recap-title {
+    font-family: 'Orbitron', sans-serif; font-size: 0.7rem; font-weight: 700;
+    color: rgba(255,255,255,0.4); letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .word-recap-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .word-recap-item {
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0; transform: translateX(-20px);
+    animation: recapItemSlide 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes recapItemSlide {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .word-recap-icon {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.85rem; font-weight: 900;
+  }
+  .word-recap-icon.found {
+    background: rgba(0,200,80,0.15); border: 1.5px solid rgba(0,200,80,0.5);
+    color: #00cc55; text-shadow: 0 0 8px rgba(0,200,80,0.4);
+  }
+  .word-recap-icon.missed {
+    background: rgba(200,30,30,0.15); border: 1.5px solid rgba(200,30,30,0.5);
+    color: #ff4444; text-shadow: 0 0 8px rgba(255,50,50,0.4);
+  }
+  .word-recap-word {
+    font-family: 'Russo One', sans-serif; font-size: 1.05rem; letter-spacing: 2px;
+  }
+  .word-recap-word.found { color: #00dd66; text-shadow: 0 0 10px rgba(0,220,80,0.3); }
+  .word-recap-word.missed { color: #ff5555; text-shadow: 0 0 10px rgba(255,60,60,0.3); }
+
   .seq-title {
     font-family: 'Russo One', sans-serif; font-size: 2.05rem; color: var(--red-bright);
     text-shadow: 0 0 15px rgba(255,26,26,0.4); letter-spacing: 4px; margin-bottom: 10px;
@@ -1241,6 +1299,13 @@
   }
   .mode-pick .search-btn.mode-friend:hover { border-color: #66cc88; box-shadow: 0 0 28px rgba(80,200,120,0.35); }
 
+  .mode-pick .search-btn.mode-bot {
+    font-size: 1.35rem; letter-spacing: 3px;
+    background: linear-gradient(180deg, #1a1520 0%, #0e0a14 50%, #1a1520 100%);
+    border-color: #6688cc;
+  }
+  .mode-pick .search-btn.mode-bot:hover { border-color: #88aaee; box-shadow: 0 0 28px rgba(100,140,220,0.35); }
+
   .friend-modal { max-width: 480px; }
   .friend-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
   .friend-tab { flex: 1; padding: 12px; background: rgba(255,255,255,0.03); border: none; color: #777; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
@@ -1314,6 +1379,7 @@
       <button type="button" class="search-btn" id="btnPlay">RECHERCHE RAPIDE — 4 JOUEURS</button>
       <button type="button" class="search-btn mode-duo" id="btnPlayDuo">DEUX JOUEURS</button>
       <button type="button" class="search-btn mode-friend" id="btnPlayFriend">JOUER ENTRE AMIS</button>
+      <button type="button" class="search-btn mode-bot" id="btnPlayBot">VS ORDINATEUR 🤖</button>
     </div>
     <div class="bottom-buttons">
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
@@ -1530,6 +1596,12 @@
       <div class="manche-result-icon" id="mancheResultIcon"></div>
       <div class="manche-result-text" id="mancheResultText"></div>
     </div>
+  </div>
+
+  <!-- Recap des mots du tour -->
+  <div class="word-recap-panel" id="wordRecapPanel">
+    <div class="word-recap-title">MOTS DU TOUR</div>
+    <ul class="word-recap-list" id="wordRecapList"></ul>
   </div>
 </div>
 </div>
@@ -1940,6 +2012,9 @@ function onData(data,fromConn){
     applyFault(data.reason||'FAUTE',true);
     if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
   }
+  else if(data.type==='wordRecap'){
+    showWordRecap(data.words, data.found, data.skipped||[]);
+  }
 }
 
 // ── Start search ──
@@ -1948,6 +2023,7 @@ function startSearch(){
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
   const bf=document.getElementById('btnPlayFriend'); if(bf) bf.disabled=true;
+  const bb=document.getElementById('btnPlayBot'); if(bb) bb.disabled=true;
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='Connexion...';
   connected=false;conns=[];lobbyPlayers=[];
@@ -3086,6 +3162,12 @@ function onCorrectAnswer(fromNetwork){
   const wi=seq.currentWordIdx;
   if(seq.found[wi]) return;
 
+  // Bot : sauvegarder mémoire et reset pour le prochain mot
+  if(botActive){
+    botAllMemory.push({word:seq.words[wi], clues:[...botClueHistory,...botReceivedClues], guesses:[...botGuessHistory], found:true});
+    botResetWordMemory();
+  }
+
   seq.found[wi]=true;
   seq.lightsLit++;
   seq.points++;
@@ -3202,6 +3284,34 @@ function showMancheResult(type){
   setTimeout(()=>{ ov.classList.remove('visible'); },2800);
 }
 
+function showWordRecap(words, foundArr, skippedArr){
+  const panel=document.getElementById('wordRecapPanel');
+  const list=document.getElementById('wordRecapList');
+  list.innerHTML='';
+
+  for(let i=0;i<words.length;i++){
+    const isFound=!!foundArr[i] && !(skippedArr&&skippedArr[i]);
+    const li=document.createElement('li');
+    li.className='word-recap-item';
+    li.style.animationDelay=(i*0.12)+'s';
+    li.innerHTML=
+      '<span class="word-recap-icon '+(isFound?'found':'missed')+'">'+(isFound?'✓':'✗')+'</span>'+
+      '<span class="word-recap-word '+(isFound?'found':'missed')+'">'+escapeHtml(words[i])+'</span>';
+    list.appendChild(li);
+  }
+
+  // Slide in
+  panel.classList.remove('hiding');
+  void panel.offsetWidth;
+  panel.classList.add('visible');
+
+  // Rester 5s puis slide out
+  setTimeout(()=>{
+    panel.classList.remove('visible');
+    panel.classList.add('hiding');
+  }, 5000);
+}
+
 function endSequence(){
   mancheState.started=false;
   mancheState.wordsPhase=false;
@@ -3226,6 +3336,14 @@ function endSequence(){
       playGameSound('son/perdu.wav',0.7);
       showMancheResult('lose');
     }
+
+    // ── Afficher le recap des mots du tour ──
+    showWordRecap(seq.words, seq.found, seq.skipped||[]);
+
+    // ── Envoyer le recap aux autres joueurs (synchro réseau) ──
+    if(isHost){
+      sendData({type:'wordRecap', words:seq.words, found:seq.found, skipped:seq.skipped||[]});
+    }
   }
 
   refreshDireInputState();
@@ -3234,9 +3352,9 @@ function endSequence(){
   const nextSeq=mancheState.currentSeq+1;
   const maxSeq=gameMode==='duo'?2:4;
   if(nextSeq>=maxSeq){
-    setTimeout(()=>{ showMancheResults(); },3200);
+    setTimeout(()=>{ showMancheResults(); },6000);
   }else{
-    setTimeout(()=>{ startSequence(nextSeq); },3200);
+    setTimeout(()=>{ startSequence(nextSeq); },6000);
   }
 }
 
@@ -4648,12 +4766,16 @@ function backToMenu(){
   if(peer)try{peer.destroy()}catch(e){}
   conns=[];peer=null;connected=false;isHost=false;lobbyPlayers=[];
   gameMode='qualif';
+  botActive=false;
+  botThinking=false;
   showScreen('screenAccueil');
   document.getElementById('btnPlay').disabled=false;
   const b=document.getElementById('btnPlayDuo');
   if(b) b.disabled=false;
   const bf=document.getElementById('btnPlayFriend');
   if(bf) bf.disabled=false;
+  const bb=document.getElementById('btnPlayBot');
+  if(bb) bb.disabled=false;
   resumeAccueilMusic();
 }
 
@@ -4675,6 +4797,7 @@ setInterval(()=>{
 document.getElementById('btnPlay').addEventListener('click',()=>{gameMode='qualif';startSearch();});
 document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='duo';startSearch();});
 document.getElementById('btnPlayFriend').addEventListener('click',()=>{ openFriendModal(); });
+document.getElementById('btnPlayBot').addEventListener('click',()=>{ startBotGame(); });
 document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
 document.getElementById('btnBackMenu').addEventListener('click',backToMenu);
 document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
@@ -5001,6 +5124,837 @@ document.getElementById('btnSendGuesser').addEventListener('click',()=>{
   const inp=document.getElementById('direGuesser');
   inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
 });
+
+// ══════════════════════════════════════════
+// MODE VS ORDINATEUR — Bot algorithmique intelligent
+// ══════════════════════════════════════════
+let botActive=false;
+let botThinking=false;
+let botClueHistory=[];     // indices donnés par le bot pour le mot courant (quand il fait deviner)
+let botReceivedClues=[];   // indices reçus du joueur pour le mot courant (quand il devine)
+let botGuessHistory=[];    // réponses déjà tentées par le bot pour le mot courant
+let botAllMemory=[];       // mémoire globale de la partie [{word, clues, guesses, found}]
+
+function botResetWordMemory(){
+  botClueHistory=[];
+  botReceivedClues=[];
+  botGuessHistory=[];
+}
+
+function startBotGame(){
+  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  gameMode='duo';
+  botActive=true;
+  botThinking=false;
+  botResetWordMemory();
+  botAllMemory=[];
+  isHost=true;
+  connected=true;
+  conns=[];
+  teamA=[myPseudo];
+  teamB=['Ordinateur \u{1F916}'];
+  stopAccueilMusic();
+  showInterditsScreen(1);
+}
+
+// ── Dictionnaire d'associations mot → indices (catégories, propriétés, contexte) ──
+const BOT_CLUE_DB={
+  // Animaux
+  'ABEILLE':['insecte','miel','ruche','pollen','dard'],
+  'AIGLE':['rapace','royal','montagne','proie','envol'],
+  'ALBATROS':['marin','ailes','oiseau','ocean','vol'],
+  'ANGUILLE':['poisson','glissant','riviere','electrique','serpentiforme'],
+  'ARAIGNEE':['toile','pattes','insecte','tisser','venin'],
+  'BALEINE':['mammifere','ocean','enorme','bleu','chant'],
+  'CANARD':['mare','volatile','coin','plumes','bec'],
+  'CHAMOIS':['montagne','agile','corne','alpes','peau'],
+  'CHAT':['felin','moustaches','ronronner','griffe','minou'],
+  'CHEVAL':['galop','criniere','sabot','equitation','selle'],
+  'CHIEN':['fidele','aboyer','laisse','compagnon','patte'],
+  'CIGOGNE':['nid','bebe','alsace','migrateur','echassier'],
+  'COCHON':['ferme','groin','rose','boue','jambon'],
+  'COCCINELLE':['rouge','points','insecte','chance','jardin'],
+  'CORBEAU':['noir','croasser','plume','intelligent','charogne'],
+  'CRAPAUD':['mare','verrue','amphibien','nocturne','coassement'],
+  'CREVETTE':['rose','crustace','peche','cocktail','antenne'],
+  'CROCODILE':['reptile','machoire','marais','ecailles','larme'],
+  'DAUPHIN':['intelligent','ocean','saut','sonar','flipper'],
+  'DINOSAURE':['prehistoire','fossile','geant','disparu','reptile'],
+  'ECUREUIL':['noisette','arbre','queue','roux','agile'],
+  'ELEPHANT':['trompe','ivoire','memoire','afrique','enorme'],
+  'ESCARGOT':['coquille','bave','lent','jardin','pluie'],
+  'GIRAFE':['cou','taches','savane','grand','afrique'],
+  'GRENOUILLE':['mare','coasser','vert','saut','tetard'],
+  'HAMSTER':['roue','joue','rongeur','cage','nocturne'],
+  'HERISSON':['piquant','nocturne','boule','jardin','hibernation'],
+  'HIBOU':['nocturne','hululer','yeux','sage','foret'],
+  'HIPPOPOTAME':['fleuve','afrique','gueule','lourd','herbivore'],
+  'HIRONDELLE':['printemps','nid','migrateur','aile','vitesse'],
+  'HOMARD':['crustace','pince','rouge','luxe','breton'],
+  'JAGUAR':['felin','taches','jungle','rapide','amerique'],
+  'KOALA':['eucalyptus','australie','dormeur','mignon','poche'],
+  'LAPIN':['terrier','carotte','oreille','bond','pelage'],
+  'LION':['criniere','roi','savane','rugir','felin'],
+  'LOUP':['meute','hurler','foret','sauvage','croc'],
+  'LOUTRE':['riviere','jouer','fourrure','nager','coquillage'],
+  'MOUCHE':['insecte','bzz','agacant','voler','rapide'],
+  'MOUETTE':['plage','cri','blanche','port','voler'],
+  'MOUTON':['laine','troupeau','berger','belant','agneau'],
+  'OIE':['ferme','gaver','foie','blanche','crier'],
+  'OURS':['grizzly','hibernation','miel','griffe','caverne'],
+  'PAPILLON':['aile','coloré','metamorphose','fleur','chenille'],
+  'PERROQUET':['repeter','colore','tropical','bec','parleur'],
+  'PHOQUE':['banquise','nager','moustache','poisson','arctique'],
+  'PIGEON':['ville','roucouler','gris','place','messager'],
+  'PINGOUIN':['banquise','froid','noir','blanc','antarctique'],
+  'POISSON':['nager','ecaille','aquarium','ocean','branchie'],
+  'PUCE':['saut','parasite','minuscule','gratter','electronique'],
+  'RENARD':['ruse','roux','terrier','queue','fable'],
+  'REQUIN':['machoire','ocean','predateur','aileron','dangereux'],
+  'RHINOCEROS':['corne','afrique','charge','epais','savane'],
+  'ROSSIGNOL':['chant','melodieux','nuit','oiseau','printemps'],
+  'SANGLIER':['foret','defense','chasse','sauvage','marcassin'],
+  'SARDINE':['conserve','huile','petit','banc','grille'],
+  'SAUMON':['riviere','rose','remonter','peche','fume'],
+  'SERPENT':['ramper','venin','ecaille','siffler','mue'],
+  'SINGE':['arbre','banane','grimper','malin','primate'],
+  'SOURIS':['fromage','trou','gris','petit','informatique'],
+  'TIGRE':['rayure','jungle','felin','bengale','ferocé'],
+  'TORTUE':['carapace','lent','centenaire','mer','patience'],
+  'VACHE':['lait','meuh','pre','tache','ruminer'],
+  // Nourriture
+  'ABRICOT':['fruit','orange','noyau','confiture','velours'],
+  'ANANAS':['tropical','epine','couronne','sucre','exotique'],
+  'ARTICHAUT':['legume','coeur','feuille','breton','violet'],
+  'BANANE':['jaune','tropical','singe','peau','courbe'],
+  'BEURRE':['tartine','cuisine','gras','creme','fondre'],
+  'BISCUIT':['sec','gouter','croquant','boite','farine'],
+  'BONBON':['sucre','enfant','sachet','couleur','fondant'],
+  'BRIOCHE':['moelleux','sucre','tresse','doree','gouter'],
+  'BROCOLI':['vert','legume','arbre','sante','vapeur'],
+  'CAROTTE':['orange','legume','lapin','rapee','potage'],
+  'CERISE':['rouge','noyau','queue','clafoutis','arbre'],
+  'CHOCOLAT':['cacao','noir','fondant','tablette','gourmand'],
+  'CITRON':['acide','jaune','agrume','jus','zeste'],
+  'CONFITURE':['fruit','sucre','tartine','pot','cuisson'],
+  'COURGETTE':['legume','vert','ete','gratin','ratatouille'],
+  'CREPE':['chandeleur','fine','poele','bretonne','sucre'],
+  'CROISSANT':['beurre','feuillete','dejeuner','lune','dore'],
+  'FARINE':['ble','blanche','poudre','patisserie','moulin'],
+  'FRAISE':['rouge','fruit','printemps','charlotte','chantilly'],
+  'FRAMBOISE':['rouge','fruit','pepins','confiture','acidule'],
+  'FROMAGE':['lait','affine','plateau','meule','cave'],
+  'GATEAU':['anniversaire','bougies','sucre','part','patisserie'],
+  'HAMBURGER':['steak','pain','americain','ketchup','rapide'],
+  'JAMBON':['charcuterie','tranche','rose','porc','sandwich'],
+  'LAIT':['blanc','vache','biberon','calcium','creme'],
+  'MELON':['ete','sucre','orange','tranche','rafraichissant'],
+  'MIEL':['abeille','dore','sucre','ruche','tartine'],
+  'NOISETTE':['coque','ecureuil','praline','croquant','automne'],
+  'NOIX':['coque','cerveau','cerner','automne','huile'],
+  'OEUF':['poule','coque','jaune','omelette','couver'],
+  'OLIVE':['huile','vert','noir','mediterranee','aperitif'],
+  'OMELETTE':['oeuf','poele','battre','plier','baveuse'],
+  'ORANGE':['agrume','jus','vitamine','zeste','pressée'],
+  'PAIN':['boulanger','croute','mie','farine','tartine'],
+  'PIZZA':['italienne','tomate','fromage','ronde','four'],
+  'POIVRE':['piquant','moulin','noir','epice','steak'],
+  'POMME':['fruit','rouge','tarte','croque','verger'],
+  'RAISIN':['grappe','vigne','vin','vendange','sec'],
+  'SALADE':['verte','laitue','vinaigrette','feuille','fraicheur'],
+  'SANDWICH':['pain','tranche','rapide','jambon','beurre'],
+  'SAUCISSE':['griller','porc','barbecue','moutarde','charcuterie'],
+  'SUCRE':['doux','blanc','canne','cristal','dessert'],
+  'TARTE':['part','fruit','pate','four','moule'],
+  'TOMATE':['rouge','salade','sauce','mure','ketchup'],
+  // Maison / Objets
+  'AMPOULE':['lumiere','filament','visser','idee','electrique'],
+  'ARMOIRE':['vetement','bois','porte','ranger','penderie'],
+  'ASPIRATEUR':['menage','bruit','poussiere','tuyau','aspirer'],
+  'ASSIETTE':['ronde','manger','porcelaine','table','service'],
+  'BAGUE':['doigt','bijou','diamant','alliance','anneau'],
+  'BALAI':['menage','sorciere','balayer','poussiere','manche'],
+  'BAIGNOIRE':['bain','eau','mousse','robinet','tremper'],
+  'BOUGIE':['flamme','cire','meche','gateau','ambiance'],
+  'BOUTEILLE':['verre','bouchon','liquide','vin','plastique'],
+  'BROSSE':['cheveux','dent','poil','frotter','manche'],
+  'CADEAU':['emballer','ruban','surprise','offrir','anniversaire'],
+  'CAHIER':['ecrire','page','lignes','ecole','carreaux'],
+  'CASSEROLE':['cuisine','manche','cuivre','sauce','feu'],
+  'CHAISE':['assise','dossier','pied','bois','table'],
+  'CISEAUX':['couper','lame','papier','coiffeur','paire'],
+  'CLEF':['serrure','trousseau','ouvrir','metal','secret'],
+  'COUTEAU':['lame','couper','manche','tranchant','cuisine'],
+  'COUSSIN':['moelleux','canape','tissu','confort','oreiller'],
+  'CRAYON':['ecrire','mine','bois','dessin','gomme'],
+  'DRAPEAU':['nation','couleur','mat','flotter','embleme'],
+  'ECHELLE':['barreau','monter','hauteur','pompier','corde'],
+  'ENVELOPPE':['lettre','timbre','papier','coller','poste'],
+  'EPONGE':['absorber','mousse','nettoyer','jaune','vaisselle'],
+  'FOURCHETTE':['dent','manger','couvert','metal','piquer'],
+  'HORLOGE':['aiguille','heure','cadran','tic','pendule'],
+  'LAMPE':['lumiere','abat','bureau','allumer','ampoule'],
+  'LUNETTES':['verre','monture','voir','nez','soleil'],
+  'MARTEAU':['clou','frapper','manche','bricolage','enclume'],
+  'MIROIR':['reflet','glace','cadre','image','verre'],
+  'MONTRE':['heure','bracelet','aiguille','cadran','poignet'],
+  'PARAPLUIE':['pluie','ouvrir','manche','abri','toile'],
+  'PUZZLE':['piece','assembler','image','patience','carton'],
+  'REVEIL':['matin','sonnerie','heure','dormir','alarme'],
+  'RIDEAU':['fenetre','tissu','tirer','theatre','cacher'],
+  'STYLO':['ecrire','encre','bille','capuchon','signer'],
+  'TELEPHONE':['appeler','sonnerie','ecran','portable','numero'],
+  'TIRELIRE':['cochon','economie','piece','casser','fente'],
+  'VALISE':['voyage','bagage','roulette','aeroprot','fermer'],
+  // Nature / Géographie
+  'ARBRE':['tronc','feuille','racine','foret','branche'],
+  'AVALANCHE':['neige','montagne','danger','glissement','secours'],
+  'CANYON':['gorge','profond','roche','riviere','desert'],
+  'CASCADE':['chute','eau','rocher','mousse','bruit'],
+  'CIEL':['bleu','nuage','etoile','infini','horizon'],
+  'COLLINE':['pente','herbe','vallée','sommet','doux'],
+  'DESERT':['sable','dune','oasis','chaud','sec'],
+  'DUNE':['sable','vent','desert','plage','forme'],
+  'ECLAIR':['foudre','orage','lumineux','rapide','tonnerre'],
+  'ETOILE':['briller','nuit','ciel','filante','constellation'],
+  'FALAISE':['vertige','roche','mer','bord','hauteur'],
+  'FLEUR':['petale','tige','parfum','bouquet','pollen'],
+  'FORET':['arbre','bois','sentier','ombre','nature'],
+  'GLACIER':['glace','montagne','fondre','froid','bleu'],
+  'GROTTE':['caverne','sombre','stalactite','chauve','rocher'],
+  'ICEBERG':['glace','titanic','flottant','immerse','froid'],
+  'ILE':['mer','plage','isole','tropical','palmier'],
+  'LAC':['eau','calme','peche','barque','montagne'],
+  'LUNE':['nuit','croissant','pleine','maree','astre'],
+  'MONTAGNE':['sommet','ski','neige','altitude','grimper'],
+  'NEIGE':['blanc','froid','flocon','hiver','fondre'],
+  'NUAGE':['ciel','blanc','pluie','coton','flotter'],
+  'OCEAN':['vaste','profond','vague','bleu','sel'],
+  'ORAGE':['tonnerre','pluie','eclair','violent','nuage'],
+  'PLAGE':['sable','mer','parasol','vacances','bronzer'],
+  'PLUIE':['goutte','parapluie','nuage','mouille','averse'],
+  'RIVIERE':['courant','eau','berge','pont','poisson'],
+  'ROCHER':['dur','pierre','escalade','falaise','granit'],
+  'SABLE':['plage','grain','chateau','desert','fin'],
+  'SOLEIL':['briller','chaleur','rayon','lever','astre'],
+  'TORNADE':['vent','tourbillon','destructeur','violent','amerique'],
+  'TSUNAMI':['vague','geante','devastateur','ocean','seisme'],
+  'VOLCAN':['eruption','lave','cratere','cendre','actif'],
+  // Transports
+  'AVION':['voler','aile','pilote','ciel','reacteur'],
+  'BATEAU':['naviguer','voile','mer','ancre','coque'],
+  'BUS':['arret','passager','trajet','chauffeur','ville'],
+  'FUSEE':['espace','lancer','propulsion','astronaute','orbite'],
+  'HELICOPTERE':['helice','voler','sauvetage','hovering','pale'],
+  'LOCOMOTIVE':['train','vapeur','rail','wagon','sifflet'],
+  'MOTO':['vitesse','casque','roue','guidon','vrombir'],
+  'TOBOGGAN':['glisser','enfant','parc','descente','jeu'],
+  'TRAIN':['rail','gare','wagon','voyage','quai'],
+  'VELO':['pedaler','roue','chaine','guidon','selle'],
+  'VOITURE':['rouler','moteur','volant','route','quatre'],
+  // Bâtiments / Lieux
+  'BIBLIOTHEQUE':['livre','silence','lire','etagere','emprunt'],
+  'BOULANGERIE':['pain','croissant','four','vitrine','odeur'],
+  'CHATEAU':['tour','roi','medieval','donjon','rempart'],
+  'CINEMA':['film','ecran','salle','popcorn','projection'],
+  'ECOLE':['apprendre','classe','maitre','cour','tableau'],
+  'EGLISE':['clocher','messe','vitrail','priere','cloche'],
+  'GARE':['train','quai','billet','horloge','depart'],
+  'HOPITAL':['malade','soigner','blanc','urgence','medecin'],
+  'MUSEE':['tableau','exposition','culture','visite','guide'],
+  'PHARMACIE':['medicament','ordonnance','sante','croix','pilule'],
+  'PRISON':['barreau','cellule','detenu','mur','gardien'],
+  'RESTAURANT':['menu','serveur','table','manger','addition'],
+  'STADE':['sport','tribune','terrain','supporter','match'],
+  'THEATRE':['scene','rideau','acteur','piece','public'],
+  // Corps / Santé
+  'BOUCHE':['levre','langue','parler','manger','sourire'],
+  'BRAS':['muscle','epaule','main','geste','coude'],
+  'CERVEAU':['penser','neurone','matiere','intelligence','crane'],
+  'COEUR':['battre','organe','amour','poitrine','rouge'],
+  'DENT':['mordre','machoire','carie','brosse','lait'],
+  'DOIGT':['main','bague','cinq','ongle','pointer'],
+  'GENOU':['plier','jambe','rotule','genouillere','articuler'],
+  'JAMBE':['marcher','os','muscle','pantalon','cuisse'],
+  'MAIN':['doigt','paume','poing','gant','serrer'],
+  'NEZ':['sentir','respirer','narine','flair','eternuer'],
+  'OEIL':['voir','pupille','cil','regard','paupiere'],
+  'OREILLE':['entendre','lobe','tympan','boucle','son'],
+  'PIED':['marcher','orteil','chaussure','sol','plante'],
+  'SQUELETTE':['os','halloween','crane','anatomie','articulation'],
+  'TETE':['cerveau','cheveu','visage','crane','penser'],
+  // Vêtements
+  'BONNET':['tete','laine','froid','hiver','pompon'],
+  'BOTTE':['pied','pluie','cuir','cavalier','chausser'],
+  'CASQUETTE':['visiere','tete','soleil','sport','casque'],
+  'CEINTURE':['taille','boucle','cuir','pantalon','noire'],
+  'CHAPEAU':['tete','bord','elegance','soleil','coiffe'],
+  'CHAUSSETTE':['pied','paire','laine','chaussure','trouer'],
+  'CHAUSSURE':['pied','lacet','semelle','talon','marcher'],
+  'CHEMISE':['bouton','col','manche','tissu','repasser'],
+  'CRAVATE':['cou','noeud','costume','elegance','soie'],
+  'ECHARPE':['cou','hiver','laine','chaleur','nouer'],
+  'GANT':['main','doigt','cuir','hiver','proteger'],
+  'JUPE':['femme','tissu','taille','tourner','genou'],
+  'LUNETTES':['yeux','verre','monture','soleil','voir'],
+  'MANTEAU':['hiver','chaud','bouton','capuche','porter'],
+  'PANTALON':['jambe','poche','ceinture','tissu','pli'],
+  'PYJAMA':['dormir','nuit','confort','rayure','lit'],
+  'ROBE':['femme','tissu','elegance','mariee','porter'],
+  // Métiers / Personnes
+  'ARBITRE':['sifflet','match','carton','decision','sport'],
+  'BOULANGER':['pain','four','petrir','farine','levain'],
+  'CLOWN':['cirque','nez','rire','maquiller','perruque'],
+  'CUISINIER':['casserole','recipe','toque','plat','gouter'],
+  'DOCTEUR':['soigner','stethoscope','patient','ordonnance','consultation'],
+  'FACTEUR':['courrier','distribuer','sacoche','lettre','tournee'],
+  'GARDIEN':['surveiller','porte','securite','nuit','cle'],
+  'MAGICIEN':['tour','lapin','chapeau','baguette','disparaitre'],
+  'PILOTE':['avion','cockpit','voler','manche','atterrir'],
+  'PIRATE':['tresor','perroquet','navire','epee','drapeau'],
+  'PLOMBIER':['tuyau','fuite','robinet','cle','eau'],
+  'POLICIER':['uniforme','badge','enquete','patrouille','sirene'],
+  'POMPIER':['incendie','casque','echelle','camion','sauver'],
+  'PROFESSEUR':['classe','enseigner','tableau','ecole','cours'],
+  // Musique / Arts
+  'ACCORDEON':['soufflet','touche','musette','bal','polka'],
+  'GUITARE':['corde','gratter','manche','folk','solo'],
+  'PIANO':['touche','noir','blanc','clavier','melodie'],
+  'TAMBOUR':['baguette','frapper','rythme','peau','caisse'],
+  'TROMPETTE':['cuivre','souffler','jazz','pavillon','note'],
+  'VIOLON':['archet','corde','quatuor','classique','melodie'],
+  // Divers
+  'ANNIVERSAIRE':['gateau','bougie','cadeau','feter','age'],
+  'AVENTURE':['risque','decouvrir','heros','voyage','excitant'],
+  'BOUSSOLE':['nord','aiguille','orienter','magnetique','rose'],
+  'CALENDRIER':['mois','date','jour','mural','planifier'],
+  'CARTE':['jouer','tresor','geographie','atout','distribuer'],
+  'CHANCE':['trefle','hasard','fortune','veine','loterie'],
+  'CIRQUE':['chapiteau','clown','acrobate','piste','spectacle'],
+  'COURONNE':['roi','tete','or','royal','joyau'],
+  'DIAMANT':['precieux','briller','carbone','bague','taille'],
+  'FANTOME':['hanter','blanc','invisible','halloween','drap'],
+  'FETE':['danser','musique','ballon','gateau','celebrer'],
+  'FOOTBALL':['ballon','but','equipe','terrain','gardien'],
+  'GUITARE':['corde','gratter','manche','folk','accord'],
+  'INCENDIE':['flamme','pompier','brulure','alarme','evacuer'],
+  'LUGE':['neige','glisser','pente','hiver','enfant'],
+  'MARIAGE':['alliance','robe','ceremonie','amour','fete'],
+  'MASCARA':['cil','maquiller','noir','brosse','regard'],
+  'MYSTERE':['enigme','secret','inconnu','indice','resoudre'],
+  'NOEL':['sapin','cadeau','rouge','traineau','decembre'],
+  'PIRATE':['tresor','bateau','epee','perroquet','ile'],
+  'PYRAMIDE':['egypte','pharaon','triangle','pierre','desert'],
+  'SKI':['neige','piste','montagne','baton','remontee'],
+  'TELESCOPE':['etoile','observer','lentille','astronome','lunette'],
+  'TRESOR':['coffre','or','pirate','carte','cacher'],
+  'VAMPIRE':['sang','nuit','canine','chauve','cercueil'],
+  'VOYAGE':['bagage','decouvrir','destination','avion','souvenir'],
+};
+
+// ── Génération d'indice intelligent quand le mot n'est pas dans la DB ──
+// ══ Algorithmes avancés du bot ══
+
+// ── Catégories sémantiques auto-détectées ──
+const BOT_CATEGORIES={
+  'animal':['abeille','aigle','albatros','anguille','antilope','araignee','autruche','baleine','belette','bison','blaireau','boeuf','buffle','cachalot','caille','canard','carpe','castor','cerf','chamois','chat','chaton','cheval','chevreuil','chien','chimpanze','cigale','cigogne','coccinelle','cochon','condor','corbeau','crapaud','crevette','criquet','crocodile','cygne','dauphin','dinosaure','dorade','ecrevisse','ecureuil','elephant','escargot','faisan','faucon','fourmi','gazelle','girafe','goeland','gorille','grenouille','grillon','guepe','hamster','hareng','herisson','heron','hibou','hippopotame','hirondelle','homard','iguane','jaguar','koala','lapin','leopard','lezard','libellule','lion','loup','loutre','macaque','mammifere','marmotte','merle','mesange','moineau','morue','mouche','mouette','mouton','oie','oiseau','ours','oursin','papillon','perdrix','perroquet','phoque','pie','pigeon','pingouin','pintade','piranha','poisson','poule','poulet','puce','renard','reptile','requin','rhinoceros','rossignol','salamandre','sanglier','sardine','saumon','sauterelle','scarabee','scorpion','serpent','singe','souris','taureau','thon','tigre','tortue','toucan','truite','vache','vautour'],
+  'nourriture':['abricot','amande','ananas','artichaut','banane','betterave','beurre','biscuit','bonbon','brioche','brocoli','caramel','carotte','celeri','cerise','chocolat','citron','citrouille','confiture','courgette','crepe','croissant','endive','epinard','farine','figue','fraise','framboise','fromage','galette','gateau','hamburger','jambon','lait','laitue','melon','miel','mirabelle','noisette','noix','oeuf','olive','omelette','orange','pain','pamplemousse','pistache','pizza','poire','poireau','poivre','pomme','prune','radis','raisin','salade','sandwich','saucisse','saumon','sel','sucre','tarte','tomate','vanille'],
+  'maison':['ampoule','armoire','aspirateur','assiette','baignoire','balai','bougie','bouteille','brosse','casserole','chaise','clef','commode','coussin','couteau','couverture','douche','evier','fourchette','lampe','lit','matelas','miroir','oreiller','pendule','poele','refrigerateur','rideau','robinet','tabouret','table','tapis','tiroir','verre'],
+  'vetement':['bermuda','bonnet','botte','calecon','casquette','ceinture','chapeau','chaussette','chaussure','chemise','cravate','echarpe','gant','gilet','jupe','lunettes','maillot','manteau','pantalon','pardessus','pull','pyjama','robe','sandale'],
+  'transport':['autobus','avion','bateau','bus','camion','deltaplane','fusee','helicoptere','locomotive','moto','scooter','toboggan','tracteur','train','tramway','velo','voiture','wagon','yacht'],
+  'musique':['accordeon','banjo','basson','batterie','clarinette','clavecin','flute','guitare','harpe','hautbois','mandoline','piano','saxophone','tambour','tambourin','trompette','tuba','ukulele','vibraphone','violon','violoncelle','xylophone'],
+  'nature':['arbre','aurore','avalanche','buisson','canyon','cascade','ciel','colline','desert','dune','eclair','etoile','falaise','fleur','foret','glacier','grotte','iceberg','ile','lac','lune','mer','montagne','neige','nuage','oasis','ocean','orage','plage','pluie','riviere','rocher','sable','soleil','tornade','tsunami','vallee','volcan'],
+  'batiment':['bibliotheque','boulangerie','chateau','cinema','ecole','eglise','gare','hopital','musee','pharmacie','prison','restaurant','stade','theatre'],
+  'corps':['bouche','bras','cerveau','coeur','dent','doigt','epaule','estomac','genou','jambe','main','nez','oeil','oreille','pied','squelette','tete','ventre'],
+  'sport':['athletisme','badminton','baseball','basket','boxe','cyclisme','escrime','football','golf','handball','hockey','judo','natation','rugby','ski','snowboard','surf','tennis','volleyball'],
+  'metier':['arbitre','architecte','astronome','avocat','boucher','boulanger','chirurgien','clown','coiffeur','cuisinier','dentiste','docteur','facteur','fermier','forgeron','gardien','gendarme','infirmier','jardinier','magicien','menuisier','navigateur','pilote','plombier','policier','pompier','professeur','sculpteur','serveur'],
+};
+
+// ── Index inversé catégorie (mot → catégories) ──
+const _wordCategories=new Map();
+(function(){
+  for(const [cat, words] of Object.entries(BOT_CATEGORIES)){
+    for(const w of words) {
+      if(!_wordCategories.has(w)) _wordCategories.set(w,new Set());
+      _wordCategories.get(w).add(cat);
+    }
+  }
+})();
+
+// ── Similarité par n-grammes (lettres) ──
+function getNgrams(s, n){
+  const result=new Set();
+  const norm=normLetters(s);
+  for(let i=0;i<=norm.length-n;i++) result.add(norm.slice(i,i+n));
+  return result;
+}
+function ngramSimilarity(a, b){
+  const ga=getNgrams(a,2), gb=getNgrams(b,2);
+  if(ga.size===0||gb.size===0) return 0;
+  let inter=0;
+  for(const g of ga) if(gb.has(g)) inter++;
+  return inter / Math.max(ga.size, gb.size);
+}
+
+// ── Distance de Levenshtein ──
+function levenshtein(a,b){
+  const la=a.length, lb=b.length;
+  if(la===0) return lb;
+  if(lb===0) return la;
+  const dp=Array.from({length:la+1},()=>Array(lb+1).fill(0));
+  for(let i=0;i<=la;i++) dp[i][0]=i;
+  for(let j=0;j<=lb;j++) dp[0][j]=j;
+  for(let i=1;i<=la;i++){
+    for(let j=1;j<=lb;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      dp[i][j]=Math.min(dp[i-1][j]+1,dp[i][j-1]+1,dp[i-1][j-1]+cost);
+    }
+  }
+  return dp[la][lb];
+}
+
+// ── Associations sémantiques inversées (pour faire deviner) ──
+// Pour chaque catégorie, des indices de catégorie
+const BOT_CAT_CLUES={
+  'animal':['creature','sauvage','pattes','queue','pelage','plumes','griffe','bec','nager','voler','fourrure','mammifere','predateur','herbivore','nid','terrier','dompter','zoo','ferme','chasser'],
+  'nourriture':['manger','cuisine','recette','saveur','delicieux','gouter','ingredient','plat','assiette','repas','dessert','gout','croquer','savourer','croquant','fondant','juteux','sucre','cuire','table'],
+  'maison':['domestique','interieur','piece','menage','quotidien','habiter','ranger','nettoyer','pratique','confort','salon','chambre','ustensile','meuble','decoration','usage','maison','foyer'],
+  'vetement':['porter','tissu','mode','habiller','enfiler','taille','couture','textile','garde','elegance','couvrir','ajuster','style','tendance'],
+  'transport':['rouler','conduire','deplacer','rapide','voyage','trajet','moteur','roue','passager','vitesse','vehicule','embarquer','station','trajet','carburant'],
+  'musique':['instrument','jouer','melodie','rythme','orchestre','note','concert','partition','harmonie','son','musicien','accorder','cordes','souffler'],
+  'nature':['exterieur','paysage','sauvage','climat','terre','eau','naturel','beaute','horizon','immense','verdure','majestueux','panorama','environnement'],
+  'batiment':['construction','edifice','batir','architecture','entrer','public','lieu','visiter','interieur','quartier'],
+  'corps':['anatomie','membre','organe','physique','humain','sentir','toucher','bouger','articulation','biologie'],
+  'sport':['equipe','match','terrain','score','competition','gagner','entrainement','athlete','champion','jouer','ballon','arbitre'],
+  'metier':['travail','profession','salaire','competence','exercer','specialiste','expert','formation','emploi','bureau'],
+};
+
+function botGenerateClue(secretWord, clueNum, previousClues){
+  const norm=normLetters(secretWord);
+
+  // ═══ 1) DB directe (priorité maximale) ═══
+  if(BOT_CLUE_DB[secretWord]){
+    const pool=BOT_CLUE_DB[secretWord].filter(c=>!previousClues.includes(c));
+    if(pool.length>0){
+      const idx=Math.min(clueNum, pool.length-1);
+      return pool[idx];
+    }
+  }
+
+  // ═══ 2) Recherche par catégorie sémantique ═══
+  const cats=_wordCategories.get(norm);
+  if(cats){
+    for(const cat of cats){
+      const catClues=BOT_CAT_CLUES[cat]||[];
+      const valid=catClues.filter(c=>{
+        if(previousClues.includes(c)) return false;
+        const check=validateGiverClue(c, secretWord);
+        return check.ok;
+      });
+      if(valid.length>0){
+        // Indice 0 = catégorie large, 1+ = plus spécifique
+        return valid[Math.min(clueNum, valid.length-1)];
+      }
+    }
+  }
+
+  // ═══ 3) Recherche dans les synonymes → trouver un champ lexical ═══
+  for(const group of SYNONYM_GROUPS){
+    if(group.some(w=>normLetters(w)===norm)){
+      for(const related of group){
+        const rn=normLetters(related);
+        if(rn===norm) continue;
+        // Chercher des indices pour les mots liés dans la DB
+        for(const [dbWord, dbClues] of Object.entries(BOT_CLUE_DB)){
+          if(normLetters(dbWord)===rn){
+            const pool=dbClues.filter(c=>{
+              if(previousClues.includes(c)) return false;
+              const check=validateGiverClue(c, secretWord);
+              return check.ok;
+            });
+            if(pool.length>0) return pool[Math.min(clueNum, pool.length-1)];
+          }
+        }
+      }
+    }
+  }
+
+  // ═══ 4) N-gram matching : trouver un mot DB similaire et piocher ses indices ═══
+  let bestSim=0, bestClues=null;
+  for(const [word, clues] of Object.entries(BOT_CLUE_DB)){
+    const sim=ngramSimilarity(secretWord, word);
+    if(sim>bestSim && sim>0.25){
+      const pool=clues.filter(c=>{
+        if(previousClues.includes(c)) return false;
+        const check=validateGiverClue(c, secretWord);
+        return check.ok;
+      });
+      if(pool.length>0){ bestSim=sim; bestClues=pool; }
+    }
+  }
+  if(bestClues) return bestClues[Math.min(clueNum, bestClues.length-1)];
+
+  // ═══ 5) Traduction inversée : utiliser le mot anglais correspondant comme piste ═══
+  for(const [eng, fr] of Object.entries(ENGLISH_TRANSLATIONS)){
+    if(normLetters(fr)===norm){
+      // Trouver un mot lié à la traduction anglaise dans la DB
+      for(const [dbWord, dbClues] of Object.entries(BOT_CLUE_DB)){
+        const dbEng=Object.entries(ENGLISH_TRANSLATIONS).find(([e,f])=>normLetters(f)===normLetters(dbWord));
+        if(dbEng){
+          const engSim=ngramSimilarity(eng, dbEng[0]);
+          if(engSim>0.3){
+            const pool=dbClues.filter(c=>{
+              if(previousClues.includes(c)) return false;
+              const check=validateGiverClue(c, secretWord);
+              return check.ok;
+            });
+            if(pool.length>0) return pool[0];
+          }
+        }
+      }
+      break;
+    }
+  }
+
+  // ═══ 6) Fallback intelligent par propriétés du mot ═══
+  const vowels=(norm.match(/[aeiouy]/g)||[]).length;
+  const consonants=norm.length-vowels;
+  const lastTwo=norm.slice(-2);
+  // Suffixes courants → catégorie probable
+  const suffixCat={
+    'eur':'metier','ier':'metier','ien':'metier','iste':'metier',
+    'tion':'abstrait','ment':'abstrait','ance':'abstrait','ence':'abstrait',
+    'age':'action','ure':'matiere','ette':'petit','on':'objet',
+  };
+  let catHint=null;
+  for(const [suf,cat] of Object.entries(suffixCat)){
+    if(norm.endsWith(suf)){ catHint=cat; break; }
+  }
+
+  const smartFallbacks={
+    'metier':['profession','specialiste','exercer','competence','salarie'],
+    'abstrait':['concept','notion','idee','philosophie','theorie'],
+    'action':['processus','activite','operation','mouvement','etape'],
+    'matiere':['materiau','substance','texture','surface','composition'],
+    'petit':['miniature','diminutif','mignon','delicat','fin'],
+    'objet':['chose','accessoire','outil','ustensile','article'],
+  };
+
+  if(catHint && smartFallbacks[catHint]){
+    const pool=smartFallbacks[catHint].filter(c=>!previousClues.includes(c));
+    if(pool.length>0) return pool[Math.min(clueNum, pool.length-1)];
+  }
+
+  // Dernier recours adaptatif
+  const generic=['quotidien','populaire','commun','familier','classique','traditionnel','moderne','francais','connu','celebre'];
+  const avail=generic.filter(c=>!previousClues.includes(c));
+  return avail.length>0 ? avail[clueNum%avail.length] : 'indice';
+}
+
+// ── Bot devine un mot à partir de TOUS les indices reçus (algorithme avancé) ──
+function botGenerateGuess(allClues, pastGuesses, secretWord, wordLength){
+  const allGameWords=[...WORDS_EASY,...WORDS_MEDIUM,...WORDS_HARD];
+  const pastGuessNorms=new Set(pastGuesses.map(g=>normLetters(g)));
+  const gameWordSet=new Set(allGameWords);
+
+  // ═══ Phase 1 : Scoring multi-critères ═══
+  let scores=new Map();
+
+  for(const clue of allClues){
+    const clueNorm=normLetters(clue);
+
+    // a) Match exact dans BOT_CLUE_DB (+15 pts)
+    for(const [word, clues] of Object.entries(BOT_CLUE_DB)){
+      for(const c of clues){
+        if(normLetters(c)===clueNorm){
+          scores.set(word, (scores.get(word)||0) + 15);
+          break;
+        }
+      }
+    }
+
+    // b) Match partiel DB par n-grammes (+1-8 pts selon similarité)
+    for(const [word, clues] of Object.entries(BOT_CLUE_DB)){
+      for(const c of clues){
+        const sim=ngramSimilarity(c, clue);
+        if(sim>0.4){
+          scores.set(word, (scores.get(word)||0) + Math.round(sim*8));
+        }
+      }
+    }
+
+    // c) Synonymes (+10 pts)
+    for(const group of SYNONYM_GROUPS){
+      if(group.some(w=>normLetters(w)===clueNorm)){
+        for(const w of group){
+          const wUp=w.toUpperCase();
+          if(gameWordSet.has(wUp) && normLetters(w)!==clueNorm){
+            scores.set(wUp, (scores.get(wUp)||0) + 10);
+          }
+        }
+      }
+    }
+
+    // d) Traductions anglaises (+12 pts)
+    for(const [eng, fr] of Object.entries(ENGLISH_TRANSLATIONS)){
+      if(normLetters(eng)===clueNorm || normLetters(fr)===clueNorm){
+        const frUp=fr.toUpperCase();
+        // Trouver le mot du jeu correspondant
+        const match=allGameWords.find(w=>normLetters(w)===normLetters(fr));
+        if(match) scores.set(match, (scores.get(match)||0) + 12);
+      }
+    }
+
+    // e) Catégorie sémantique (+6 pts pour chaque mot de la même catégorie)
+    for(const [cat, catWords] of Object.entries(BOT_CATEGORIES)){
+      if(catWords.includes(clueNorm)){
+        // L'indice EST un mot de cette catégorie → tous les mots de cette catégorie gagnent des pts
+        for(const w of catWords){
+          const wUp=w.toUpperCase();
+          if(gameWordSet.has(wUp)){
+            scores.set(wUp, (scores.get(wUp)||0) + 6);
+          }
+        }
+      }
+      // L'indice décrit cette catégorie ?
+      const catClues=BOT_CAT_CLUES[cat]||[];
+      if(catClues.includes(clueNorm)){
+        for(const w of catWords){
+          const wUp=w.toUpperCase();
+          if(gameWordSet.has(wUp)){
+            scores.set(wUp, (scores.get(wUp)||0) + 8);
+          }
+        }
+      }
+    }
+
+    // f) Inclusion de chaînes (+3 pts)
+    for(const w of allGameWords){
+      const wn=normLetters(w);
+      if(wn.length>=4 && clueNorm.length>=4 && wn!==clueNorm){
+        if(wn.includes(clueNorm)) scores.set(w, (scores.get(w)||0) + 3);
+        if(clueNorm.includes(wn)) scores.set(w, (scores.get(w)||0) + 2);
+      }
+    }
+
+    // g) Levenshtein faible distance (+4 pts si distance ≤ 2)
+    for(const w of allGameWords){
+      const wn=normLetters(w);
+      if(Math.abs(wn.length-clueNorm.length)<=2 && wn!==clueNorm){
+        const dist=levenshtein(wn, clueNorm);
+        if(dist<=2) scores.set(w, (scores.get(w)||0) + (4-dist));
+      }
+    }
+
+    // h) Même famille morphologique (+5 pts)
+    for(const w of allGameWords){
+      const wn=normLetters(w);
+      if(wn.length>=5 && clueNorm.length>=5 && wn!==clueNorm){
+        // Racine commune de 5+ lettres
+        let common=0;
+        for(let i=0;i<Math.min(wn.length,clueNorm.length);i++){
+          if(wn[i]===clueNorm[i]) common++; else break;
+        }
+        if(common>=5) scores.set(w, (scores.get(w)||0) + 5);
+      }
+    }
+  }
+
+  // ═══ Phase 2 : Bonus/Malus croisés ═══
+
+  // Bonus : mots scorés par PLUSIEURS indices (+50% par indice supplémentaire)
+  if(allClues.length>1){
+    for(const [word, score] of scores){
+      // Compter combien d'indices contribuent au score de ce mot
+      let clueContribs=0;
+      for(const clue of allClues){
+        const clueNorm=normLetters(clue);
+        const dbEntry=BOT_CLUE_DB[word];
+        if(dbEntry && dbEntry.some(c=>normLetters(c)===clueNorm)) clueContribs++;
+        for(const group of SYNONYM_GROUPS){
+          if(group.some(w=>normLetters(w)===clueNorm) && group.some(w=>normLetters(w)===normLetters(word))) clueContribs++;
+        }
+      }
+      if(clueContribs>1) scores.set(word, score * (1 + 0.5*(clueContribs-1)));
+    }
+  }
+
+  // Malus : mots déjà tentés → exclus
+  // Malus : mauvaise longueur → exclu
+
+  // ═══ Phase 3 : Filtrage et sélection ═══
+  let candidates=[...scores.entries()]
+    .filter(([w,s])=> !pastGuessNorms.has(normLetters(w)))
+    .filter(([w,s])=> wordLength===0 || w.length===wordLength)
+    .sort((a,b)=>b[1]-a[1]);
+
+  if(candidates.length>0){
+    // Plus on a d'indices, plus on est précis
+    const precision=Math.min(0.4 + allClues.length * 0.2, 0.95);
+    if(Math.random()<precision || candidates.length===1){
+      return candidates[0][0];
+    }
+    // Top 2 sinon
+    const top=candidates.slice(0, Math.min(2, candidates.length));
+    return top[Math.floor(Math.random()*top.length)][0];
+  }
+
+  // ═══ Phase 4 : Fallback intelligent ═══
+  // Mot aléatoire de la bonne longueur non déjà tenté
+  const sameLen=allGameWords.filter(w=>
+    w.length===wordLength && !pastGuessNorms.has(normLetters(w))
+  );
+  if(sameLen.length>0) return sameLen[Math.floor(Math.random()*sameLen.length)];
+  return allGameWords[Math.floor(Math.random()*allGameWords.length)];
+}
+
+// ── Effet de frappe progressive ──
+function botTypeInBubble(role, text, callback){
+  const el=document.getElementById(role==='giver'?'bubbleGiver':'bubbleGuesser');
+  if(!el){ if(callback) callback(); return; }
+  let i=0;
+  el.textContent='';
+  const speed=55+Math.random()*55;
+  function typeNext(){
+    if(!botActive){ if(callback) callback(); return; }
+    if(i<text.length){
+      i++;
+      el.textContent=text.slice(0,i);
+      setTimeout(typeNext, speed+Math.random()*35);
+    }else{
+      el.classList.remove('bubble-pop');
+      void el.offsetWidth;
+      el.classList.add('bubble-pop');
+      if(callback) setTimeout(callback, 300);
+    }
+  }
+  setTimeout(typeNext, 600+Math.random()*1400);
+}
+
+// ── Bot fait deviner (donne un indice) ──
+function botGiveClue(){
+  if(!botActive||botThinking||!mancheState.wordsPhase) return;
+  const seq=getCurrentSeq();
+  if(!seq||seq.found[seq.currentWordIdx]) return;
+  if(mancheState.turn!=='giver') return;
+
+  botThinking=true;
+  const secretWord=seq.words[seq.currentWordIdx];
+  const clueNum=mancheState.cluesGiven;
+
+  const clue=botGenerateClue(secretWord, clueNum, botClueHistory);
+  botClueHistory.push(clue);
+
+  // Vérifier les règles
+  let finalClue=clue;
+  const check=validateGiverClue(finalClue, secretWord);
+  if(!check.ok){
+    // Fallback sûr
+    const safeClues=['concept','element','objet','nature','symbole','histoire','culture'];
+    finalClue=safeClues.filter(c=>!botClueHistory.includes(c))[0]||'indice';
+  }
+
+  botTypeInBubble('giver', finalClue.toLowerCase(), ()=>{
+    botThinking=false;
+    tryStartTimerAfterFirstClue();
+
+    if(gameMode==='duo'){
+      consumeArrow(mancheState.cluesGiven);
+      mancheState.cluesGiven++;
+    }
+
+    mancheState.turn='guesser';
+    refreshDireInputState();
+  });
+}
+
+// ── Bot devine (propose une réponse) ──
+function botGuess(){
+  if(!botActive||botThinking||!mancheState.wordsPhase||!mancheState.started) return;
+  const seq=getCurrentSeq();
+  if(!seq||seq.found[seq.currentWordIdx]) return;
+  if(mancheState.turn!=='guesser') return;
+
+  botThinking=true;
+  const secretWord=seq.words[seq.currentWordIdx];
+
+  // Récupérer le dernier indice donné par le joueur et l'ajouter à la mémoire
+  const giverBubble=document.getElementById('bubbleGiver');
+  const lastClue=giverBubble?giverBubble.textContent.trim():'';
+  if(lastClue && !botReceivedClues.includes(lastClue.toLowerCase())){
+    botReceivedClues.push(lastClue.toLowerCase());
+  }
+
+  // Utiliser TOUS les indices reçus + l'historique des réponses ratées
+  const guess=botGenerateGuess(botReceivedClues, botGuessHistory, secretWord, secretWord.length);
+  botGuessHistory.push(guess);
+
+  botTypeInBubble('guesser', guess.toLowerCase(), ()=>{
+    botThinking=false;
+
+    const normalizedGuess=normalizeAnswer(guess);
+    let matchedIdx=-1;
+    for(let i=0;i<seq.words.length;i++){
+      if(!seq.found[i]&&normalizeAnswer(seq.words[i])===normalizedGuess){
+        matchedIdx=i; break;
+      }
+    }
+
+    if(matchedIdx>=0){
+      // Bonne réponse ! Sauvegarder en mémoire globale
+      botAllMemory.push({word:secretWord, clues:[...botReceivedClues], guesses:[...botGuessHistory], found:true});
+      seq.currentWordIdx=matchedIdx;
+      onCorrectAnswer();
+      mancheState.cluesGiven=0;
+      botResetWordMemory();
+      resetArrows();
+      mancheState.turn='giver';
+      refreshDireInputState();
+      setTimeout(()=>{ botPlayTurn(); }, 1800);
+    }else{
+      if(gameMode==='duo' && mancheState.cluesGiven>=3){
+        // Mot perdu — sauvegarder en mémoire globale
+        botAllMemory.push({word:secretWord, clues:[...botReceivedClues], guesses:[...botGuessHistory], found:false});
+        const wi=seq.currentWordIdx;
+        duoSkipWord();
+        botResetWordMemory();
+        setTimeout(()=>{ botPlayTurn(); }, 2000);
+      }else{
+        mancheState.turn='giver';
+        refreshDireInputState();
+        setTimeout(()=>{ botPlayTurn(); }, 1200);
+      }
+    }
+  });
+}
+
+// ── Bot joue son tour ──
+function botPlayTurn(){
+  if(!botActive||!mancheState.wordsPhase||botThinking) return;
+  const seq=getCurrentSeq();
+  if(!seq) return;
+
+  const botIsGiver=pseudoMatch('Ordinateur \u{1F916}',seq.giver);
+  const botIsGuesser=pseudoMatch('Ordinateur \u{1F916}',seq.guesser);
+
+  if(botIsGiver && mancheState.turn==='giver'){
+    botGiveClue();
+  }else if(botIsGuesser && mancheState.turn==='guesser' && mancheState.started){
+    botGuess();
+  }
+}
+
+// ── Hook : déclencher le bot quand c'est son tour ──
+const _origRefreshDire=refreshDireInputState;
+refreshDireInputState=function(){
+  _origRefreshDire();
+  if(botActive) setTimeout(()=>{ botPlayTurn(); }, 800);
+};
+const _origStartTimer=startTimer;
+startTimer=function(){
+  _origStartTimer();
+  if(botActive) setTimeout(()=>{ botPlayTurn(); }, 1200);
+};
 
 // ══════════════════════════════════════════
 // SHOUTBOX — Tchat global PeerJS
