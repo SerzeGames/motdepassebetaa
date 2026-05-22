@@ -2028,10 +2028,11 @@ function onData(data,fromConn){
   else if(data.type==='syncSequences'){
     if(data.mode) gameMode=data.mode;
     mancheState.sequences=data.sequences;
-    if(!isHost && clientAwaitingSequenceStart){
+    if(!isHost && !isSpectator && clientAwaitingSequenceStart){
       clientAwaitingSequenceStart=false;
       startSequence(0);
     }
+    // Spectateur : startSequence sera déclenché par spectatorSeqStart
   }
   else if(data.type==='direBubble'){
     applyDireBubble(data.role,data.text,!!data.pop);
@@ -2241,8 +2242,27 @@ function tryMatchmaking(){
           clearTimeout(identTimeout);
           console.log('[Spectator] Spectateur rejoint:', firstData.pseudo||'?');
 
-          // Envoyer l'état actuel de la partie
+          // Snapshot complet de l'état du jeu pour synchroniser le spectateur
           const players=[{pseudo:myPseudo,id:peer.id},...conns.map(p=>({pseudo:p.pseudo,id:p.id}))];
+
+          // Capturer l'état des bulles actuelles
+          const bubbleGiverEl=document.getElementById('bubbleGiver');
+          const bubbleGuesserEl=document.getElementById('bubbleGuesser');
+          const bubbleGiverText=bubbleGiverEl?bubbleGiverEl.textContent:'';
+          const bubbleGuesserText=bubbleGuesserEl?bubbleGuesserEl.textContent:'';
+
+          // Capturer l'état des pastilles
+          const spheresState=[];
+          for(let i=0;i<5;i++){
+            const s=document.getElementById('sphere'+i);
+            if(s){
+              spheresState.push({
+                lit:s.classList.contains('lit'),
+                lost:s.classList.contains('lost')
+              });
+            }
+          }
+
           try{
             c.send({
               type:'spectatePong',
@@ -2250,16 +2270,23 @@ function tryMatchmaking(){
               players:players,
               gameMode:gameMode,
               teamA:teamA, teamB:teamB,
+              currentScreen:document.querySelector('.screen.active')?.id||'screenManche',
+              bubbleGiverText,
+              bubbleGuesserText,
+              spheresState,
               mancheState:{
                 currentSeq:mancheState.currentSeq,
                 started:mancheState.started,
                 wordsPhase:mancheState.wordsPhase,
-                timeLeft:mancheState.timeLeft,
+                timeLeft:mancheState.timeLeft, // TIMER ACTUEL (pas la valeur max)
                 turn:mancheState.turn,
                 cluesGiven:mancheState.cluesGiven,
+                scoreA:mancheState.scoreA,
+                scoreB:mancheState.scoreB,
                 sequences:mancheState.sequences ? mancheState.sequences.map(s=>({
                   ...s,
-                  words:s.words ? s.words.map(w=>'*'.repeat(w.length)) : [] // mots masqués pour spectateur
+                  // Masquer les mots pour le spectateur
+                  words:s.words ? s.words.map(w=>'*'.repeat(w.length)) : []
                 })) : []
               }
             });
@@ -2333,6 +2360,13 @@ let teamA=[], teamB=[];
 function onGameStart(){
   stopAccueilMusic();
 
+  // Spectateur : juste passer en attente, le reste viendra via syncSequences puis spectatorSeqStart
+  if(isSpectator){
+    const s=document.getElementById('lobbyStatus');
+    if(s){ s.textContent='👁 Spectateur — Partie en démarrage...'; s.style.color='#6a7aaa'; }
+    return;
+  }
+
   const s=document.getElementById('lobbyStatus');
   s.textContent='\u{1F3AE} La partie va commencer !';
   s.style.color='#00ff44';
@@ -2361,6 +2395,7 @@ function onGameStart(){
 }
 
 function showInterditsScreen(manche){
+  if(isSpectator) return; // Spectateur ne voit pas l'écran des règles
   if(gameMode==='duo'){
     document.getElementById('teamAMembers').textContent=teamA[0]||'';
     document.getElementById('teamBMembers').textContent=teamB[0]||'';
@@ -2412,6 +2447,7 @@ function updateInterditsHostUi(){
 }
 
 function applyInterditsTransition(){
+  if(isSpectator) return; // Spectateur ne reproduit pas la transition
   document.body.style.transition='filter 0.3s';
   document.body.style.filter='brightness(1.5)';
   setTimeout(()=>{document.body.style.filter='brightness(1)'},300);
@@ -2872,6 +2908,15 @@ function startSequence(idx){
   mancheState.wordsPhase=false;
   mancheState.timeLeft=30;
   mancheState.turn='giver'; // giver commence toujours
+
+  // Broadcast pour les spectateurs (l'hôte uniquement)
+  if(isHost && window._spectators && window._spectators.length>0){
+    const sync={type:'spectatorSeqStart', seqIdx:idx};
+    for(const s of window._spectators){
+      if(s.conn && s.conn.open) try{s.conn.send(sync)}catch(e){}
+    }
+  }
+
   const seq=mancheState.sequences[idx];
 
   for(let i=0;i<5;i++){
@@ -2926,6 +2971,14 @@ function startSequence(idx){
       renderPseudoOrVous(seq.giver,'name-highlight')+' <span class="role-tag giver">FAIT DEVINER</span><br>'+
       renderPseudoOrVous(seq.guesser,'name-highlight')+' <span class="role-tag guesser">DEVINE</span>';
   document.getElementById('seqDetail').innerHTML=seqDetailHTML;
+
+  // Spectateur : skip les overlays et aller direct au mot
+  if(isSpectator){
+    mancheState.wordsPhase=true;
+    revealWordFrame();
+    return;
+  }
+
   seqOv.classList.add('visible');
 
   setTimeout(()=>{
@@ -3367,26 +3420,68 @@ function startTimer(){
   const duration=gameMode==='duo'?90:30;
   mancheState.timeLeft=duration;
 
+  // S'assurer que bedfinale est bien arrêtée
+  if(mancheState.audioBed){
+    try{mancheState.audioBed.pause();mancheState.audioBed.currentTime=0;}catch(e){}
+    mancheState.audioBed=null;
+  }
+
   // Musique selon le mode
   const sndFile=gameMode==='duo'?'son/1m30.wav':'son/30secondes.wav';
   mancheState.audio30s=playGameSound(sndFile,0.5);
 
-  mancheState.timerInterval=setInterval(()=>{
-    mancheState.timeLeft--;
-    const t=mancheState.timeLeft;
-    document.getElementById('timerDisplay').textContent=formatTimer(t);
+  mancheState.timerInterval=setInterval(tickTimer,1000);
+}
 
-    if(t<=10){
-      document.getElementById('timerBox').classList.add('urgent');
-    }
+// Démarrer le timer à la valeur courante de timeLeft (pour reprise spectateur)
+function startTimerFromCurrent(){
+  if(mancheState.timerInterval) return;
+  mancheState.started=true;
 
-    if(t<=0){
-      clearInterval(mancheState.timerInterval);
-      mancheState.timerInterval=null;
-      if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
-      endSequence();
+  // Pas de musique 1m30 au démarrage car déjà en cours côté joueurs — on lance en sourdine
+  if(!mancheState.audio30s){
+    const sndFile=gameMode==='duo'?'son/1m30.wav':'son/30secondes.wav';
+    mancheState.audio30s=playGameSound(sndFile,0.5);
+    // Avancer l'audio à la position approximative
+    if(mancheState.audio30s){
+      const total=gameMode==='duo'?90:30;
+      const elapsed=total-mancheState.timeLeft;
+      try{ mancheState.audio30s.currentTime=Math.max(0,Math.min(elapsed,total-1)); }catch(e){}
     }
-  },1000);
+  }
+
+  mancheState.timerInterval=setInterval(tickTimer,1000);
+}
+
+function tickTimer(){
+  mancheState.timeLeft--;
+  const t=mancheState.timeLeft;
+  const td=document.getElementById('timerDisplay');
+  if(td) td.textContent=formatTimer(t);
+
+  if(t<=10){
+    const tb=document.getElementById('timerBox');
+    if(tb) tb.classList.add('urgent');
+  }
+
+  // Synchroniser le timer avec les spectateurs (toutes les secondes)
+  if(!isSpectator && window._spectators && window._spectators.length>0){
+    const sync={type:'spectatorSync', timeLeft:mancheState.timeLeft, turn:mancheState.turn, cluesGiven:mancheState.cluesGiven};
+    for(const s of window._spectators){
+      if(s.conn && s.conn.open) try{s.conn.send(sync)}catch(e){}
+    }
+  }
+
+  if(t<=0){
+    clearInterval(mancheState.timerInterval);
+    mancheState.timerInterval=null;
+    if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+    if(!isSpectator) endSequence();
+    else {
+      // Spectateur : juste arrêter mais attendre les messages réseau pour la suite
+      mancheState.started=false;
+    }
+  }
 }
 
 function onCorrectAnswer(fromNetwork){
@@ -5195,48 +5290,148 @@ function handleSpectatorData(data){
     teamA=data.teamA||[];
     teamB=data.teamB||[];
 
-    // Charger l'état actuel
+    // Charger l'état complet
     if(data.mancheState){
       mancheState.currentSeq=data.mancheState.currentSeq||0;
-      mancheState.started=data.mancheState.started||false;
+      mancheState.started=false; // on remet à false pour pouvoir relancer le timer côté spec
       mancheState.wordsPhase=data.mancheState.wordsPhase||false;
-      mancheState.timeLeft=data.mancheState.timeLeft||90;
+      mancheState.timeLeft=data.mancheState.timeLeft||(gameMode==='duo'?90:30);
       mancheState.turn=data.mancheState.turn||'giver';
       mancheState.cluesGiven=data.mancheState.cluesGiven||0;
+      mancheState.scoreA=data.mancheState.scoreA||0;
+      mancheState.scoreB=data.mancheState.scoreB||0;
       mancheState.sequences=data.mancheState.sequences||[];
     }
 
     // Afficher la bannière spectateur
     document.getElementById('spectatorBanner').classList.remove('hidden');
 
-    // Si la partie est déjà en cours, démarrer l'affichage
-    if(mancheState.wordsPhase){
+    // Si la partie est en cours, reconstruire l'écran
+    if(mancheState.wordsPhase && mancheState.sequences.length>0){
+      // Afficher l'écran manche
       showScreen('screenManche');
-      if(typeof startSequence==='function'){
-        try{ startSequence(mancheState.currentSeq); }catch(e){}
-      }
-      refreshPlayerPodium();
-      updateWordDisplay(getCurrentSeq(), {animate:false});
 
-      if(mancheState.started){
-        // Reprendre le timer là où il en est
-        if(typeof startTimer==='function'){
-          // Forcer le timer à la valeur actuelle
-          const sndFile=gameMode==='duo'?'son/1m30.wav':'son/30secondes.wav';
-          if(!mancheState.audio30s) mancheState.audio30s=playGameSound(sndFile,0.5);
+      // Mettre à jour le HUD (TOUR X/Y, scores, pseudos)
+      updateMancheHUD();
+
+      // Activer la zone de jeu
+      const seq=getCurrentSeq();
+      if(seq){
+        // Afficher le mot (masqué en étoiles côté spectateur)
+        document.getElementById('wordFrame').classList.add('visible');
+        updateWordDisplay(seq, {animate:false});
+
+        // Restaurer les pastilles (vertes/rouges)
+        if(data.spheresState){
+          for(let i=0;i<data.spheresState.length;i++){
+            const s=document.getElementById('sphere'+i);
+            if(!s) continue;
+            s.classList.remove('lit','lost');
+            if(data.spheresState[i].lit) s.classList.add('lit');
+            if(data.spheresState[i].lost) s.classList.add('lost');
+          }
+        }
+
+        // Restaurer les flèches (consommées par les indices déjà donnés)
+        if(gameMode==='duo'){
+          document.getElementById('arrowsWrap').classList.add('active');
+          resetArrows();
+          // Marquer comme consommées les flèches déjà utilisées
+          for(let i=0;i<mancheState.cluesGiven;i++){
+            consumeArrow(i);
+          }
+        }
+
+        // Restaurer les bulles
+        if(data.bubbleGiverText){
+          applyDireBubble('giver', data.bubbleGiverText, false);
+        }
+        if(data.bubbleGuesserText){
+          applyDireBubble('guesser', data.bubbleGuesserText, false);
+        }
+
+        // Refresh des podiums (pseudos)
+        refreshPlayerPodium();
+
+        // Masquer les inputs (refreshDireInputState verra isObserver=true)
+        refreshDireInputState();
+
+        // Démarrer le timer à la valeur actuelle si le chrono tournait
+        if(data.mancheState.started){
+          // Afficher la valeur actuelle du timer
+          const td=document.getElementById('timerDisplay');
+          if(td) td.textContent=formatTimer(mancheState.timeLeft);
+          startTimerFromCurrent();
+        }else{
+          // Pas encore démarré → afficher le max et lancer bedfinale en attente
+          const total=gameMode==='duo'?90:30;
+          const td=document.getElementById('timerDisplay');
+          if(td) td.textContent=formatTimer(total);
+          // bedfinale en attente du 1er indice
+          if(!mancheState.audioBed){
+            mancheState.audioBed=playGameSound('son/bedfinale.wav',0.35);
+            if(mancheState.audioBed) mancheState.audioBed.loop=true;
+          }
         }
       }
     }else{
       // Partie pas encore commencée → afficher écran d'attente
       showScreen('screenLobby');
-      document.getElementById('lobbyStatus').textContent='👁 Spectateur — En attente de la partie...';
+      document.getElementById('lobbyStatus').textContent='👁 Spectateur — En attente du démarrage...';
     }
+    return;
+  }
+
+  // Message de synchronisation périodique du timer (depuis l'hôte vers les spectateurs)
+  if(data.type==='spectatorSync'){
+    if(typeof data.timeLeft==='number'){
+      // Corriger le drift : ne mettre à jour que si écart > 1s
+      if(Math.abs(mancheState.timeLeft - data.timeLeft) > 1){
+        mancheState.timeLeft=data.timeLeft;
+        const td=document.getElementById('timerDisplay');
+        if(td) td.textContent=formatTimer(data.timeLeft);
+      }
+    }
+    if(data.turn) mancheState.turn=data.turn;
+    if(typeof data.cluesGiven==='number') mancheState.cluesGiven=data.cluesGiven;
+    return;
+  }
+
+  // Nouveau tour démarre côté hôte → reproduire le démarrage côté spectateur
+  if(data.type==='spectatorSeqStart'){
+    // Stop tout
+    if(mancheState.timerInterval){clearInterval(mancheState.timerInterval);mancheState.timerInterval=null;}
+    if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+    if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+    mancheState.audio30s=null;
+    mancheState.audioBed=null;
+    try{ startSequence(data.seqIdx); }catch(e){ console.warn('[Spec] seqStart err:',e); }
     return;
   }
 
   // Pour tous les autres messages, réutiliser le handler normal onData
   // (les mots sont déjà masqués côté hôte avant d'envoyer)
   try{ onData(data); }catch(e){ console.warn('[Spec] err handling',data.type,e); }
+}
+
+// Helper pour rafraîchir le HUD (titre, scores)
+function updateMancheHUD(){
+  const seq=getCurrentSeq();
+  if(!seq) return;
+  // TOUR X/Y
+  const total=gameMode==='duo'?2:4;
+  const mt=document.getElementById('mancheText');
+  if(mt) mt.textContent='TOUR '+(mancheState.currentSeq+1)+'/'+total;
+  // Scores
+  const sA=document.getElementById('scoreA');
+  const sB=document.getElementById('scoreB');
+  if(sA) sA.textContent=mancheState.scoreA||0;
+  if(sB) sB.textContent=mancheState.scoreB||0;
+  // Sous-titre (qui fait deviner à qui)
+  const sub=document.getElementById('mancheSubtitle');
+  if(sub && seq.giver && seq.guesser){
+    sub.innerHTML='<strong>'+escapeHtml(seq.giver)+'</strong> fait deviner à <strong>'+escapeHtml(seq.guesser)+'</strong>';
+  }
 }
 
 function leaveSpectator(){
