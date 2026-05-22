@@ -3485,8 +3485,10 @@ function tickTimer(){
 }
 
 function onCorrectAnswer(fromNetwork){
-  if(!mancheState.started) return;
+  // Spectateur ou message réseau : accepter même si started=false (au cas où le timer n'a pas encore démarré côté nous)
+  if(!mancheState.started && !fromNetwork && !isSpectator) return;
   const seq=mancheState.sequences[mancheState.currentSeq];
+  if(!seq) return;
   const wi=seq.currentWordIdx;
   if(seq.found[wi]) return;
 
@@ -5313,6 +5315,12 @@ function handleSpectatorData(data){
 
       // Mettre à jour le HUD (TOUR X/Y, scores, pseudos)
       updateMancheHUD();
+
+      // Afficher les scores actuels
+      const sA=document.getElementById('mancheScoreA');
+      const sB=document.getElementById('mancheScoreB');
+      if(sA) sA.textContent=mancheState.scoreA||0;
+      if(sB) sB.textContent=mancheState.scoreB||0;
 
       // Activer la zone de jeu
       const seq=getCurrentSeq();
