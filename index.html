@@ -1299,6 +1299,83 @@
   }
   .mode-pick .search-btn.mode-friend:hover { border-color: #66cc88; box-shadow: 0 0 28px rgba(80,200,120,0.35); }
 
+  .mode-pick .search-btn.mode-spectate {
+    font-size: 1.15rem; letter-spacing: 2px;
+    background: linear-gradient(180deg, #1a1825 0%, #0a0a14 50%, #1a1825 100%);
+    border-color: #6a7aaa;
+    color: #b5c0e0;
+  }
+  .mode-pick .search-btn.mode-spectate:hover { border-color: #8a9cd4; box-shadow: 0 0 28px rgba(110,130,200,0.35); }
+
+  /* Modal liste des parties */
+  .spectate-modal { max-width: 560px; }
+  .spectate-list { max-height: 380px; overflow-y: auto; margin: 16px 0; }
+  .spectate-empty { text-align: center; color: #888; padding: 30px 20px; font-size: 0.95rem; }
+  .spectate-game {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; margin-bottom: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+  .spectate-game:hover {
+    background: rgba(106,122,170,0.15);
+    border-color: #6a7aaa;
+    transform: translateX(4px);
+  }
+  .spectate-game-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, #6a7aaa, #4a5a8a);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .spectate-game-info { flex: 1; }
+  .spectate-game-players {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    color: #fff; letter-spacing: 1px;
+  }
+  .spectate-game-status {
+    font-size: 0.78rem; color: #999; margin-top: 2px;
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .spectate-game-status.in-game { color: #44ff66; }
+  .spectate-game-status.waiting { color: #ffaa33; }
+  .spectate-loader {
+    text-align: center; padding: 20px;
+    color: #6a7aaa; font-size: 0.9rem;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .spectate-refresh-btn {
+    display: block; margin: 12px auto 0;
+    padding: 8px 24px; border-radius: 8px;
+    background: rgba(106,122,170,0.15); border: 1px solid #6a7aaa;
+    color: #b5c0e0; font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem; font-weight: 600;
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.25s;
+  }
+  .spectate-refresh-btn:hover { background: rgba(106,122,170,0.3); }
+
+  /* Bannière spectateur */
+  .spectator-banner {
+    position: fixed; top: 0; left: 0; right: 0;
+    z-index: 30;
+    background: linear-gradient(90deg, transparent, rgba(106,122,170,0.6), transparent);
+    color: #fff; text-align: center;
+    padding: 6px 0;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem; font-weight: 700;
+    letter-spacing: 4px; text-transform: uppercase;
+    pointer-events: none;
+    border-bottom: 1px solid rgba(106,122,170,0.3);
+  }
+  .spectator-banner.hidden { display: none; }
+
   .friend-modal { max-width: 480px; }
   .friend-tabs { display: flex; gap: 0; margin-bottom: 20px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
   .friend-tab { flex: 1; padding: 12px; background: rgba(255,255,255,0.03); border: none; color: #777; font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
@@ -1372,6 +1449,7 @@
       <button type="button" class="search-btn" id="btnPlay" disabled style="opacity:0.4;cursor:not-allowed;position:relative;">RECHERCHE RAPIDE — 4 JOUEURS<span style="display:block;font-size:0.7rem;color:#d4a843;letter-spacing:3px;margin-top:4px;">BIENTÔT !</span></button>
       <button type="button" class="search-btn mode-duo" id="btnPlayDuo">DEUX JOUEURS</button>
       <button type="button" class="search-btn mode-friend" id="btnPlayFriend">JOUER ENTRE AMIS</button>
+      <button type="button" class="search-btn mode-spectate" id="btnSpectate">👁 OBSERVER UNE PARTIE</button>
     </div>
     <div class="bottom-buttons">
       <button class="secondary-btn" onclick="showModal('rules')">Règles du jeu</button>
@@ -1682,6 +1760,22 @@
   </div>
 </div>
 
+<!-- Modal Observer une partie -->
+<div class="modal-overlay" id="modalSpectate">
+  <div class="modal spectate-modal">
+    <button class="modal-close" onclick="closeSpectateModal()">&#10005;</button>
+    <h2>👁 OBSERVER UNE PARTIE</h2>
+    <p style="color:#aaa;text-align:center;margin-bottom:8px;font-size:0.9rem">Sélectionnez une partie pour l'observer en tant que spectateur</p>
+    <div class="spectate-list" id="spectateList">
+      <div class="spectate-loader">Recherche en cours...</div>
+    </div>
+    <button class="spectate-refresh-btn" id="btnSpectateRefresh" onclick="scanSpectateRooms()">🔄 Actualiser</button>
+  </div>
+</div>
+
+<!-- Bannière spectateur -->
+<div class="spectator-banner hidden" id="spectatorBanner">👁 MODE SPECTATEUR — Vous observez la partie</div>
+
 <audio id="bgMusic" loop preload="auto"><source src="son/accueil.mp3" type="audio/mpeg"></audio>
 
 <script>
@@ -1772,10 +1866,30 @@ let peer=null;
 let conns=[]; // [{conn, id, pseudo, isRoomHost, _listenersAttached}]
 let isHost=false;
 let connected=false;
+let isSpectator=false; // true si on observe une partie
+let spectatorPeer=null;
+let spectatorConn=null;
 let lobbyPlayers=[]; // [{id, pseudo, isHost, isMe}]
 let clientAwaitingSequenceStart=false;
 
-function sendData(data){for(const p of conns){if(p.conn&&p.conn.open)try{p.conn.send(data)}catch(e){}}}
+function sendData(data){
+  if(isSpectator) return; // les spectateurs n'envoient rien
+  for(const p of conns){if(p.conn&&p.conn.open)try{p.conn.send(data)}catch(e){}}
+  // Diffuser aussi aux spectateurs avec les mots masqués
+  if(window._spectators && window._spectators.length>0){
+    let spectatorData=data;
+    // Si le message contient les mots du jeu (syncSequences), masquer
+    if(data.type==='syncSequences' && data.sequences){
+      spectatorData={...data, sequences:data.sequences.map(s=>({
+        ...s,
+        words:s.words ? s.words.map(w=>'*'.repeat(w.length)) : []
+      }))};
+    }
+    for(const s of window._spectators){
+      if(s.conn && s.conn.open) try{s.conn.send(spectatorData)}catch(e){}
+    }
+  }
+}
 function sendTo(p,data){if(p.conn&&p.conn.open)try{p.conn.send(data)}catch(e){}}
 
 function escapeHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
@@ -2111,33 +2225,93 @@ function tryMatchmaking(){
 
     peer.on('connection',c=>{
       if(hostTimeout){clearTimeout(hostTimeout);hostTimeout=null;}
-      const need=maxPlayersForMode();
-      if(conns.length>=need-1){try{c.close()}catch(e){}return}
 
-      const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
-      conns.push(rp);
+      // Attendre le premier message pour identifier : spectateur ou joueur
+      let identified=false;
+      const identTimeout=setTimeout(()=>{
+        if(!identified){ identified=true; setupAsPlayer(c); }
+      },1500);
 
-      const setup=()=>{
-        if(rp._listenersAttached)return;
-        rp._listenersAttached=true;
+      c.on('data',firstData=>{
+        if(identified){ onData(firstData,c); return; }
 
-        c.on('data',d=>onData(d,c));
-        c.on('close',()=>{
-          const idx=conns.indexOf(rp);
-          if(idx>=0)conns.splice(idx,1);
-          for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
+        // Spectateur — n'est PAS compté comme joueur
+        if(firstData && firstData.type==='spectatePing'){
+          identified=true;
+          clearTimeout(identTimeout);
+          console.log('[Spectator] Spectateur rejoint:', firstData.pseudo||'?');
+
+          // Envoyer l'état actuel de la partie
+          const players=[{pseudo:myPseudo,id:peer.id},...conns.map(p=>({pseudo:p.pseudo,id:p.id}))];
+          try{
+            c.send({
+              type:'spectatePong',
+              hostPseudo:myPseudo,
+              players:players,
+              gameMode:gameMode,
+              teamA:teamA, teamB:teamB,
+              mancheState:{
+                currentSeq:mancheState.currentSeq,
+                started:mancheState.started,
+                wordsPhase:mancheState.wordsPhase,
+                timeLeft:mancheState.timeLeft,
+                turn:mancheState.turn,
+                cluesGiven:mancheState.cluesGiven,
+                sequences:mancheState.sequences ? mancheState.sequences.map(s=>({
+                  ...s,
+                  words:s.words ? s.words.map(w=>'*'.repeat(w.length)) : [] // mots masqués pour spectateur
+                })) : []
+              }
+            });
+          }catch(e){}
+
+          // Ajouter à la liste des spectateurs (pas dans conns)
+          if(!window._spectators) window._spectators=[];
+          const spec={conn:c, pseudo:firstData.pseudo||'Spectateur'};
+          window._spectators.push(spec);
+
+          c.on('close',()=>{
+            window._spectators=(window._spectators||[]).filter(s=>s.conn!==c);
+          });
+          return;
+        }
+
+        // Joueur normal
+        identified=true;
+        clearTimeout(identTimeout);
+        setupAsPlayer(c);
+        onData(firstData, c);
+      });
+
+      function setupAsPlayer(conn){
+        const need=maxPlayersForMode();
+        if(conns.length>=need-1){try{conn.close()}catch(e){}return}
+
+        const rp={id:conn.peer,conn:conn,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
+        conns.push(rp);
+
+        const setup=()=>{
+          if(rp._listenersAttached)return;
+          rp._listenersAttached=true;
+
+          conn.on('data',d=>onData(d,conn));
+          conn.on('close',()=>{
+            const idx=conns.indexOf(rp);
+            if(idx>=0)conns.splice(idx,1);
+            for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
+            rebuildLobbyList();
+            broadcastRoster();
+          });
+
+          sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
+          for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
           rebuildLobbyList();
           broadcastRoster();
-        });
+        };
 
-        sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
-        for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
-        rebuildLobbyList();
-        broadcastRoster();
-      };
-
-      c.on('open',setup);
-      if(c.open)setup();
+        if(conn.open) setup();
+        else conn.on('open',setup);
+      }
     });
 
     peer.on('error',err=>{
@@ -2908,10 +3082,12 @@ function getCurrentSeq(){
   return mancheState.sequences[mancheState.currentSeq];
 }
 function isLocalGiver(){
+  if(isSpectator) return false;
   const seq=getCurrentSeq();
   return seq && pseudoMatch(myPseudo,seq.giver);
 }
 function isLocalGuesser(){
+  if(isSpectator) return false;
   const seq=getCurrentSeq();
   return seq && pseudoMatch(myPseudo,seq.guesser);
 }
@@ -4851,6 +5027,243 @@ document.getElementById('interditsConfirmWrap').addEventListener('click',e=>{
   onConfirmInterdits();
 });
 document.getElementById('btnPass').addEventListener('click',()=>onPassWord());
+
+// ══════════════════════════════════════════
+// MODE SPECTATEUR — Observer une partie
+// ══════════════════════════════════════════
+let _spectateAvailableGames=[]; // [{roomId, players, gameMode, started}]
+let _spectateScanPeer=null;
+let _spectateScanConns=[];
+
+function openSpectateModal(){
+  document.getElementById('modalSpectate').classList.add('active');
+  scanSpectateRooms();
+}
+function closeSpectateModal(){
+  document.getElementById('modalSpectate').classList.remove('active');
+  // Nettoyer le peer de scan
+  if(_spectateScanPeer && !_spectateScanPeer.destroyed){
+    try{_spectateScanPeer.destroy();}catch(e){}
+  }
+  _spectateScanPeer=null;
+  _spectateScanConns=[];
+}
+
+async function scanSpectateRooms(){
+  const list=document.getElementById('spectateList');
+  list.innerHTML='<div class="spectate-loader">Recherche des parties...</div>';
+  _spectateAvailableGames=[];
+
+  // Détruire l'ancien peer
+  if(_spectateScanPeer && !_spectateScanPeer.destroyed){
+    try{_spectateScanPeer.destroy();}catch(e){}
+  }
+  for(const c of _spectateScanConns){ try{c.close()}catch(e){} }
+  _spectateScanConns=[];
+
+  // Créer un peer temporaire pour scanner
+  const scanId='motdepasse-spec-scan-'+Math.random().toString(36).substr(2,8);
+  _spectateScanPeer=new Peer(scanId);
+
+  await new Promise((resolve)=>{
+    _spectateScanPeer.on('open',resolve);
+    _spectateScanPeer.on('error',err=>{
+      if(err.type==='peer-unavailable') return;
+      console.warn('[Spec scan] err:',err);
+    });
+    setTimeout(resolve, 3000);
+  });
+
+  if(_spectateScanPeer.destroyed) return;
+
+  // Scanner les rooms
+  const prefixes=['motdepasse-','motdepasse-duo-'];
+  const NUM=10;
+
+  for(const prefix of prefixes){
+    for(let i=0;i<NUM;i++){
+      const roomId=prefix+'room-'+i;
+      try{
+        const c=_spectateScanPeer.connect(roomId,{reliable:true});
+        _spectateScanConns.push(c);
+
+        let opened=false;
+        c.on('open',()=>{
+          opened=true;
+          // Demander les infos
+          c.send({type:'spectatePing', pseudo:'__scan__'});
+        });
+        c.on('data',data=>{
+          if(data.type==='spectatePong'){
+            _spectateAvailableGames.push({
+              roomId,
+              hostPseudo:data.hostPseudo,
+              players:data.players||[],
+              gameMode:data.gameMode||'duo',
+              started:data.mancheState?data.mancheState.started:false,
+              wordsPhase:data.mancheState?data.mancheState.wordsPhase:false
+            });
+            renderSpectateList();
+            try{c.close()}catch(e){}
+          }
+        });
+        c.on('error',()=>{});
+        setTimeout(()=>{if(!opened)try{c.close()}catch(e){}}, 2000);
+      }catch(e){}
+    }
+  }
+
+  // Afficher résultat après 3s
+  setTimeout(()=>{ renderSpectateList(); },3000);
+}
+
+function renderSpectateList(){
+  const list=document.getElementById('spectateList');
+  if(_spectateAvailableGames.length===0){
+    list.innerHTML='<div class="spectate-empty">Aucune partie en cours.<br>Lancez une partie et revenez ici !</div>';
+    return;
+  }
+  list.innerHTML=_spectateAvailableGames.map(g=>{
+    const players=g.players.map(p=>p.pseudo||'?').filter(p=>p&&p!=='__scan__');
+    const playerNames=players.length>0?players.join(' vs '):'Joueurs inconnus';
+    const statusClass=g.started?'in-game':'waiting';
+    const statusText=g.started?'⏱ En jeu':'⏳ En attente';
+    const icon=g.gameMode==='duo'?'👥':'🎮';
+    return `<div class="spectate-game" onclick="joinAsSpectator('${g.roomId}')">
+      <div class="spectate-game-icon">${icon}</div>
+      <div class="spectate-game-info">
+        <div class="spectate-game-players">${playerNames}</div>
+        <div class="spectate-game-status ${statusClass}">${statusText} — ${g.gameMode==='duo'?'Duel':'Qualif'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function joinAsSpectator(roomId){
+  closeSpectateModal();
+
+  // Cleanup
+  if(spectatorPeer && !spectatorPeer.destroyed){
+    try{spectatorPeer.destroy();}catch(e){}
+  }
+  isSpectator=true;
+  spectatorConn=null;
+
+  myPseudo=(document.getElementById('pseudoInput').value.trim())||'Spectateur';
+
+  const specId='motdepasse-spec-'+Math.random().toString(36).substr(2,8);
+  spectatorPeer=new Peer(specId);
+
+  spectatorPeer.on('open',()=>{
+    const c=spectatorPeer.connect(roomId,{reliable:true});
+    spectatorConn=c;
+
+    c.on('open',()=>{
+      console.log('[Spectator] Connecté à',roomId);
+      c.send({type:'spectatePing', pseudo:myPseudo});
+      stopAccueilMusic();
+    });
+
+    c.on('data',data=>handleSpectatorData(data));
+    c.on('close',()=>{
+      if(isSpectator){
+        alert('La partie est terminée ou l\'hôte s\'est déconnecté.');
+        leaveSpectator();
+      }
+    });
+    c.on('error',err=>{
+      console.warn('[Spectator] err:',err);
+      alert('Impossible de rejoindre cette partie.');
+      leaveSpectator();
+    });
+  });
+
+  spectatorPeer.on('error',err=>{
+    if(err.type==='peer-unavailable'){
+      alert('La partie n\'est plus disponible.');
+      leaveSpectator();
+    }
+  });
+}
+
+function handleSpectatorData(data){
+  if(!data || !data.type) return;
+
+  // Réponse initiale avec l'état complet de la partie
+  if(data.type==='spectatePong'){
+    gameMode=data.gameMode||'duo';
+    teamA=data.teamA||[];
+    teamB=data.teamB||[];
+
+    // Charger l'état actuel
+    if(data.mancheState){
+      mancheState.currentSeq=data.mancheState.currentSeq||0;
+      mancheState.started=data.mancheState.started||false;
+      mancheState.wordsPhase=data.mancheState.wordsPhase||false;
+      mancheState.timeLeft=data.mancheState.timeLeft||90;
+      mancheState.turn=data.mancheState.turn||'giver';
+      mancheState.cluesGiven=data.mancheState.cluesGiven||0;
+      mancheState.sequences=data.mancheState.sequences||[];
+    }
+
+    // Afficher la bannière spectateur
+    document.getElementById('spectatorBanner').classList.remove('hidden');
+
+    // Si la partie est déjà en cours, démarrer l'affichage
+    if(mancheState.wordsPhase){
+      showScreen('screenManche');
+      if(typeof startSequence==='function'){
+        try{ startSequence(mancheState.currentSeq); }catch(e){}
+      }
+      refreshPlayerPodium();
+      updateWordDisplay(getCurrentSeq(), {animate:false});
+
+      if(mancheState.started){
+        // Reprendre le timer là où il en est
+        if(typeof startTimer==='function'){
+          // Forcer le timer à la valeur actuelle
+          const sndFile=gameMode==='duo'?'son/1m30.wav':'son/30secondes.wav';
+          if(!mancheState.audio30s) mancheState.audio30s=playGameSound(sndFile,0.5);
+        }
+      }
+    }else{
+      // Partie pas encore commencée → afficher écran d'attente
+      showScreen('screenLobby');
+      document.getElementById('lobbyStatus').textContent='👁 Spectateur — En attente de la partie...';
+    }
+    return;
+  }
+
+  // Pour tous les autres messages, réutiliser le handler normal onData
+  // (les mots sont déjà masqués côté hôte avant d'envoyer)
+  try{ onData(data); }catch(e){ console.warn('[Spec] err handling',data.type,e); }
+}
+
+function leaveSpectator(){
+  isSpectator=false;
+  document.getElementById('spectatorBanner').classList.add('hidden');
+  if(spectatorConn){ try{spectatorConn.close()}catch(e){} spectatorConn=null; }
+  if(spectatorPeer && !spectatorPeer.destroyed){ try{spectatorPeer.destroy()}catch(e){} }
+  spectatorPeer=null;
+  // Arrêter musiques en cours
+  if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+  if(mancheState.timerInterval){clearInterval(mancheState.timerInterval);mancheState.timerInterval=null;}
+  mancheState.started=false;
+  mancheState.wordsPhase=false;
+  showScreen('screenAccueil');
+  resumeAccueilMusic();
+}
+
+// Listener du bouton observer
+document.getElementById('btnSpectate').addEventListener('click',openSpectateModal);
+
+// Override backToMenu pour gérer le spectateur
+const _origBackToMenuSpec=backToMenu;
+backToMenu=function(){
+  if(isSpectator){ leaveSpectator(); return; }
+  _origBackToMenuSpec();
+};
 
 // ══════════════════════════════════════════
 // MODE AMIS — Partie privée avec code
