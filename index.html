@@ -1369,7 +1369,7 @@
         <div></div>
         <div class="team-info"><div class="team-label">Duel</div><div class="team-detail">2 joueurs — 2 tours</div></div>
       </div>
-      <button type="button" class="search-btn" id="btnPlay">RECHERCHE RAPIDE — 4 JOUEURS</button>
+      <button type="button" class="search-btn" id="btnPlay" disabled style="opacity:0.4;cursor:not-allowed;position:relative;">RECHERCHE RAPIDE — 4 JOUEURS<span style="display:block;font-size:0.7rem;color:#d4a843;letter-spacing:3px;margin-top:4px;">BIENTÔT !</span></button>
       <button type="button" class="search-btn mode-duo" id="btnPlayDuo">DEUX JOUEURS</button>
       <button type="button" class="search-btn mode-friend" id="btnPlayFriend">JOUER ENTRE AMIS</button>
     </div>
@@ -4818,7 +4818,7 @@ function backToMenu(){
   conns=[];peer=null;connected=false;isHost=false;lobbyPlayers=[];
   gameMode='qualif';
   showScreen('screenAccueil');
-  document.getElementById('btnPlay').disabled=false;
+  // btnPlay reste disabled (mode 4 joueurs désactivé temporairement)
   const b=document.getElementById('btnPlayDuo');
   if(b) b.disabled=false;
   const bf=document.getElementById('btnPlayFriend');
@@ -4841,7 +4841,7 @@ setInterval(()=>{
 // ══════════════════════════════════════════
 // EVENT LISTENERS
 // ══════════════════════════════════════════
-document.getElementById('btnPlay').addEventListener('click',()=>{gameMode='qualif';startSearch();});
+document.getElementById('btnPlay').addEventListener('click',()=>{ /* mode désactivé temporairement */ });
 document.getElementById('btnPlayDuo').addEventListener('click',()=>{gameMode='duo';startSearch();});
 document.getElementById('btnPlayFriend').addEventListener('click',()=>{ openFriendModal(); });
 document.getElementById('btnResultsDuoMenu').addEventListener('click',backToMenu);
