@@ -3787,8 +3787,12 @@ const REGLES = {
   // L'émission n'interdit PAS les synonymes : "sable" pour PLAGE, c'est le jeu.
   // Passe à true pour retrouver la règle maison du v1.
   synonymeStrict         : false,
-  // Rime forte (>= 4 lettres finales communes) : "bateau" pour CHÂTEAU.
-  rimeStrict             : true,
+  // L'émission AUTORISE explicitement les rimes et les mots qui finissent
+  // pareil. Laisse false pour rester fidèle ; true = règle maison.
+  rimeStrict             : false,
+  // Marques déposées, sigles, acronymes, abréviations : interdits (CAPES,
+  // OVNI, PDG...).
+  siglesInterdits        : true,
   // true = refuse tout mot absent du lexique interne. Source n°1 des faux
   // positifs du v1 : un arbitre humain accepte n'importe quel vrai mot.
   lexiqueStrict          : false,
@@ -3815,6 +3819,7 @@ const FAUTES = {
   TRADUCTION   : { label:'Traduction interdite' },
   RIME         : { label:'Rime avec le mot' },
   SYNONYME     : { label:'Synonyme direct interdit' },
+  SIGLE        : { label:'Sigle ou marque interdit' },
   PHRASE       : { label:'Phrase déguisée' },
 };
 
@@ -3874,6 +3879,56 @@ function arbRacine(w){
     }
   }
   return w;
+}
+
+// ── Sigles, acronymes, marques déposées : interdits comme indices ──
+// Liste volontairement sans collision avec un mot français du jeu.
+const SIGLES_MARQUES = new Set(('pdg ovni capes sncf ratp edf gdf cnrs crs tgv vtt urss onu otan '+
+  'pib pme tva rtt smic cdd cdi bts iut bep fbi cia nasa ufo adn arn vih irm qcm usb gps sms mms '+
+  'wifi dvd vhs jt sos hlm rer ovnis '+
+  'coca pepsi nike adidas reebok apple google microsoft samsung sony nintendo sega '+
+  'playstation xbox ferrari porsche renault peugeot citroen bmw audi mercedes volkswagen toyota '+
+  'honda yamaha kawasaki ducati harley tesla ikea lego barbie disney pixar netflix youtube '+
+  'facebook twitter instagram tiktok amazon ebay paypal nutella danone nestle kinder haribo '+
+  'oreo kitkat lipton evian perrier orangina fanta sprite redbull heineken kronenbourg ricard '+
+  'chanel dior gucci prada vuitton hermes rolex swatch levis zara decathlon leclerc '+
+  'auchan lidl aldi fnac darty mcdo mcdonald starbucks kfc').split(' '));
+
+function ressembleSigle(norm){
+  if(SIGLES_MARQUES.has(norm)) return true;
+  // pdg, sncf, crs, tgv... : court et sans voyelle
+  if(norm.length<=5 && !/[aeiouy]/.test(norm)) return true;
+  return false;
+}
+
+// ── Homophones : stratégie légale dans l'émission (MUR -> MÛRE) ──
+// Sans traitement phonétique, ces paires seraient refusées pour "même début".
+// On leur donne donc une immunité explicite. Liste à compléter librement.
+const HOMOPHONES = [
+  ['mur','mure'],['ver','verre','vert','vers'],['sang','cent','sans'],
+  ['pere','paire'],['mer','mere','maire'],['pain','pin'],['sot','seau','saut'],
+  ['cour','cours','court'],['foi','foie','fois'],['temps','tant'],
+  ['vin','vingt'],['cygne','signe'],['champ','chant'],['coup','cou'],
+  ['fin','faim'],['point','poing'],['reine','renne'],['chaine','chene'],
+  ['conte','compte','comte'],['pot','peau'],['col','colle'],['sel','selle'],
+  ['pouce','pousse'],['balle','bal'],['bond','bon'],['dessin','dessein'],
+  ['ancre','encre'],['auteur','hauteur'],['air','aire','ere'],
+  ['chair','cher','chere'],['date','datte'],['sur','sure'],
+  ['tante','tente'],['cane','canne'],['tribu','tribut'],['si','scie'],
+  ['ni','nid'],['mai','mais','mets'],['roue','roux'],['pouls','pou'],
+  ['laid','lait'],['maux','mot'],['port','pore'],['tache','tacher'],
+];
+const _homophones=new Map();
+for(const g of HOMOPHONES){
+  for(const a of g){
+    const na=normLetters(a);
+    if(!_homophones.has(na)) _homophones.set(na,new Set());
+    for(const b of g){ const nb=normLetters(b); if(na!==nb) _homophones.get(na).add(nb); }
+  }
+}
+function estHomophone(c,w){
+  const s=_homophones.get(w);
+  return !!(s && s.has(c));
 }
 
 // ── Synonymes ──
@@ -4751,6 +4806,7 @@ function isEnglishTranslation(clue,secretWord){
 // Un mot est-il l'autre + un suffixe connu ? marin -> marine (dérivation),
 // alors que chat -> chateau n'en est pas une ("eau" n'est pas un suffixe).
 function arbDerivation(court,long){
+  if(court.length<5) return false;   // "trop"+"ique" n'est pas une dérivation
   if(!long.startsWith(court) || long.length<=court.length) return false;
   return ARB_SUFFIXES.includes(long.slice(court.length));
 }
@@ -5219,6 +5275,12 @@ function arbitrerIndice(saisie, motSecret){
   if(c.length===1)  return arbFail('EPELLATION');
   if(c===w)         return arbFail('MOT_EXACT');
 
+  // Homophone : autorisé par l'émission (MUR -> MÛRE). Immunité avant tout
+  // le reste, sinon "même début" le refuserait.
+  if(estHomophone(c,w)) return { ok:true, code:null, label:'', grave:false };
+
+  if(REGLES.siglesInterdits && ressembleSigle(c)) return arbFail('SIGLE');
+
   const incl=arbInclusion(c,w);
   if(incl)                                        return arbFail(incl);
   if(isSameFamily(c,w))                           return arbFail('MEME_FAMILLE');
@@ -5240,6 +5302,54 @@ function arbitrerReponse(saisie){
   if(raw.length>REGLES.longueurMax) return arbFail('TROP_LONG');
   if(/[0-9]/.test(raw))             return arbFail('CHIFFRE');
   return { ok:true, code:null, label:'', grave:false };
+}
+
+// L'émission tolère singulier/pluriel et masculin/féminin dans la réponse :
+// ACTEUR -> "actrice", JOUEUR -> "joueuse", FÉDÉRAL -> "fédéraux" sont validés.
+function variantesGrammaticales(n){
+  const v=new Set([n]);
+  const add=x=>{ if(x && x.length>=2) v.add(x); };
+  // Pluriel
+  add(n+'s'); add(n+'x');
+  if(n.endsWith('s')||n.endsWith('x')) add(n.slice(0,-1));
+  if(n.endsWith('aux')){ add(n.slice(0,-3)+'al'); add(n.slice(0,-3)+'ail'); add(n.slice(0,-3)+'au'); }
+  if(n.endsWith('al'))    add(n.slice(0,-2)+'aux');
+  if(n.endsWith('ail'))   add(n.slice(0,-3)+'aux');
+  if(n.endsWith('eau'))   add(n+'x');
+  if(n.endsWith('teur')){ add(n.slice(0,-4)+'trice'); add(n.slice(0,-4)+'teuse'); }
+  if(n.endsWith('trice')) add(n.slice(0,-5)+'teur');
+  if(n.endsWith('eur')){  add(n.slice(0,-3)+'euse'); add(n.slice(0,-3)+'rice'); }
+  if(n.endsWith('euse'))  add(n.slice(0,-4)+'eur');
+  if(n.endsWith('rice'))  add(n.slice(0,-4)+'eur');
+  if(n.length>=5 && n.endsWith('er'))  add(n.slice(0,-2)+'ere');
+  if(n.length>=6 && n.endsWith('ere')) add(n.slice(0,-3)+'er');
+  if(n.endsWith('f'))     add(n.slice(0,-1)+'ve');
+  if(n.endsWith('ve'))    add(n.slice(0,-2)+'f');
+  if(n.endsWith('x'))     add(n.slice(0,-1)+'se');
+  if(n.endsWith('el'))    add(n+'le');
+  if(n.endsWith('en'))    add(n+'ne');
+  if(n.endsWith('on'))    add(n+'ne');
+  if(n.endsWith('in'))    add(n+'e');
+  if(n.endsWith('ain'))   add(n+'e');
+  if(n.endsWith('ant'))   add(n+'e');
+  if(n.endsWith('ent'))   add(n+'e');
+  if(n.endsWith('ais'))   add(n+'e');
+  if(n.endsWith('ois'))   add(n+'e');
+  if(n.endsWith('ine'))   add(n.slice(0,-1));
+  if(n.endsWith('ante'))  add(n.slice(0,-1));
+  if(n.endsWith('ente'))  add(n.slice(0,-1));
+  if(n.endsWith('aise'))  add(n.slice(0,-1));
+  if(n.endsWith('oise'))  add(n.slice(0,-1));
+  return v;
+}
+
+function reponseCorrespond(reponse, motSecret){
+  const r=normLetters(reponse), m=normLetters(motSecret);
+  if(!r || !m) return false;
+  if(r===m) return true;
+  if(variantesGrammaticales(r).has(m)) return true;
+  if(variantesGrammaticales(m).has(r)) return true;
+  return false;
 }
 
 // ── Retour visuel ──
@@ -5972,11 +6082,14 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
 
   const seq=getCurrentSeq();
   if(seq){
-    const guess=normalizeAnswer(raw);
-    // ── Comparer avec TOUS les mots non trouvés (pas seulement currentWordIdx) ──
+    // Emission : quand le devineur enchaine plusieurs reponses, seule la
+    // PREMIERE est prise en compte ("tigre... lion !" -> tigre).
+    const guess=raw.split(/\s+/)[0];
+    // Comparer avec TOUS les mots non trouves, en tolerant singulier/pluriel
+    // et masculin/feminin (ACTEUR -> "actrice" est valide).
     let matchedIdx=-1;
     for(let i=0;i<seq.words.length;i++){
-      if(!seq.found[i] && normalizeAnswer(seq.words[i])===guess){
+      if(!seq.found[i] && reponseCorrespond(guess, seq.words[i])){
         matchedIdx=i;
         break;
       }
