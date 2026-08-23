@@ -465,6 +465,7 @@
   .interdit-item:nth-child(3) { animation-delay: 1.8s; }
   .interdit-item:nth-child(4) { animation-delay: 2.1s; }
   .interdit-item:nth-child(5) { animation-delay: 2.4s; }
+  .interdit-item:nth-child(6) { animation-delay: 2.7s; }
   @keyframes interditSlide { to { opacity: 1; transform: translateX(0); } }
 
   /* Checkmark button */
@@ -1402,6 +1403,38 @@
   .results-duo-table th { background: rgba(196,30,30,0.25); color: var(--silver-light); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-size: 0.75rem; }
   .results-duo-table td:first-child { text-align: left; font-weight: 600; color: var(--silver-light); }
   .results-duo-winner { text-align: center; margin-top: 22px; font-size: 1.2rem; color: var(--gold); font-weight: 600; letter-spacing: 1px; }
+
+  /* ===== BANDEAU D'ARBITRAGE ===== */
+  .arb-flash{
+    position:absolute; left:50%; top:24%;
+    transform:translate(-50%,-50%) scale(.86);
+    z-index:46; padding:14px 34px; border-radius:14px;
+    font-family:'Russo One',sans-serif; font-size:clamp(1rem,2.4vw,1.3rem);
+    letter-spacing:3px; text-transform:uppercase; text-align:center;
+    opacity:0; pointer-events:none; max-width:88%;
+    transition:opacity .22s ease, transform .28s cubic-bezier(.34,1.56,.64,1);
+    background:linear-gradient(180deg,rgba(62,0,0,.93),rgba(24,0,0,.96));
+    border:2px solid rgba(255,60,60,.55); color:#ff5555;
+    text-shadow:0 0 18px rgba(255,50,50,.55);
+    box-shadow:0 0 44px rgba(255,40,40,.22), 0 12px 40px rgba(0,0,0,.5);
+  }
+  .arb-flash.visible{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  .arb-flash.rejet{
+    background:linear-gradient(180deg,rgba(52,40,0,.93),rgba(24,18,0,.96));
+    border-color:rgba(255,200,60,.5); color:#ffcc44;
+    text-shadow:0 0 18px rgba(255,200,60,.45);
+    box-shadow:0 0 40px rgba(255,190,40,.18), 0 12px 40px rgba(0,0,0,.5);
+  }
+  .word-recap-body{ display:flex; flex-direction:column; min-width:0; }
+  .word-recap-reason{
+    font-family:'Rajdhani',sans-serif; font-size:.72rem; font-weight:600;
+    letter-spacing:1px; text-transform:uppercase;
+    color:rgba(255,90,90,.7); margin-top:1px;
+  }
+  @media (prefers-reduced-motion:reduce){
+    .arb-flash{ transition:opacity .15s ease; transform:translate(-50%,-50%); }
+    .arb-flash.visible{ transform:translate(-50%,-50%); }
+  }
 </style>
 </head>
 <body>
@@ -1470,7 +1503,7 @@
       </div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.3.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.4.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1530,11 +1563,12 @@
       <div class="interdits-title-text">LES INTERDITS</div>
     </div>
     <div class="interdits-list">
-      <div class="interdit-item">Pas de mot composé</div>
+      <div class="interdit-item">Un seul mot à la fois</div>
       <div class="interdit-item">Pas de mot de la même famille</div>
+      <div class="interdit-item">Pas de mot composé ni de découpage</div>
       <div class="interdit-item">Pas de mot qui commence pareil</div>
-      <div class="interdit-item">Pas de découpage du mot</div>
-      <div class="interdit-item">Pas de mime</div>
+      <div class="interdit-item">Pas de traduction ni de rime</div>
+      <div class="interdit-item">Pas d’épellation ni de mime</div>
     </div>
   </div>
 
@@ -1648,6 +1682,9 @@
     </div>
   </div>
 
+  <!-- Bandeau d'arbitrage -->
+  <div class="arb-flash" id="arbFlash"></div>
+
   <!-- Chrono intro overlay -->
   <div class="chrono-overlay" id="chronoOverlay">
     <div class="chrono-big" id="chronoBig">30</div>
@@ -1709,7 +1746,8 @@
       <li>Deux équipes de 2 joueurs s'affrontent</li>
       <li>Un joueur donne des indices (un seul mot à la fois) pour faire deviner un mot mystère à son partenaire</li>
       <li>Les équipes alternent, chaque mot-indice compte</li>
-      <li>Le premier mot-indice ne peut pas être un synonyme direct</li>
+      <li>Interdits : même famille, mot composé, découpage, même début, traduction, rime, épellation, mime</li>
+      <li>Un interdit sur un mot : ce mot est définitivement perdu</li>
       <li>L'équipe qui trouve le mot marque des points</li>
       <li>La manche se joue en temps limité</li>
     </ul>
@@ -2115,12 +2153,15 @@ function onData(data,fromConn){
     }
     if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
   }
-  else if(data.type==='duoFault'){
-    applyFault(data.reason||'FAUTE',true);
+  else if(data.type==='arbitrage'){
+    if(data.seqIdx!==mancheState.currentSeq) return;
+    const seqArb=mancheState.sequences[data.seqIdx];
+    if(seqArb && typeof data.wordIdx==='number') seqArb.currentWordIdx=data.wordIdx;
+    appliquerFaute({ok:false,code:data.code,label:data.label,grave:true}, true);
     if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
   }
   else if(data.type==='wordRecap'){
-    showWordRecap(data.words, data.found, data.skipped||[]);
+    showWordRecap(data.words, data.found, data.skipped||[], data.faults||[]);
   }
 }
 
@@ -3608,19 +3649,23 @@ function showMancheResult(type){
   setTimeout(()=>{ ov.classList.remove('visible'); },2800);
 }
 
-function showWordRecap(words, foundArr, skippedArr){
+function showWordRecap(words, foundArr, skippedArr, faultsArr){
   const panel=document.getElementById('wordRecapPanel');
   const list=document.getElementById('wordRecapList');
   list.innerHTML='';
 
   for(let i=0;i<words.length;i++){
     const isFound=!!foundArr[i] && !(skippedArr&&skippedArr[i]);
+    const motif=(faultsArr&&faultsArr[i])?faultsArr[i]:null;
     const li=document.createElement('li');
     li.className='word-recap-item';
     li.style.animationDelay=(i*0.12)+'s';
     li.innerHTML=
       '<span class="word-recap-icon '+(isFound?'found':'missed')+'">'+(isFound?'✓':'✗')+'</span>'+
-      '<span class="word-recap-word '+(isFound?'found':'missed')+'">'+escapeHtml(words[i])+'</span>';
+      '<span class="word-recap-body">'+
+        '<span class="word-recap-word '+(isFound?'found':'missed')+'">'+escapeHtml(words[i])+'</span>'+
+        (motif?'<span class="word-recap-reason">'+escapeHtml(motif)+'</span>':'')+
+      '</span>';
     list.appendChild(li);
   }
 
@@ -3662,11 +3707,11 @@ function endSequence(){
     }
 
     // ── Afficher le recap des mots du tour ──
-    showWordRecap(seq.words, seq.found, seq.skipped||[]);
+    showWordRecap(seq.words, seq.found, seq.skipped||[], seq.faults||[]);
 
     // ── Envoyer le recap aux autres joueurs (synchro réseau) ──
     if(isHost){
-      sendData({type:'wordRecap', words:seq.words, found:seq.found, skipped:seq.skipped||[]});
+      sendData({type:'wordRecap', words:seq.words, found:seq.found, skipped:seq.skipped||[], faults:seq.faults||[]});
     }
   }
 
@@ -3737,12 +3782,98 @@ function showMancheResultsDuo(){
 // ══════════════════════════════════════════
 // SYSTÈME DE RÈGLES & ANTI-TRICHE
 // ══════════════════════════════════════════
-function normLetters(s){
-  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
+// ── Réglages d'arbitrage ──
+const REGLES = {
+  // L'émission n'interdit PAS les synonymes : "sable" pour PLAGE, c'est le jeu.
+  // Passe à true pour retrouver la règle maison du v1.
+  synonymeStrict         : false,
+  // Rime forte (>= 4 lettres finales communes) : "bateau" pour CHÂTEAU.
+  rimeStrict             : true,
+  // true = refuse tout mot absent du lexique interne. Source n°1 des faux
+  // positifs du v1 : un arbitre humain accepte n'importe quel vrai mot.
+  lexiqueStrict          : false,
+  // true = une saisie invalide (2 mots, chiffre...) coûte le mot.
+  sanctionSaisieInvalide : false,
+  longueurMax            : 24,
+};
+
+// ── Catalogue des interdits ──
+const FAUTES = {
+  VIDE         : { label:'Indice vide' },
+  MULTI_MOTS   : { label:'Un seul mot à la fois' },
+  CHIFFRE      : { label:'Pas de chiffre' },
+  CARACTERES   : { label:'Lettres uniquement' },
+  TROP_LONG    : { label:'Mot trop long' },
+  HORS_LEXIQUE : { label:'Mot inconnu' },
+
+  EPELLATION   : { label:'Épellation interdite' },
+  MOT_EXACT    : { label:'C’est le mot de passe !' },
+  DECOUPAGE    : { label:'Découpage du mot' },
+  COMPOSE      : { label:'Mot composé' },
+  MEME_FAMILLE : { label:'Mot de la même famille' },
+  MEME_DEBUT   : { label:'Même début que le mot' },
+  TRADUCTION   : { label:'Traduction interdite' },
+  RIME         : { label:'Rime avec le mot' },
+  SYNONYME     : { label:'Synonyme direct interdit' },
+  PHRASE       : { label:'Phrase déguisée' },
+};
+
+// Codes "saisie" : rejet sans sanction, sauf REGLES.sanctionSaisieInvalide.
+const CODES_SAISIE = new Set(['VIDE','MULTI_MOTS','CHIFFRE','CARACTERES','TROP_LONG','HORS_LEXIQUE']);
+
+function arbFail(code){
+  const f = FAUTES[code] || { label:'Interdit' };
+  return {
+    ok    : false,
+    code  : code,
+    label : f.label,
+    grave : CODES_SAISIE.has(code) ? (code!=='VIDE' && !!REGLES.sanctionSaisieInvalide) : true,
+  };
 }
+
+// œ / æ développés avant NFD, sinon "cœur" devient "cur".
+function normLetters(s){
+  return String(s||'')
+    .replace(/[œŒ]/g,'oe').replace(/[æÆ]/g,'ae')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/[^a-z]/g,'');
+}
+
+function arbPrefixe(a,b){
+  let n=0; const m=Math.min(a.length,b.length);
+  while(n<m && a[n]===b[n]) n++;
+  return n;
+}
+function arbSuffixe(a,b){
+  let n=0; const m=Math.min(a.length,b.length);
+  while(n<m && a[a.length-1-n]===b[b.length-1-n]) n++;
+  return n;
+}
+
+// "Pas de mot qui commence pareil". Seuil 3 lettres sur les mots courts,
+// 4 au-delà : sur CONSTELLATION, "con" est une coïncidence, pas un début.
 function sameFirst3(clue,secretWord){
-  const c=normLetters(clue),w=normLetters(secretWord);
-  return c.length>=3 && w.length>=3 && c.slice(0,3)===w.slice(0,3);
+  const c=normLetters(clue), w=normLetters(secretWord);
+  if(c.length<3 || w.length<3) return false;
+  const n=arbPrefixe(c,w);
+  return n>=4 || (n>=3 && w.length<=6);
+}
+
+// Racine approximative : rapproche chanteur / chanter / chant.
+const ARB_SUFFIXES = ['issement','ellement','ation','ition','ement','ateur','atrice','ance','ence',
+  'ette','elle','ienne','iere','isme','iste','ique','able','ible','oire','tion','sion','ment',
+  'euse','rice','ure','age','ade','eur','ien','ier','ale','aux','ant','ent','eux','ive','ons',
+  'ais','ait','er','ir','re','ez','es','ee','et','ie','if','al','le','s','x','e']
+  .sort((a,b)=>b.length-a.length);
+
+function arbRacine(w){
+  for(const suf of ARB_SUFFIXES){
+    if(w.length>suf.length+2 && w.endsWith(suf)){
+      const base=w.slice(0,-suf.length);
+      if(base.length>=3) return base;
+    }
+  }
+  return w;
 }
 
 // ── Synonymes ──
@@ -4593,49 +4724,81 @@ for(const group of SYNONYM_GROUPS){
   }
 }
 
+// Index inverse FR -> EN, construit une fois. Le v1 parcourait les ~2500
+// entrées de ENGLISH_TRANSLATIONS à chaque indice tapé.
+const _fr2en=new Map();
+for(const [eng,fr] of Object.entries(ENGLISH_TRANSLATIONS)){
+  const nf=normLetters(fr), ne=normLetters(eng);
+  if(!_fr2en.has(nf)) _fr2en.set(nf,new Set());
+  _fr2en.get(nf).add(ne);
+}
+
 function isSynonym(clue,secretWord){
   const c=normLetters(clue), w=normLetters(secretWord);
-  const syns=_synonymMap.get(w);
-  if(syns && syns.has(c)) return true;
-  const syns2=_synonymMap.get(c);
-  if(syns2 && syns2.has(w)) return true;
+  const a=_synonymMap.get(w); if(a && a.has(c)) return true;
+  const b=_synonymMap.get(c); if(b && b.has(w)) return true;
   return false;
 }
 
 function isEnglishTranslation(clue,secretWord){
   const c=normLetters(clue), w=normLetters(secretWord);
-  const frenchOfClue=ENGLISH_TRANSLATIONS[c];
-  if(frenchOfClue && normLetters(frenchOfClue)===w) return true;
-  for(const [eng,fr] of Object.entries(ENGLISH_TRANSLATIONS)){
-    if(normLetters(fr)===w && normLetters(eng)===c) return true;
-  }
-  return false;
+  const direct=ENGLISH_TRANSLATIONS[c];
+  if(direct && normLetters(direct)===w) return true;
+  const set=_fr2en.get(w);
+  return !!(set && set.has(c));
 }
 
+// Un mot est-il l'autre + un suffixe connu ? marin -> marine (dérivation),
+// alors que chat -> chateau n'en est pas une ("eau" n'est pas un suffixe).
+function arbDerivation(court,long){
+  if(!long.startsWith(court) || long.length<=court.length) return false;
+  return ARB_SUFFIXES.includes(long.slice(court.length));
+}
+
+// Inclusion : distingue le découpage (le mot contient l'indice, "pluie" pour
+// PARAPLUIE), le mot composé (l'indice contient le mot, "portemanteau" pour
+// PORTE) et la simple dérivation (marine / MARIN = même famille).
+// Le mot contenu doit faire 4 lettres minimum, sinon "bateau" serait refusé
+// pour EAU alors que c'est une association parfaitement légitime.
+function arbInclusion(c,w){
+  if(c===w) return null;
+  if(c.length>=4 && w.includes(c)){
+    return arbDerivation(c,w) ? 'MEME_FAMILLE' : 'DECOUPAGE';
+  }
+  if(w.length>=4 && c.includes(w)){
+    return arbDerivation(w,c) ? 'MEME_FAMILLE' : 'COMPOSE';
+  }
+  return null;
+}
+
+// Même famille : racines identiques ou radical commun long.
+// On ne teste PAS startsWith sur les racines : "chat"/"chateau" passerait
+// pour de la famille alors que c'est du découpage.
 function isSameFamily(clue,secretWord){
   const c=normLetters(clue), w=normLetters(secretWord);
   if(c.length<3 || w.length<3) return false;
-  if(c.length>=4 && w.length>=4){
-    if(c.includes(w) || w.includes(c)) return true;
-  }
-  let common=0;
-  const minLen=Math.min(c.length,w.length);
-  for(let i=0;i<minLen;i++){
-    if(c[i]===w[i]) common++; else break;
-  }
-  if(common>=5 || (common>=4 && common>=minLen*0.7)) return true;
-  const suffixes=['er','ir','re','eur','euse','tion','sion','ment','iste','ique','ible','able','eux','ier','iere','age','ure','ence','ance','ite','isme','ien','ienne','ette','elle','al','ale','ive','if','oire'];
-  for(const suf of suffixes){
-    if(c.endsWith(suf) && c.length>suf.length+2){
-      const cBase=c.slice(0,-suf.length);
-      if(cBase.length>=3 && w.startsWith(cBase)) return true;
-    }
-    if(w.endsWith(suf) && w.length>suf.length+2){
-      const wBase=w.slice(0,-suf.length);
-      if(wBase.length>=3 && c.startsWith(wBase)) return true;
-    }
-  }
+  if(c===w) return true;
+  const rc=arbRacine(c), rw=arbRacine(w);
+  if(rc.length>=4 && rc===rw) return true;
+  const n=arbPrefixe(c,w);
+  if(n>=5) return true;
+  if(n>=4 && n>=Math.min(c.length,w.length)-1) return true;
   return false;
+}
+
+// Rime : >= 4 lettres finales communes, sauf si la fin partagée n'est qu'un
+// suffixe grammatical (parlement / gouvernement ne riment pas, ils dérivent).
+const ARB_SUFFIXES_GRAM=['ation','ement','ment','tion','sion','ique','ance','ence','oire',
+  'able','ible','iste','isme','euse','rice','ette','elle','iere','eur','age','ure','ier'];
+
+function isRime(clue,secretWord){
+  const c=normLetters(clue), w=normLetters(secretWord);
+  if(c.length<4 || w.length<4 || c===w) return false;
+  const n=arbSuffixe(c,w);
+  if(n<4) return false;
+  const fin=c.slice(-n);
+  for(const s of ARB_SUFFIXES_GRAM){ if(fin.endsWith(s)) return false; }
+  return true;
 }
 
 // ── Set de mots acceptés comme indices (jeu + synonymes + traductions + mots courants) ──
@@ -4986,101 +5149,172 @@ const _frenchSplitWords=new Set();
   for(const w of petits.split(/\s+/)) _frenchSplitWords.add(normLetters(w));
 })();
 
-function canSplitIntoWords(str, minParts){
-  if(str.length===0) return minParts<=0;
-  for(let len=1;len<=str.length;len++){
-    const part=str.slice(0,len);
-    if(_frenchSplitWords.has(part)){
-      if(canSplitIntoWords(str.slice(len), minParts-1)) return true;
-    }
-  }
-  return false;
-}
+// ── Lexique : "est-ce un vrai mot ?", séparé de "est-ce légal ?" ──
+const ARB_FLEXIONS=['issements','issement','ellement','ations','atrices','ateurs','aient','ation',
+  'ition','ement','ateur','atrice','ances','ences','ettes','elles','iennes','ieres','istes','ismes',
+  'iques','ables','ibles','oires','euses','rices','tions','sions','ments','antes','ance','ence',
+  'ette','elle','ienne','iere','iste','isme','ique','able','ible','oire','ures','ages','ades',
+  'eurs','iens','iers','ives','ants','ure','age','ade','eur','euse','rice','tion','sion','ment',
+  'ien','ier','ale','ive','ant','ent','eux','ons','aux','ais','ait','ez','er','ir','re','ee','es',
+  's','x','e'].sort((a,b)=>b.length-a.length);
 
-function isCheatAttempt(input){
-  const raw=input.trim();
-  if(/\s/.test(raw)) return 'un seul mot autorisé';
-  if(/[^a-zA-ZÀ-ÿ]/.test(raw)) return 'lettres uniquement';
-  const norm=normLetters(raw);
-  if(norm.length<1) return false;
-  if(norm.length>20) return 'mot trop long';
-
-  // Mot connu exact → autorisé
-  if(_allowedClueWords.has(norm)) return false;
-
-  // Mots courts (≤5 lettres) → laisser passer
-  if(norm.length<=5) return false;
-
-  // ── Tolérance flexions grammaticales ──
-  const flexSuffixes=['s','es','x','e','ee','ees','ent','ement','ment',
-    'er','ir','re','ons','ez','ais','ait','aient','ant','ante','ants','antes',
-    'eur','eurs','euse','euses','rice','rices','tion','tions','iste','istes',
-    'ique','iques','ible','ibles','able','ables','eux','euses','ienne','iennes',
-    'ien','iens','iere','ieres','ier','iers','elle','elles','ette','ettes',
-    'ale','ales','aux','ive','ives','if','ifs'];
-  for(const suf of flexSuffixes){
-    if(norm.length > suf.length+2 && norm.endsWith(suf)){
+function estDansLexique(norm){
+  if(_allowedClueWords.has(norm)) return true;
+  if(norm.length<=5) return true;
+  for(const suf of ARB_FLEXIONS){
+    if(norm.length>suf.length+2 && norm.endsWith(suf)){
       const base=norm.slice(0,-suf.length);
-      if(base.length>=3 && _allowedClueWords.has(base)) return false;
+      if(base.length>=3 && _allowedClueWords.has(base)) return true;
     }
   }
-  for(const strip of ['s','x','e','es','ne','de','re','le','se','te','me','nt','er','ez','ai']){
-    if(norm.endsWith(strip) && norm.length>strip.length+2){
-      const base=norm.slice(0,-strip.length);
-      if(base.length>=3 && _allowedClueWords.has(base)) return false;
-    }
+  for(const add of ['e','s','er','ir','re','eux','al','if']){
+    if(_allowedClueWords.has(norm+add)) return true;
   }
-  if(_allowedClueWords.has(norm+'e')||_allowedClueWords.has(norm+'s')||
-     _allowedClueWords.has(norm+'er')||_allowedClueWords.has(norm+'ir')||
-     _allowedClueWords.has(norm+'re')) return false;
-  // Irréguliers
-  if(norm.endsWith('euse')&&norm.length>6&&_allowedClueWords.has(norm.slice(0,-4)+'eux'))return false;
-  if(norm.endsWith('euses')&&norm.length>7&&_allowedClueWords.has(norm.slice(0,-5)+'eux'))return false;
-  if(norm.endsWith('aux')&&norm.length>5){if(_allowedClueWords.has(norm.slice(0,-3)+'al')||_allowedClueWords.has(norm.slice(0,-3)+'au'))return false;}
-  if(norm.endsWith('elle')&&norm.length>5){if(_allowedClueWords.has(norm.slice(0,-4)+'eau')||_allowedClueWords.has(norm.slice(0,-4)+'el'))return false;}
-  if(norm.endsWith('ive')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'if'))return false;
-  if(norm.endsWith('ives')&&norm.length>5&&_allowedClueWords.has(norm.slice(0,-4)+'if'))return false;
-  if(norm.endsWith('sse')&&norm.length>4){if(_allowedClueWords.has(norm.slice(0,-3)+'x')||_allowedClueWords.has(norm.slice(0,-3)+'s')||_allowedClueWords.has(norm.slice(0,-3)))return false;}
-  if(norm.endsWith('che')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'c'))return false;
-  if(norm.endsWith('lle')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'l'))return false;
-  if(norm.endsWith('nne')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'n'))return false;
-  if(norm.endsWith('tte')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'t'))return false;
-  if(norm.endsWith('ere')&&norm.length>4&&_allowedClueWords.has(norm.slice(0,-3)+'er'))return false;
-
-  // ── Détection de phrases collées : découpable en 2+ mots connus ? ──
-  if(norm.length>=6 && canSplitIntoWords(norm, 2)){
-    return 'phrase déguisée';
-  }
-
-  // Mot non découpable = probablement un vrai mot français inconnu du dico → laisser passer
+  if(norm.endsWith('euse') && _allowedClueWords.has(norm.slice(0,-4)+'eux')) return true;
+  if(norm.endsWith('ive')  && _allowedClueWords.has(norm.slice(0,-3)+'if'))  return true;
+  if(norm.endsWith('aux')  && (_allowedClueWords.has(norm.slice(0,-3)+'al') ||
+                               _allowedClueWords.has(norm.slice(0,-3)+'au'))) return true;
+  if(norm.endsWith('elle') && (_allowedClueWords.has(norm.slice(0,-4)+'eau')||
+                               _allowedClueWords.has(norm.slice(0,-4)+'el'))) return true;
   return false;
 }
-function validateGiverClue(clue,secretWord){
-  const raw=clue.trim();
-  if(!raw) return {ok:false,reason:'vide'};
-  const cheat=isCheatAttempt(raw);
-  if(cheat) return {ok:false,reason:'FAUTE : '+cheat};
-  if(normLetters(raw)===normLetters(secretWord)) return {ok:false,reason:'FAUTE : c\'est le mot !'};
-  if(sameFirst3(raw,secretWord)) return {ok:false,reason:'FAUTE : même début que le mot'};
-  if(isSameFamily(raw,secretWord)) return {ok:false,reason:'FAUTE : mot de la même famille'};
-  if(isSynonym(raw,secretWord)) return {ok:false,reason:'FAUTE : synonyme interdit'};
-  if(isEnglishTranslation(raw,secretWord)) return {ok:false,reason:'FAUTE : traduction interdite'};
-  return {ok:true};
-}
-function validateGuesserAnswer(answer){
-  const raw=answer.trim();
-  if(!raw) return {ok:false,reason:'vide'};
-  return {ok:true};
-}
-function applyFault(reason,fromNetwork){
-  playGameSound('son/faute.wav',0.8);
-  applyDireBubble('giver',reason,true);
-  setTimeout(()=>{
-    if(gameMode==='duo'){
-      duoSkipWord();
-      if(!fromNetwork) sendData({type:'duoFault',seqIdx:mancheState.currentSeq,wordIdx:mancheState.sequences[mancheState.currentSeq]?.currentWordIdx||0,reason:reason});
+
+// ── Phrase collée ("grandemaison") ──
+// v1 : 2 parties d'1 lettre mini, donc "chateau" = "chat"+"eau" -> faute.
+// v2 : parties de 4 lettres mini, mot de 8+, et mémoïsation (la version
+// récursive nue était exponentielle sur 20 caractères).
+const _splitCache=new Map();
+function _arbSplit(str,minParts,minLen){
+  if(str.length===0) return minParts<=0;
+  const key=str+'|'+minParts;
+  if(_splitCache.has(key)) return _splitCache.get(key);
+  let res=false;
+  for(let len=minLen; len<=str.length; len++){
+    if(_frenchSplitWords.has(str.slice(0,len)) && _arbSplit(str.slice(len),minParts-1,minLen)){
+      res=true; break;
     }
-  },500);
+  }
+  _splitCache.set(key,res);
+  return res;
+}
+function looksLikeGluedPhrase(norm){
+  if(norm.length<8) return false;
+  if(_allowedClueWords.has(norm)) return false;
+  return _arbSplit(norm,2,4);
+}
+
+// ══════════════════════════════════════════
+// L'ARBITRE
+// ══════════════════════════════════════════
+function arbitrerIndice(saisie, motSecret){
+  const raw=String(saisie||'').trim();
+  if(!raw)                          return arbFail('VIDE');
+  if(raw.length>REGLES.longueurMax) return arbFail('TROP_LONG');
+  if(/\s/.test(raw))                return arbFail('MULTI_MOTS');
+  if(/[0-9]/.test(raw))             return arbFail('CHIFFRE');
+  if(/[^a-zA-ZÀ-ÿŒœ]/.test(raw))    return arbFail('CARACTERES');
+
+  const c=normLetters(raw), w=normLetters(motSecret);
+  if(!c)            return arbFail('VIDE');
+  if(c.length===1)  return arbFail('EPELLATION');
+  if(c===w)         return arbFail('MOT_EXACT');
+
+  const incl=arbInclusion(c,w);
+  if(incl)                                        return arbFail(incl);
+  if(isSameFamily(c,w))                           return arbFail('MEME_FAMILLE');
+  if(sameFirst3(c,w))                             return arbFail('MEME_DEBUT');
+  if(isEnglishTranslation(c,w))                   return arbFail('TRADUCTION');
+  if(REGLES.synonymeStrict && isSynonym(c,w))     return arbFail('SYNONYME');
+  if(REGLES.rimeStrict && isRime(c,w))            return arbFail('RIME');
+  if(looksLikeGluedPhrase(c))                     return arbFail('PHRASE');
+  if(REGLES.lexiqueStrict && !estDansLexique(c))  return arbFail('HORS_LEXIQUE');
+
+  return { ok:true, code:null, label:'', grave:false };
+}
+
+// Celui qui devine n'a aucun interdit dans l'émission : il propose des mots.
+// On valide donc la saisie, on ne sanctionne jamais.
+function arbitrerReponse(saisie){
+  const raw=String(saisie||'').trim();
+  if(!raw)                          return arbFail('VIDE');
+  if(raw.length>REGLES.longueurMax) return arbFail('TROP_LONG');
+  if(/[0-9]/.test(raw))             return arbFail('CHIFFRE');
+  return { ok:true, code:null, label:'', grave:false };
+}
+
+// ── Retour visuel ──
+let _arbFlashTimer=null;
+function flashArbitrage(texte,grave){
+  const el=document.getElementById('arbFlash');
+  if(!el) return;
+  el.textContent=texte;
+  el.classList.toggle('rejet',!grave);
+  el.classList.remove('visible');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(_arbFlashTimer);
+  _arbFlashTimer=setTimeout(()=>el.classList.remove('visible'), grave?2200:1500);
+}
+
+// ── Sanction ──
+function appliquerFaute(verdict, fromNetwork){
+  if(!verdict || verdict.ok) return false;
+
+  if(!verdict.grave){                       // simple rejet de saisie
+    flashArbitrage(verdict.label,false);
+    return false;
+  }
+
+  const seq=getCurrentSeq();
+  if(!seq) return false;
+
+  playGameSound('son/faute.wav',0.8);
+  flashArbitrage('FAUTE — '+verdict.label, true);
+
+  if(!fromNetwork){
+    sendData({ type:'arbitrage', seqIdx:mancheState.currentSeq,
+               wordIdx:seq.currentWordIdx, code:verdict.code, label:verdict.label });
+  }
+  setTimeout(()=>{ perdreMotCourant(verdict.label); }, 900);
+  return true;
+}
+
+// Le mot est définitivement perdu, dans les DEUX modes.
+// v1 : applyFault ne faisait strictement rien en mode qualif.
+function perdreMotCourant(motif){
+  const seq=getCurrentSeq();
+  if(!seq) return;
+
+  if(!seq.faults) seq.faults=Array(seq.words.length).fill(null);
+  seq.faults[seq.currentWordIdx]=motif||'faute';
+
+  if(gameMode==='duo'){ duoSkipWord(); return; }
+
+  const wi=seq.currentWordIdx;
+  if(!seq.skipped) seq.skipped=Array(seq.words.length).fill(false);
+  if(seq.found[wi]) return;
+
+  seq.skipped[wi]=true;
+  seq.found[wi]=true;                        // retiré du pool : on n'y revient pas
+  seq.lostCount=(seq.lostCount||0)+1;
+
+  for(let i=4;i>=0;i--){
+    const s=document.getElementById('sphere'+i);
+    if(s && !s.classList.contains('lit') && !s.classList.contains('lost')){
+      s.classList.add('lost'); break;
+    }
+  }
+
+  mancheState.cluesGiven=0;
+  mancheState.turn='giver';
+  clearDireFields();
+
+  if(seq.lightsLit+seq.lostCount>=5 || !goToNextWord(seq)){
+    setTimeout(()=>{ endSequence(); },1000);
+    return;
+  }
+  refreshDireInputState();
+  updateWordDisplay(seq,{animate:true});
 }
 
 // ── Back to menu ──
@@ -5665,17 +5899,23 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   if(!raw) return;
   if(gameMode==='duo' && mancheState.cluesGiven>=3) return;
 
-  // ── Validation des règles ──
+  // ── Arbitrage ──
   const seq=getCurrentSeq();
   if(seq){
-    const check=validateGiverClue(raw, seq.words[seq.currentWordIdx]);
-    if(!check.ok){
+    const verdict=arbitrerIndice(raw, seq.words[seq.currentWordIdx]);
+    if(!verdict.ok){
+      if(!verdict.grave){
+        // Saisie refusee : rien n'est envoye, le chrono ne demarre pas,
+        // le champ n'est pas vide, le tour reste au donneur.
+        flashArbitrage(verdict.label,false);
+        return;
+      }
       clearTimeout(_direSendTimer);
-      sendDireBubbleNow('giver',raw,true);
+      sendDireBubbleNow('giver',raw,true);   // l'indice fautif reste affiche
       _skipNextGiverInput=true;
       e.target.value='';
       tryStartTimerAfterFirstClue();
-      applyFault(check.reason);
+      appliquerFaute(verdict);
       return;
     }
   }
@@ -5722,15 +5962,9 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
   const raw=document.getElementById('direGuesser').value.trim();
   if(!raw) return;
 
-  // ── Validation anti-triche ──
-  const gCheck=validateGuesserAnswer(raw);
-  if(!gCheck.ok){
-    sendDireBubbleNow('guesser',raw,true);
-    _skipNextGuesserInput=true;
-    document.getElementById('direGuesser').value='';
-    applyFault(gCheck.reason);
-    return;
-  }
+  // ── Arbitrage (le devineur n'a aucun interdit : simple validation) ──
+  const gCheck=arbitrerReponse(raw);
+  if(!gCheck.ok){ flashArbitrage(gCheck.label,false); return; }
 
   sendDireBubbleNow('guesser',raw,true);
   _skipNextGuesserInput=true;
