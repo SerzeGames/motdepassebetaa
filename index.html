@@ -1503,7 +1503,7 @@
       </div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.4.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.5.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1890,6 +1890,23 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{ov.addEventListener('cl
 // NETWORKING — PeerJS Matchmaking
 // (Inspired by multi.html Doodle Jump technique)
 // ══════════════════════════════════════════
+// Increment ce numero a CHAQUE changement du format des messages reseau.
+const PROTOCOL='mdp-2';
+function msgPseudo(){ return {type:'pseudo',id:peer.id,pseudo:myPseudo,proto:PROTOCOL}; }
+function versionIncompatible(recu){
+  const el=document.getElementById('lobbyStatus');
+  if(el){
+    el.textContent='Versions differentes \u2014 rafraichissez la page tous les deux (Ctrl+Maj+R)';
+    el.style.color='#ff5555';
+  }
+  const sp=document.getElementById('lobbySpinner'); if(sp) sp.style.display='none';
+  console.warn('[proto] attendu '+PROTOCOL+', recu '+(recu||'aucun'));
+  connected=false;
+  for(const q of conns){ if(q.conn) try{q.conn.close()}catch(e){} }
+  conns=[]; lobbyPlayers=[];
+  setTimeout(backToMenu,6000);
+}
+
 const LOBBY_PREFIX='motdepasse-';
 const NUM_ROOMS=10;
 const MAX_PLAYERS=4;
@@ -2031,6 +2048,7 @@ function broadcastRoster(){
 function onData(data,fromConn){
   const rp=conns.find(p=>p.conn===fromConn);
   if(data.type==='pseudo'){
+    if(data.proto!==PROTOCOL){ versionIncompatible(data.proto); return; }
     if(rp){rp.pseudo=data.pseudo;if(data.id)rp.id=data.id}
     rebuildLobbyList();
     if(isHost)broadcastRoster();
@@ -2220,7 +2238,7 @@ function tryMatchmaking(){
           setTimeout(backToMenu,2000);
         });
 
-        c.send({type:'pseudo',id:peer.id,pseudo:myPseudo});
+        c.send(msgPseudo());
         rebuildLobbyList();
         document.getElementById('lobbyStatus').textContent='Connecté ! En attente de joueurs...';
       });
@@ -2371,7 +2389,7 @@ function tryMatchmaking(){
             broadcastRoster();
           });
 
-          sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
+          sendTo(rp,msgPseudo());
           for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
           rebuildLobbyList();
           broadcastRoster();
@@ -6175,7 +6193,7 @@ setInterval(()=>{
     const count=lobbyPlayers.length;
     const cap=maxPlayersForMode();
     if(count<cap&&count>0){
-      const dots='.'.repeat((Date.now()/500|0)%4);
+      const dots='.'.repeat(Math.floor(Date.now()/500)%4);
       document.getElementById('lobbyStatus').textContent=count+'/'+cap+' joueurs \u2014 En attente'+dots;
     }
   }
@@ -6632,7 +6650,7 @@ function startFriendCreate(){
         for(const p2 of conns)sendTo(p2,{type:'playerLeft',id:rp.id,pseudo:rp.pseudo});
         rebuildLobbyList(); broadcastRoster();
       });
-      sendTo(rp,{type:'pseudo',id:peer.id,pseudo:myPseudo});
+      sendTo(rp,msgPseudo());
       for(const p2 of conns){if(p2!==rp)sendTo(rp,{type:'playerJoined',id:p2.id,pseudo:p2.pseudo})}
       rebuildLobbyList(); broadcastRoster();
     };
@@ -6683,7 +6701,7 @@ function startFriendJoin(){
         document.getElementById('lobbyStatus').textContent='Hôte déconnecté...';
         setTimeout(backToMenu,2000);
       });
-      c.send({type:'pseudo',id:peer.id,pseudo:myPseudo});
+      c.send(msgPseudo());
       rebuildLobbyList();
       document.getElementById('lobbyStatus').textContent='Connecté ! En attente du lancement...';
     });
