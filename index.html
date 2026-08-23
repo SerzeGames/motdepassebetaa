@@ -1503,7 +1503,7 @@
       </div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.5.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.6.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1894,13 +1894,15 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{ov.addEventListener('cl
 const PROTOCOL='mdp-2';
 function msgPseudo(){ return {type:'pseudo',id:peer.id,pseudo:myPseudo,proto:PROTOCOL}; }
 function versionIncompatible(recu){
+  console.warn('[proto] attendu '+PROTOCOL+', recu '+(recu||'aucun'));
+  // En pleine partie, un visiteur mal versionne ne doit surtout pas nous ejecter.
+  if(partieEnCours) return;
   const el=document.getElementById('lobbyStatus');
   if(el){
     el.textContent='Versions differentes \u2014 rafraichissez la page tous les deux (Ctrl+Maj+R)';
     el.style.color='#ff5555';
   }
   const sp=document.getElementById('lobbySpinner'); if(sp) sp.style.display='none';
-  console.warn('[proto] attendu '+PROTOCOL+', recu '+(recu||'aucun'));
   connected=false;
   for(const q of conns){ if(q.conn) try{q.conn.close()}catch(e){} }
   conns=[]; lobbyPlayers=[];
@@ -2004,7 +2006,7 @@ function rebuildLobbyList(){
 
 // ── Host: broadcast roster ──
 function broadcastRoster(){
-  if(!isHost)return;
+  if(!isHost || partieEnCours) return;
   const players=[{id:peer.id,pseudo:myPseudo,isHost:true},...conns.map(p=>({id:p.id,pseudo:p.pseudo,isHost:false}))];
   // Disambiguate duplicate pseudos
   const counts={};
@@ -2052,6 +2054,14 @@ function onData(data,fromConn){
     if(rp){rp.pseudo=data.pseudo;if(data.id)rp.id=data.id}
     rebuildLobbyList();
     if(isHost)broadcastRoster();
+  }
+  else if(data.type==='roomBusy'){
+    // Cette room heberge deja une partie : on se retire sans repasser par le
+    // menu et on relance la recherche sur les autres rooms.
+    conns=conns.filter(q=>q.conn!==fromConn);
+    connected=false;
+    try{ if(fromConn) fromConn.close(); }catch(e){}
+    if(!isHost && !partieEnCours && typeof window._mmRelance==='function') window._mmRelance();
   }
   else if(data.type==='roster'){
     if(data.mode) gameMode=data.mode;
@@ -2191,7 +2201,7 @@ function startSearch(){
   const bf=document.getElementById('btnPlayFriend'); if(bf) bf.disabled=true;
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='Connexion...';
-  connected=false;conns=[];lobbyPlayers=[];
+  partieEnCours=false;connected=false;conns=[];lobbyPlayers=[];
   tryMatchmaking();
 }
 
@@ -2365,13 +2375,19 @@ function tryMatchmaking(){
         // Joueur normal
         identified=true;
         clearTimeout(identTimeout);
-        setupAsPlayer(c);
-        onData(firstData, c);
+        if(setupAsPlayer(c)) onData(firstData, c);
       });
 
       function setupAsPlayer(conn){
         const need=maxPlayersForMode();
-        if(conns.length>=need-1){try{conn.close()}catch(e){}return}
+        // Partie deja lancee ou room pleine : on refuse, et on le DIT au
+        // visiteur pour qu'il aille chercher ailleurs au lieu de croire
+        // qu'il a rejoint.
+        if(partieEnCours || conns.length>=need-1){
+          try{ conn.send({type:'roomBusy'}); }catch(e){}
+          setTimeout(()=>{try{conn.close()}catch(e){}},120);
+          return false;
+        }
 
         const rp={id:conn.peer,conn:conn,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
         conns.push(rp);
@@ -2397,6 +2413,7 @@ function tryMatchmaking(){
 
         if(conn.open) setup();
         else conn.on('open',setup);
+        return true;
       }
     });
 
@@ -2409,14 +2426,26 @@ function tryMatchmaking(){
     });
   }
 
+  let _relances=0;
+  window._mmRelance=()=>{
+    if(_mmAborted || connected || _relances>=3) return;
+    _relances++;
+    const el=document.getElementById('lobbyStatus');
+    if(el) el.textContent='Salon occupé — recherche d\u2019un autre adversaire\u2026';
+    setTimeout(()=>{ if(!connected && !_mmAborted) attemptJoinRooms(); }, 400+Math.random()*600);
+  };
+
   // Cleanup si le joueur quitte le lobby
-  const origBack=backToMenu;
-  window._mmCleanup=()=>{ _mmAborted=true; };
+  window._mmCleanup=()=>{ _mmAborted=true; window._mmRelance=null; };
 }
 
 // ── Game start ──
 let teamA=[], teamB=[];
+// Vrai des que la manche est lancee : sert de garde a tous les evenements
+// de lobby, qui ne doivent plus rien pouvoir relancer.
+let partieEnCours=false;
 function onGameStart(){
+  partieEnCours=true;
   stopAccueilMusic();
 
   // Spectateur : juste passer en attente, le reste viendra via syncSequences puis spectatorSeqStart
@@ -6173,6 +6202,7 @@ function perdreMotCourant(motif){
 
 // ── Back to menu ──
 function backToMenu(){
+  partieEnCours=false;
   if(window._mmCleanup) window._mmCleanup();
   for(const p of conns){if(p.conn)try{p.conn.close()}catch(e){}}
   if(peer)try{peer.destroy()}catch(e){}
@@ -6637,7 +6667,11 @@ function startFriendCreate(){
 
   peer.on('connection',c=>{
     const need=maxPlayersForMode();
-    if(conns.length>=need-1){try{c.close()}catch(e){}return;}
+    if(partieEnCours || conns.length>=need-1){
+      try{ c.send({type:'roomBusy'}); }catch(e){}
+      setTimeout(()=>{try{c.close()}catch(e){}},120);
+      return;
+    }
     const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
     conns.push(rp);
     const setup=()=>{
