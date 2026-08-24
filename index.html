@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.10.1 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.10.2 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -3466,7 +3466,7 @@ function refreshDireInputState(){
     u.closest('.dire-field').style.display='none';
     u.disabled=true;
 
-    let myTurn=roundOpen && turn==='giver';
+    let myTurn=roundOpen && turn==='giver' && !_sanctionEnCours;
     // En duo : bloquer si 3 indices déjà donnés pour ce mot
     if(gameMode==='duo' && mancheState.cluesGiven>=3) myTurn=false;
 
@@ -6383,7 +6383,8 @@ function appliquerFaute(verdict, fromNetwork){
   flashArbitrage('FAUTE — '+verdict.label, true);
 
   const wiFaute=seq.currentWordIdx;
-  _sanctionEnCours=true;   // pendant ces 900 ms, PASSER doit rester inerte
+  _sanctionEnCours=true;   // pendant ces 900 ms, PASSER et le champ sont inertes
+  refreshDireInputState();
   if(!fromNetwork){
     sendData({ type:'arbitrage', seqIdx:mancheState.currentSeq,
                wordIdx:wiFaute, code:verdict.code, label:verdict.label });
@@ -6401,7 +6402,13 @@ function perdreMotCourant(motif, wordIdx){
   const seq=getCurrentSeq();
   if(!seq) return;
 
-  if(typeof wordIdx==='number' && !seq.found[wordIdx]) seq.currentWordIdx=wordIdx;
+  // Si le mot vise est deja traite, la sanction a deja ete appliquee : on
+  // s'arrete la. Sans ce return, on continuait avec currentWordIdx qui pointe
+  // desormais sur le mot SUIVANT, et on le perdait lui aussi.
+  if(typeof wordIdx==='number'){
+    if(seq.found[wordIdx]) return;
+    seq.currentWordIdx=wordIdx;
+  }
 
   if(!seq.faults) seq.faults=Array(seq.words.length).fill(null);
   seq.faults[seq.currentWordIdx]=motif||'faute';
@@ -6426,6 +6433,7 @@ function perdreMotCourant(motif, wordIdx){
   mancheState.cluesGiven=0;
   mancheState.turn='giver';
   clearDireFields();
+  refreshDireInputState();
 
   if(seq.lightsLit+seq.lostCount>=5 || !goToNextWord(seq)){
     setTimeout(()=>{ endSequence(); },1000);
@@ -7013,6 +7021,9 @@ document.getElementById('direGiver').addEventListener('keydown',e=>{
   if(!isLocalGiver()||e.key!=='Enter') return;
   e.preventDefault();
   if(mancheState.turn!=='giver') return;
+  // Une faute est en cours de traitement : un second indice partirait sur le
+  // meme mot et finirait par en sanctionner un deuxieme.
+  if(_sanctionEnCours) return;
   const raw=e.target.value.trim();
   if(!raw) return;
   if(gameMode==='duo' && mancheState.cluesGiven>=3) return;
