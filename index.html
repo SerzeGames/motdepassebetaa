@@ -1435,6 +1435,72 @@
     .arb-flash{ transition:opacity .15s ease; transform:translate(-50%,-50%); }
     .arb-flash.visible{ transform:translate(-50%,-50%); }
   }
+
+  /* ===== CLASSEMENT ===== */
+  .classement{
+    width:100%; max-width:600px;
+    background:linear-gradient(180deg,rgba(15,5,5,.75) 0%,rgba(8,2,2,.85) 100%);
+    border:1px solid rgba(196,30,30,.25); border-radius:16px; overflow:hidden;
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    box-shadow:0 8px 30px rgba(0,0,0,.3);
+    animation:fadeIn .8s 1.5s forwards; opacity:0;
+  }
+  .classement-header{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:12px 18px; flex-wrap:wrap;
+    background:linear-gradient(180deg,rgba(40,12,12,.6) 0%,rgba(20,6,6,.4) 100%);
+    border-bottom:1px solid rgba(196,30,30,.15);
+  }
+  .classement-titre{
+    font-family:'Orbitron',sans-serif; font-size:.8rem; font-weight:700;
+    color:rgba(255,255,255,.6); letter-spacing:3px; text-transform:uppercase;
+  }
+  .classement-tris{ display:flex; gap:6px; }
+  .classement-tri{
+    padding:5px 12px; border-radius:6px; cursor:pointer;
+    background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1);
+    color:#888; font-family:'Rajdhani',sans-serif; font-size:.8rem; font-weight:600;
+    letter-spacing:1px; transition:all .25s;
+  }
+  .classement-tri:hover{ color:#ccc; border-color:rgba(196,30,30,.4); }
+  .classement-tri.active{ background:rgba(196,30,30,.28); border-color:var(--red-main); color:#fff; }
+  .classement-profil{
+    display:flex; flex-wrap:wrap; gap:6px 18px; padding:12px 18px;
+    border-bottom:1px solid rgba(196,30,30,.12);
+    font-family:'Rajdhani',sans-serif; font-size:.92rem; color:#8a8a8a; letter-spacing:.5px;
+  }
+  .classement-profil b{ color:var(--gold); font-weight:700; font-size:1.05rem; }
+  .classement-table{ width:100%; border-collapse:collapse; font-family:'Rajdhani',sans-serif; }
+  .classement-table th{
+    padding:8px 12px; text-align:left;
+    font-size:.65rem; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+    color:rgba(255,255,255,.3); border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .classement-table th:first-child,.classement-table td:first-child{ width:38px; text-align:center; }
+  .classement-table th:not(:nth-child(2)):not(:first-child),
+  .classement-table td:not(:nth-child(2)):not(:first-child){ text-align:right; padding-right:18px; }
+  .classement-table td{
+    padding:9px 12px; font-size:1rem; font-weight:600; color:#c8c8c8;
+    border-bottom:1px solid rgba(255,255,255,.04);
+  }
+  .classement-table tr:last-child td{ border-bottom:none; }
+  .classement-rang{ color:rgba(255,255,255,.35); font-family:'Orbitron',sans-serif; font-size:.85rem; }
+  .classement-table tr:nth-child(1) .classement-rang{ color:var(--gold); }
+  .classement-nom{ color:#e6e6e6; letter-spacing:.5px; }
+  .classement-moi td{ background:rgba(212,168,67,.07); }
+  .classement-vous{
+    font-size:.7rem; color:var(--gold); letter-spacing:1px; text-transform:uppercase; margin-left:4px;
+  }
+  .classement-vide{ text-align:center !important; color:#666 !important; font-style:italic; padding:22px 12px !important; }
+  .classement-note{
+    padding:10px 18px; font-size:.68rem; line-height:1.5; color:#555; letter-spacing:.5px;
+    border-top:1px solid rgba(255,255,255,.05);
+  }
+  @media (max-width:768px){
+    .classement-header{ padding:10px 12px; }
+    .classement-profil{ padding:10px 12px; font-size:.85rem; gap:4px 12px; }
+    .classement-table td,.classement-table th{ padding:7px 8px; }
+  }
 </style>
 </head>
 <body>
@@ -1503,7 +1569,25 @@
       </div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.6.0 BÊTA</span></div>
+    <!-- ══════ CLASSEMENT ══════ -->
+    <div class="classement" id="classement">
+      <div class="classement-header">
+        <span class="classement-titre">&#127942; CLASSEMENT</span>
+        <div class="classement-tris">
+          <button type="button" class="classement-tri active" data-tri="victoires" onclick="trierClassement('victoires')">Victoires</button>
+          <button type="button" class="classement-tri" data-tri="mots" onclick="trierClassement('mots')">Mots</button>
+          <button type="button" class="classement-tri" data-tri="rapidite" onclick="trierClassement('rapidite')">Rapidit&eacute;</button>
+        </div>
+      </div>
+      <div class="classement-profil" id="monProfil"></div>
+      <table class="classement-table">
+        <thead><tr><th>#</th><th>Joueur</th><th>V</th><th>Mots</th><th>Moy.</th></tr></thead>
+        <tbody id="classementCorps"></tbody>
+      </table>
+      <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
+    </div>
+
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.9.1 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1891,7 +1975,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov=>{ov.addEventListener('cl
 // (Inspired by multi.html Doodle Jump technique)
 // ══════════════════════════════════════════
 // Increment ce numero a CHAQUE changement du format des messages reseau.
-const PROTOCOL='mdp-2';
+const PROTOCOL='mdp-3';
 function msgPseudo(){ return {type:'pseudo',id:peer.id,pseudo:myPseudo,proto:PROTOCOL}; }
 function versionIncompatible(recu){
   console.warn('[proto] attendu '+PROTOCOL+', recu '+(recu||'aucun'));
@@ -2120,7 +2204,11 @@ function onData(data,fromConn){
   else if(data.type==='timerStart'){
     if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
     mancheState.audioBed=null;
+    // Si le message arrive pendant l'ecran de sequence, wordsPhase est encore
+    // faux et le chrono ne demarrait JAMAIS pour ce tour : le devineur restait
+    // avec un champ grise et l'adversaire finissait tout seul.
     if(mancheState.wordsPhase && !mancheState.started) startTimer();
+    else if(!mancheState.started) _timerDemande=true;
     refreshDireInputState();
     if(isHost && fromConn){
       for(const p of conns){
@@ -2188,8 +2276,14 @@ function onData(data,fromConn){
     appliquerFaute({ok:false,code:data.code,label:data.label,grave:true}, true);
     if(isHost && fromConn){ for(const p of conns){ if(p.conn!==fromConn) sendTo(p,data); } }
   }
-  else if(data.type==='wordRecap'){
-    showWordRecap(data.words, data.found, data.skipped||[], data.faults||[]);
+  else if(data.type==='etatManche'){
+    appliquerEtatManche(data);
+  }
+  else if(data.type==='finSequence'){
+    if(data.seqIdx!==mancheState.currentSeq) return;
+    if(data.etat) appliquerEtatManche(data.etat);
+    endSequence(true);
+    if(isHost && fromConn){ for(const q of conns){ if(q.conn!==fromConn) sendTo(q,data); } }
   }
 }
 
@@ -2996,6 +3090,10 @@ function startSequence(idx){
   mancheState.wordsPhase=false;
   mancheState.timeLeft=30;
   mancheState.turn='giver'; // giver commence toujours
+  _finSeqFaite=-1;
+  _timerDemande=false;
+  const panRecap=document.getElementById('wordRecapPanel');
+  if(panRecap) panRecap.classList.remove('visible','hiding');
 
   // Broadcast pour les spectateurs (l'hôte uniquement)
   if(isHost && window._spectators && window._spectators.length>0){
@@ -3117,6 +3215,7 @@ function revealWordFrame(){
   }
 
   refreshDireInputState();
+  if(_timerDemande && !mancheState.started){ _timerDemande=false; startTimer(); }
   playGameSound('son/IndiceDisplay.wav',0.7);
   // Jouer bedfinale.wav en boucle en attendant le premier indice
   setTimeout(()=>{
@@ -3157,6 +3256,8 @@ function duoSkipWord(){
   seq.skipsCount=(seq.skipsCount||0)+1;
 
   playGameSound('son/passer.wav',0.7);
+  diffuserEtat();
+  enregistrerMotRate();
 
   // Pastille rouge: la plus à droite non-utilisée
   for(let i=4;i>=0;i--){
@@ -3459,6 +3560,7 @@ function updateWordDisplay(seq,opts){
   opts=opts||{};
   const animate=opts.animate!==false;
   const w=seq.words[seq.currentWordIdx];
+  marquerMotAffiche(seq);
 
   // Seul le giver voit le mot. Le guesser voit des étoiles. Les observateurs voient des étoiles.
   let displayW;
@@ -3602,6 +3704,8 @@ function onCorrectAnswer(fromNetwork){
   }
 
   playGameSound('son/BonneReponse.wav',0.7);
+  diffuserEtat();
+  enregistrerMotTrouve();
 
   // En duo : reset flèches + clues pour le prochain mot
   if(gameMode==='duo'){
@@ -3728,7 +3832,13 @@ function showWordRecap(words, foundArr, skippedArr, faultsArr){
   }, 5000);
 }
 
-function endSequence(){
+function endSequence(fromNetwork){
+  // Huit endroits appellent cette fonction. Sans garde, le chrono a zero et
+  // le 5e mot traite la declenchent deux fois -> double recap, double
+  // startSequence.
+  if(_finSeqFaite===mancheState.currentSeq) return;
+  _finSeqFaite=mancheState.currentSeq;
+
   mancheState.started=false;
   mancheState.wordsPhase=false;
   if(mancheState.timerInterval){
@@ -3756,9 +3866,11 @@ function endSequence(){
     // ── Afficher le recap des mots du tour ──
     showWordRecap(seq.words, seq.found, seq.skipped||[], seq.faults||[]);
 
-    // ── Envoyer le recap aux autres joueurs (synchro réseau) ──
-    if(isHost){
-      sendData({type:'wordRecap', words:seq.words, found:seq.found, skipped:seq.skipped||[], faults:seq.faults||[]});
+    // ── L'hote cloture la sequence pour tout le monde ──
+    // On n'envoie plus le recap tout seul : on envoie la FIN. Chacun affiche
+    // alors son propre recap, a partir de l'etat que l'hote vient de fournir.
+    if(isHost && !fromNetwork && !isSpectator){
+      sendData({type:'finSequence', seqIdx:mancheState.currentSeq, etat:snapshotManche()});
     }
   }
 
@@ -3820,6 +3932,8 @@ function showMancheResultsDuo(){
   if(scoreP0asGuesser>scoreP1asGuesser) winEl.textContent='\u{1F3C6} '+p0+' remporte la partie !';
   else if(scoreP1asGuesser>scoreP0asGuesser) winEl.textContent='\u{1F3C6} '+p1+' remporte la partie !';
   else winEl.textContent='\u{1F91D} \u00c9galit\u00e9 parfaite !';
+
+  enregistrerPartie(scoreP0asGuesser,scoreP1asGuesser,p0,p1);
 
   // Remettre la musique d'accueil
   resumeAccueilMusic();
@@ -5599,6 +5713,104 @@ function arbInclusion(c,w){
   return null;
 }
 
+// ── Familles a racine invisible ──
+// La detection morphologique ne voit que les racines partagees a l'ecrit.
+// Elle rate donc les doublets savants : NEZ/nasal, ROI/royal, EAU/aquatique.
+// On ne liste que les liens qu'un francophone percoit comme evidents : pas
+// d'etymologie obscure (OEUF/ovale reste autorise, c'est un bon indice).
+const FAMILLES_IRREGULIERES = [
+  // corps
+  ['oeil','oculaire','ophtalmique','orbital'],
+  ['nez','nasal','nasillard'],
+  ['bouche','buccal','oral'],
+  ['oreille','auriculaire','auditif'],
+  ['dent','odontologie'],
+  ['main','manuel','manipuler','manuscrit'],
+  ['pied','pedestre','podologue','piedestal'],
+  ['coeur','cardiaque','cordial'],
+  ['sang','sanguin','sanguinaire'],
+  ['os','osseux','ossature','osteopathe'],
+  ['peau','cutane','dermique','epiderme'],
+  ['ventre','abdominal','ventral'],
+  ['dos','dorsal'],
+  ['cheveu','capillaire'],
+  ['doigt','digital','digitale'],
+  ['corps','corporel','corpulent'],
+  // nature
+  ['eau','aquatique','aqueux','hydrique','hydraulique','hydratant'],
+  ['terre','terrestre','territorial','terrien'],
+  ['ciel','celeste'],
+  ['lune','lunaire','lunatique'],
+  ['soleil','solaire','heliotrope'],
+  ['etoile','stellaire','astral'],
+  ['mer','marin','maritime','marine'],
+  ['foret','forestier','sylvestre'],
+  ['arbre','arboricole'],
+  ['fleur','floral','flore'],
+  ['feu','ignition','pyromane'],
+  ['bois','boisement','sylvicole'],
+  // temps
+  ['nuit','nocturne','nuitamment'],
+  ['jour','diurne','quotidien'],
+  ['mois','mensuel'],
+  ['an','annuel','annuaire'],
+  ['semaine','hebdomadaire'],
+  ['temps','temporel','temporaire'],
+  ['hiver','hivernal','hiberner'],
+  ['printemps','printanier'],
+  ['ete','estival'],
+  ['automne','automnal'],
+  // societe et famille
+  ['roi','royal','royaume','regner','regne'],
+  ['reine','royale'],
+  ['pere','paternel','paternite','patriarche'],
+  ['mere','maternel','maternite','matriarche'],
+  ['frere','fraternel','fraternite'],
+  ['soeur','sororal'],
+  ['fils','filial'],
+  ['enfant','infantile'],
+  ['ville','urbain','urbanisme'],
+  ['ecole','scolaire','scolarite'],
+  ['eglise','ecclesiastique'],
+  ['lettre','epistolaire','litteraire'],
+  ['guerre','belliqueux','martial'],
+  ['paix','pacifique','pacifiste'],
+  ['vie','vital','vitalite'],
+  ['mort','mortel','mortuaire','mortalite'],
+  // animaux
+  ['cheval','equestre','equide','hippique','cavalier'],
+  ['chien','canin','cynophile'],
+  ['vache','bovin'],
+  ['porc','porcin'],
+  ['mouton','ovin'],
+  ['oiseau','aviaire','ornithologie'],
+  ['poisson','piscicole','halieutique'],
+  ['abeille','apicole','apiculteur'],
+  // aliments et matieres
+  ['lait','lacte','lactose','laitage'],
+  ['pain','panifier','panetier'],
+  ['vin','vinicole','viticole','vigne','vineux','oenologue'],
+  ['fer','ferreux','ferronnerie','siderurgie'],
+  ['sel','saler','sale','salin','saliere'],
+  ['sucre','sucrer','saccharose'],
+  ['froid','frigorifique','refrigerer'],
+  ['chaud','calorifique','rechauffer'],
+];
+const _famIrr=new Map();
+for(const g of FAMILLES_IRREGULIERES){
+  for(const a of g){
+    const na=normLetters(a);
+    if(!_famIrr.has(na)) _famIrr.set(na,new Set());
+    for(const b of g){ const nb=normLetters(b); if(na!==nb) _famIrr.get(na).add(nb); }
+  }
+}
+function familleIrreguliere(c,w){
+  const s=_famIrr.get(w);
+  if(s && s.has(c)) return true;
+  const s2=_famIrr.get(c);
+  return !!(s2 && s2.has(w));
+}
+
 // Même famille : racines identiques ou radical commun long.
 // On ne teste PAS startsWith sur les racines : "chat"/"chateau" passerait
 // pour de la famille alors que c'est du découpage.
@@ -5606,6 +5818,7 @@ function isSameFamily(clue,secretWord){
   const c=normLetters(clue), w=normLetters(secretWord);
   if(c.length<3 || w.length<3) return false;
   if(c===w) return true;
+  if(familleIrreguliere(c,w)) return true;
   const rc=arbRacine(c), rw=arbRacine(w);
   if(rc.length>=4 && rc===rw) return true;
   const n=arbPrefixe(c,w);
@@ -6154,19 +6367,24 @@ function appliquerFaute(verdict, fromNetwork){
   playGameSound('son/faute.wav',0.8);
   flashArbitrage('FAUTE — '+verdict.label, true);
 
+  const wiFaute=seq.currentWordIdx;
   if(!fromNetwork){
     sendData({ type:'arbitrage', seqIdx:mancheState.currentSeq,
-               wordIdx:seq.currentWordIdx, code:verdict.code, label:verdict.label });
+               wordIdx:wiFaute, code:verdict.code, label:verdict.label });
   }
-  setTimeout(()=>{ perdreMotCourant(verdict.label); }, 900);
+  // On FIGE l'index ici : la sanction s'applique 900 ms plus tard, et d'ici la
+  // currentWordIdx a pu bouger. Sinon on perd le mauvais mot -> desync.
+  setTimeout(()=>{ perdreMotCourant(verdict.label, wiFaute); }, 900);
   return true;
 }
 
 // Le mot est définitivement perdu, dans les DEUX modes.
 // v1 : applyFault ne faisait strictement rien en mode qualif.
-function perdreMotCourant(motif){
+function perdreMotCourant(motif, wordIdx){
   const seq=getCurrentSeq();
   if(!seq) return;
+
+  if(typeof wordIdx==='number' && !seq.found[wordIdx]) seq.currentWordIdx=wordIdx;
 
   if(!seq.faults) seq.faults=Array(seq.words.length).fill(null);
   seq.faults[seq.currentWordIdx]=motif||'faute';
@@ -6198,6 +6416,57 @@ function perdreMotCourant(motif){
   }
   refreshDireInputState();
   updateWordDisplay(seq,{animate:true});
+}
+
+// ══════════════════════════════════════════
+// FILET DE SECURITE : l'hote fait autorite
+// ══════════════════════════════════════════
+// Si les deux clients divergent sur found[] ou currentWordIdx, ils jouent deux
+// mots differents et une bonne reponse peut ne jamais etre validee. L'hote
+// rediffuse donc l'etat des mots apres chaque changement, et le client aligne.
+function snapshotManche(){
+  const seq=getCurrentSeq();
+  if(!seq) return null;
+  return { type:'etatManche', seqIdx:mancheState.currentSeq,
+    found:seq.found.slice(), skipped:(seq.skipped||[]).slice(),
+    currentWordIdx:seq.currentWordIdx, lightsLit:seq.lightsLit,
+    skipsCount:seq.skipsCount||0, lostCount:seq.lostCount||0,
+    points:seq.points, scoreA:mancheState.scoreA, scoreB:mancheState.scoreB };
+}
+// Sequence deja cloturee (idempotence) et demande de chrono arrivee trop tot.
+let _finSeqFaite=-1;
+let _timerDemande=false;
+
+let _etatTimer=null;
+function diffuserEtat(){
+  if(!isHost || !partieEnCours || isSpectator) return;
+  clearTimeout(_etatTimer);
+  _etatTimer=setTimeout(()=>{ const s=snapshotManche(); if(s) sendData(s); },350);
+}
+function appliquerEtatManche(data){
+  if(isHost || data.seqIdx!==mancheState.currentSeq) return;
+  const seq=mancheState.sequences[data.seqIdx];
+  if(!seq) return;
+  const avant=seq.found.join('')+'|'+seq.currentWordIdx;
+  seq.found=data.found.slice();
+  seq.skipped=data.skipped.slice();
+  seq.currentWordIdx=data.currentWordIdx;
+  seq.lightsLit=data.lightsLit;
+  seq.skipsCount=data.skipsCount;
+  seq.lostCount=data.lostCount;
+  seq.points=data.points;
+  mancheState.scoreA=data.scoreA;
+  mancheState.scoreB=data.scoreB;
+  if(avant===seq.found.join('')+'|'+seq.currentWordIdx) return;   // deja aligne
+
+  console.warn('[resync] etat realigne sur l\'hote');
+  const eA=document.getElementById('mancheScoreA'); if(eA) eA.textContent=mancheState.scoreA;
+  const eB=document.getElementById('mancheScoreB'); if(eB) eB.textContent=mancheState.scoreB;
+  for(let i=0;i<5;i++){ const s=document.getElementById('sphere'+i); if(s) s.classList.remove('lit','lost'); }
+  for(let i=0;i<seq.lightsLit;i++){ const s=document.getElementById('sphere'+i); if(s) s.classList.add('lit'); }
+  for(let i=0;i<(seq.skipsCount||0);i++){ const s=document.getElementById('sphere'+(4-i)); if(s) s.classList.add('lost'); }
+  updateWordDisplay(seq,{animate:false});
+  refreshDireInputState();
 }
 
 // ── Back to menu ──
@@ -6914,6 +7183,164 @@ document.getElementById('btnSendGuesser').addEventListener('click',()=>{
 
 
 // ══════════════════════════════════════════
+// PROFIL & CLASSEMENT
+// ══════════════════════════════════════════
+// Aucun serveur derriere ce jeu : les statistiques vivent dans le
+// localStorage du navigateur, et le classement se complete avec les joueurs
+// croises via le tchat. Ce n'est donc pas un classement mondial.
+const CLE_PSEUDO='motdepasse-pseudo';
+const CLE_STATS='motdepasse-stats';
+const CLE_CLASSEMENT='motdepasse-classement';
+
+function statsVides(){
+  return {parties:0,victoires:0,defaites:0,egalites:0,
+          motsTrouves:0,motsRates:0,tempsTotal:0,meilleurTemps:0,maj:0};
+}
+function lireJSON(cle,defaut){
+  try{ const r=localStorage.getItem(cle); return r?JSON.parse(r):defaut; }catch(e){ return defaut; }
+}
+function ecrireJSON(cle,val){ try{ localStorage.setItem(cle,JSON.stringify(val)); }catch(e){} }
+
+let mesStats=Object.assign(statsVides(), lireJSON(CLE_STATS,{}));
+let classement=lireJSON(CLE_CLASSEMENT,{});
+let triClassement='victoires';
+
+function pseudoCourant(){
+  const i=document.getElementById('pseudoInput');
+  return (i && i.value.trim()) || 'Joueur';
+}
+function majEntreeClassement(pseudo,st){
+  const k=String(pseudo||'').trim().toLowerCase();
+  if(!k) return;
+  // Pas de ligne fantome pour un joueur sans aucune partie ni mot.
+  if(!(st.parties|0) && !(st.motsTrouves|0) && !(st.motsRates|0)) return;
+  const ancien=classement[k];
+  if(!ancien || (st.maj||0)>=(ancien.maj||0)) classement[k]=Object.assign({pseudo:pseudo},st);
+  ecrireJSON(CLE_CLASSEMENT,classement);
+}
+function sauverStats(){
+  mesStats.maj=Date.now();
+  ecrireJSON(CLE_STATS,mesStats);
+  majEntreeClassement(pseudoCourant(),mesStats);
+  rendreMonProfil();
+  rendreClassement();
+}
+
+// ── Chronometrage : de l'apparition du mot a la bonne reponse ──
+let _motCle='', _motDepuis=0;
+function marquerMotAffiche(seq){
+  const k=mancheState.currentSeq+':'+seq.currentWordIdx;
+  if(k!==_motCle){ _motCle=k; _motDepuis=Date.now(); }
+}
+function enregistrerMotTrouve(){
+  if(isSpectator || !isLocalGuesser()) return;   // on ne credite que le devineur
+  const dt=_motDepuis?Date.now()-_motDepuis:0;
+  mesStats.motsTrouves++;
+  if(dt>400 && dt<300000){
+    mesStats.tempsTotal+=dt;
+    if(!mesStats.meilleurTemps || dt<mesStats.meilleurTemps) mesStats.meilleurTemps=dt;
+  }
+  sauverStats();
+}
+function enregistrerMotRate(){
+  if(isSpectator || !isLocalGuesser()) return;
+  mesStats.motsRates++;
+  sauverStats();
+}
+function enregistrerPartie(sA,sB,pA,pB){
+  if(isSpectator) return;
+  const moi   = pseudoMatch(myPseudo,pA)?sA:(pseudoMatch(myPseudo,pB)?sB:null);
+  const autre = pseudoMatch(myPseudo,pA)?sB:(pseudoMatch(myPseudo,pB)?sA:null);
+  mesStats.parties++;
+  if(moi!==null){
+    if(moi>autre) mesStats.victoires++;
+    else if(moi<autre) mesStats.defaites++;
+    else mesStats.egalites++;
+  }
+  sauverStats();
+  diffuserStats();
+}
+
+// ── Rendu ──
+function tempsMoyen(s){ return (s.motsTrouves|0) ? s.tempsTotal/s.motsTrouves : 0; }
+function fmtSec(ms){ return ms ? (ms/1000).toFixed(1).replace('.',',')+' s' : '\u2014'; }
+
+function rendreMonProfil(){
+  const el=document.getElementById('monProfil');
+  if(!el) return;
+  const s=mesStats, total=(s.motsTrouves|0)+(s.motsRates|0);
+  const taux=total?Math.round(100*s.motsTrouves/total):0;
+  el.innerHTML=
+    '<span><b>'+(s.parties|0)+'</b> parties</span>'+
+    '<span><b>'+(s.victoires|0)+'</b> victoires</span>'+
+    '<span><b>'+(s.motsTrouves|0)+'</b> mots</span>'+
+    '<span><b>'+taux+'%</b> r\u00e9ussite</span>'+
+    '<span>moyenne <b>'+fmtSec(tempsMoyen(s))+'</b></span>'+
+    '<span>record <b>'+fmtSec(s.meilleurTemps)+'</b></span>';
+}
+function rendreClassement(){
+  const corps=document.getElementById('classementCorps');
+  if(!corps) return;
+  const moiK=String(pseudoCourant()||'').trim().toLowerCase();
+  const lignes=Object.keys(classement)
+    .map(k=>Object.assign({cle:k},classement[k]))
+    .filter(s=>(s.parties|0)>0 || (s.motsTrouves|0)>0);
+  lignes.sort((a,b)=>{
+    if(triClassement==='rapidite'){
+      const ta=tempsMoyen(a)||1e12, tb=tempsMoyen(b)||1e12;
+      if(ta!==tb) return ta-tb;
+      return (b.motsTrouves|0)-(a.motsTrouves|0);
+    }
+    if(triClassement==='mots'){
+      if((b.motsTrouves|0)!==(a.motsTrouves|0)) return (b.motsTrouves|0)-(a.motsTrouves|0);
+      return (b.victoires|0)-(a.victoires|0);
+    }
+    if((b.victoires|0)!==(a.victoires|0)) return (b.victoires|0)-(a.victoires|0);
+    if((b.motsTrouves|0)!==(a.motsTrouves|0)) return (b.motsTrouves|0)-(a.motsTrouves|0);
+    return (tempsMoyen(a)||1e12)-(tempsMoyen(b)||1e12);
+  });
+  if(!lignes.length){
+    corps.innerHTML='<tr><td colspan="5" class="classement-vide">Aucune partie enregistr\u00e9e \u2014 lance un duel !</td></tr>';
+    return;
+  }
+  corps.innerHTML=lignes.slice(0,12).map((s,i)=>{
+    const moi=(s.cle===moiK);
+    return '<tr'+(moi?' class="classement-moi"':'')+'>'+
+      '<td class="classement-rang">'+(i+1)+'</td>'+
+      '<td class="classement-nom">'+escapeHtml(s.pseudo||s.cle)+(moi?' <span class="classement-vous">vous</span>':'')+'</td>'+
+      '<td>'+(s.victoires|0)+'</td>'+
+      '<td>'+(s.motsTrouves|0)+'</td>'+
+      '<td>'+fmtSec(tempsMoyen(s))+'</td></tr>';
+  }).join('');
+}
+function trierClassement(mode){
+  triClassement=mode;
+  const bs=document.querySelectorAll('.classement-tri');
+  for(let i=0;i<bs.length;i++) bs[i].classList.toggle('active', bs[i].dataset.tri===mode);
+  rendreClassement();
+}
+function diffuserStats(){
+  try{ chatBroadcast({type:'chatStats',pseudo:pseudoCourant(),stats:mesStats}); }catch(e){}
+}
+
+// ── Memoire du pseudo ──
+function initProfil(){
+  const inp=document.getElementById('pseudoInput');
+  if(inp){
+    let enregistre=null;
+    try{ enregistre=localStorage.getItem(CLE_PSEUDO); }catch(e){}
+    if(enregistre && !inp.value) inp.value=enregistre;
+    inp.addEventListener('input',()=>{
+      try{ localStorage.setItem(CLE_PSEUDO, inp.value.trim()); }catch(e){}
+      rendreClassement();
+    });
+  }
+  majEntreeClassement(pseudoCourant(),mesStats);
+  rendreMonProfil();
+  rendreClassement();
+}
+
+// ══════════════════════════════════════════
 // SHOUTBOX — Tchat global PeerJS
 // ══════════════════════════════════════════
 const CHAT_PREFIX='motdepasse-chat-';
@@ -6994,6 +7421,7 @@ function chatOnData(data,fromConn){
     if(chatIsHost){
       const historyToSend=chatMessages.filter(m=>!m.system).slice(-30);
       try{fromConn.send({type:'chatHistory',messages:historyToSend})}catch(e){}
+      try{fromConn.send({type:'chatStats',pseudo:pseudoCourant(),stats:mesStats})}catch(e){}
       for(const p of chatConns){ if(p.conn!==fromConn&&p.conn&&p.conn.open) try{p.conn.send(data)}catch(e){} }
       chatBroadcast({type:'chatOnline',count:chatConns.filter(c=>c.conn&&c.conn.open).length+1});
     }
@@ -7013,6 +7441,10 @@ function chatOnData(data,fromConn){
         chatSaveHistory();
       }
     }
+  }
+  else if(data.type==='chatStats'){
+    if(data.pseudo && data.stats){ majEntreeClassement(data.pseudo,data.stats); rendreClassement(); }
+    if(chatIsHost){ for(const q of chatConns){ if(q.conn!==fromConn&&q.conn&&q.conn.open) try{q.conn.send(data)}catch(e){} } }
   }
   else if(data.type==='chatOnline'){
     chatOnlineCount=data.count||1;
@@ -7053,6 +7485,7 @@ function chatTryJoin(startIdx){
         setTimeout(()=>{ if(!chatIsHost&&chatConns.length===0) chatBecomeHost(0); },2000);
       });
       c.send({type:'chatJoin',pseudo:chatGetPseudo()});
+      setTimeout(diffuserStats,900);
       chatUpdateOnline();
     });
     c.on('error',()=>{});
@@ -7095,6 +7528,7 @@ document.getElementById('shoutboxSend').addEventListener('click',chatSendMessage
 document.getElementById('shoutboxInput').addEventListener('keydown',e=>{
   if(e.key==='Enter'){ e.preventDefault(); e.stopPropagation(); chatSendMessage(); }
 });
+initProfil();
 setTimeout(initShoutbox,500);
 
 // Activer le scroll sur l'accueil au chargement
