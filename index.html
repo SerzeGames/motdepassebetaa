@@ -1501,6 +1501,14 @@
     .classement-profil{ padding:10px 12px; font-size:.85rem; gap:4px 12px; }
     .classement-table td,.classement-table th{ padding:7px 8px; }
   }
+
+  .spectator-quit{
+    pointer-events:auto; margin-left:14px; padding:3px 14px; border-radius:6px;
+    background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.3); color:#fff;
+    font-family:'Rajdhani',sans-serif; font-size:.8rem; font-weight:700;
+    letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .25s;
+  }
+  .spectator-quit:hover{ background:rgba(196,30,30,.5); border-color:#fff; }
 </style>
 </head>
 <body>
@@ -1587,7 +1595,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.9.2 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.10.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -1896,7 +1904,7 @@
 </div>
 
 <!-- Bannière spectateur -->
-<div class="spectator-banner hidden" id="spectatorBanner">👁 MODE SPECTATEUR — Vous observez la partie</div>
+<div class="spectator-banner hidden" id="spectatorBanner">👁 MODE SPECTATEUR — Vous observez la partie<button type="button" class="spectator-quit" onclick="leaveSpectator()">Quitter</button></div>
 
 <audio id="bgMusic" loop preload="auto"><source src="son/accueil.mp3" type="audio/mpeg"></audio>
 
@@ -2132,6 +2140,9 @@ function broadcastRoster(){
 
 // ── Handle data ──
 function onData(data,fromConn){
+  // Les spectateurs ne sont connectes qu a l hote. Sans ce relais, tout ce que
+  // fait l AUTRE joueur (indices, reponses, passes) ne leur parvient jamais.
+  if(isHost && fromConn && data && data.type) relayerAuxSpectateurs(data);
   const rp=conns.find(p=>p.conn===fromConn);
   if(data.type==='pseudo'){
     if(data.proto!==PROTOCOL){ versionIncompatible(data.proto); return; }
@@ -2455,7 +2466,13 @@ function tryMatchmaking(){
             });
           }catch(e){}
 
-          // Ajouter à la liste des spectateurs (pas dans conns)
+          // Le scanner de la liste des parties n'est pas un spectateur : il
+          // repart des qu'il a sa reponse. On ne l'inscrit pas, sinon l'hote
+          // lui envoie le flux de la partie pour rien.
+          if(firstData.pseudo==='__scan__'){
+            setTimeout(()=>{try{c.close()}catch(e){}},400);
+            return;
+          }
           if(!window._spectators) window._spectators=[];
           const spec={conn:c, pseudo:firstData.pseudo||'Spectateur'};
           window._spectators.push(spec);
@@ -6599,6 +6616,8 @@ async function scanSpectateRooms(){
         });
         c.on('data',data=>{
           if(data.type==='spectatePong'){
+            // Une room peut repondre deux fois : on ne la liste qu une seule fois.
+            if(_spectateAvailableGames.some(g=>g.roomId===roomId)) return;
             _spectateAvailableGames.push({
               roomId,
               hostPseudo:data.hostPseudo,
@@ -6695,105 +6714,13 @@ function handleSpectatorData(data){
 
   // Réponse initiale avec l'état complet de la partie
   if(data.type==='spectatePong'){
-    gameMode=data.gameMode||'duo';
-    teamA=data.teamA||[];
-    teamB=data.teamB||[];
-
-    // Charger l'état complet
-    if(data.mancheState){
-      mancheState.currentSeq=data.mancheState.currentSeq||0;
-      mancheState.started=false; // on remet à false pour pouvoir relancer le timer côté spec
-      mancheState.wordsPhase=data.mancheState.wordsPhase||false;
-      mancheState.timeLeft=data.mancheState.timeLeft||(gameMode==='duo'?90:30);
-      mancheState.turn=data.mancheState.turn||'giver';
-      mancheState.cluesGiven=data.mancheState.cluesGiven||0;
-      mancheState.scoreA=data.mancheState.scoreA||0;
-      mancheState.scoreB=data.mancheState.scoreB||0;
-      mancheState.sequences=data.mancheState.sequences||[];
-    }
-
-    // Afficher la bannière spectateur
     document.getElementById('spectatorBanner').classList.remove('hidden');
+    appliquerSnapshotSpectateur(data, true);
+    return;
+  }
 
-    // Si la partie est en cours, reconstruire l'écran
-    if(mancheState.wordsPhase && mancheState.sequences.length>0){
-      // Afficher l'écran manche
-      showScreen('screenManche');
-
-      // Mettre à jour le HUD (TOUR X/Y, scores, pseudos)
-      updateMancheHUD();
-
-      // Afficher les scores actuels
-      const sA=document.getElementById('mancheScoreA');
-      const sB=document.getElementById('mancheScoreB');
-      if(sA) sA.textContent=mancheState.scoreA||0;
-      if(sB) sB.textContent=mancheState.scoreB||0;
-
-      // Activer la zone de jeu
-      const seq=getCurrentSeq();
-      if(seq){
-        // Afficher le mot (masqué en étoiles côté spectateur)
-        document.getElementById('wordFrame').classList.add('visible');
-        updateWordDisplay(seq, {animate:false});
-
-        // Restaurer les pastilles (vertes/rouges)
-        if(data.spheresState){
-          for(let i=0;i<data.spheresState.length;i++){
-            const s=document.getElementById('sphere'+i);
-            if(!s) continue;
-            s.classList.remove('lit','lost');
-            if(data.spheresState[i].lit) s.classList.add('lit');
-            if(data.spheresState[i].lost) s.classList.add('lost');
-          }
-        }
-
-        // Restaurer les flèches (consommées par les indices déjà donnés)
-        if(gameMode==='duo'){
-          document.getElementById('arrowsWrap').classList.add('active');
-          resetArrows();
-          // Marquer comme consommées les flèches déjà utilisées
-          for(let i=0;i<mancheState.cluesGiven;i++){
-            consumeArrow(i);
-          }
-        }
-
-        // Restaurer les bulles
-        if(data.bubbleGiverText){
-          applyDireBubble('giver', data.bubbleGiverText, false);
-        }
-        if(data.bubbleGuesserText){
-          applyDireBubble('guesser', data.bubbleGuesserText, false);
-        }
-
-        // Refresh des podiums (pseudos)
-        refreshPlayerPodium();
-
-        // Masquer les inputs (refreshDireInputState verra isObserver=true)
-        refreshDireInputState();
-
-        // Démarrer le timer à la valeur actuelle si le chrono tournait
-        if(data.mancheState.started){
-          // Afficher la valeur actuelle du timer
-          const td=document.getElementById('timerDisplay');
-          if(td) td.textContent=formatTimer(mancheState.timeLeft);
-          startTimerFromCurrent();
-        }else{
-          // Pas encore démarré → afficher le max et lancer bedfinale en attente
-          const total=gameMode==='duo'?90:30;
-          const td=document.getElementById('timerDisplay');
-          if(td) td.textContent=formatTimer(total);
-          // bedfinale en attente du 1er indice
-          if(!mancheState.audioBed){
-            mancheState.audioBed=playGameSound('son/bedfinale.wav',0.35);
-            if(mancheState.audioBed) mancheState.audioBed.loop=true;
-          }
-        }
-      }
-    }else{
-      // Partie pas encore commencée → afficher écran d'attente
-      showScreen('screenLobby');
-      document.getElementById('lobbyStatus').textContent='👁 Spectateur — En attente du démarrage...';
-    }
+  if(data.type==='spectateSnapshot'){
+    appliquerSnapshotSpectateur(data, false);
     return;
   }
 
@@ -6833,19 +6760,32 @@ function handleSpectatorData(data){
 function updateMancheHUD(){
   const seq=getCurrentSeq();
   if(!seq) return;
-  // TOUR X/Y
+  // Ces identifiants sont ceux du HUD de MANCHE. L'ancienne version visait
+  // mancheText/scoreA, qui appartiennent a l'ecran des interdits : le HUD du
+  // spectateur n'etait donc jamais rempli.
   const total=gameMode==='duo'?2:4;
-  const mt=document.getElementById('mancheText');
-  if(mt) mt.textContent='TOUR '+(mancheState.currentSeq+1)+'/'+total;
-  // Scores
-  const sA=document.getElementById('scoreA');
-  const sB=document.getElementById('scoreB');
+  const info=document.getElementById('seqInfo');
+  if(info) info.textContent=(gameMode==='duo'?'Tour ':'S\u00e9quence ')+(mancheState.currentSeq+1)+'/'+total;
+
+  const roles=document.getElementById('seqRoles');
+  if(roles && seq.giver && seq.guesser){
+    roles.innerHTML='<span class="role-giver">'+escapeHtml(seq.giver)+'</span> fait deviner \u00e0 '+
+                    '<span class="role-guesser">'+escapeHtml(seq.guesser)+'</span>';
+  }
+
+  const sA=document.getElementById('mancheScoreA');
+  const sB=document.getElementById('mancheScoreB');
   if(sA) sA.textContent=mancheState.scoreA||0;
   if(sB) sB.textContent=mancheState.scoreB||0;
-  // Sous-titre (qui fait deviner à qui)
-  const sub=document.getElementById('mancheSubtitle');
-  if(sub && seq.giver && seq.guesser){
-    sub.innerHTML='<strong>'+escapeHtml(seq.giver)+'</strong> fait deviner à <strong>'+escapeHtml(seq.guesser)+'</strong>';
+
+  const hA=document.querySelector('.manche-hud .hud-team.team-a');
+  const hB=document.querySelector('.manche-hud .hud-team.team-b');
+  if(gameMode==='duo'){
+    if(hA) hA.textContent=teamA[0]||'Joueur 1';
+    if(hB) hB.textContent=teamB[0]||'Joueur 2';
+  }else{
+    if(hA) hA.textContent='EQUIPE A';
+    if(hB) hB.textContent='EQUIPE B';
   }
 }
 
@@ -7358,6 +7298,154 @@ function initProfil(){
   majEntreeClassement(pseudoCourant(),mesStats);
   rendreMonProfil();
   rendreClassement();
+}
+
+// ══════════════════════════════════════════
+// SPECTATEUR — synchronisation robuste
+// ══════════════════════════════════════════
+// L'ancienne version reconstruisait l'ecran a la main au moment de rejoindre,
+// puis dependait uniquement des messages suivants : le moindre message rate
+// laissait le spectateur bloque sur un ecran faux, sans jamais se rattraper.
+// L'hote envoie desormais un instantane complet toutes les 2,5 s.
+
+function snapshotSpectateur(type){
+  const spheres=[];
+  for(let i=0;i<5;i++){
+    const s=document.getElementById('sphere'+i);
+    spheres.push(s?{lit:s.classList.contains('lit'),lost:s.classList.contains('lost')}
+                  :{lit:false,lost:false});
+  }
+  const act=document.querySelector('.screen.active');
+  const bg=document.getElementById('bubbleGiver');
+  const bu=document.getElementById('bubbleGuesser');
+  return {
+    type: type||'spectateSnapshot',
+    hostPseudo: myPseudo,
+    gameMode: gameMode,
+    teamA: teamA, teamB: teamB,
+    players: [{pseudo:myPseudo}].concat(conns.map(p=>({pseudo:p.pseudo}))),
+    currentScreen: act?act.id:'screenManche',
+    spheresState: spheres,
+    bubbleGiverText: bg?bg.textContent:'',
+    bubbleGuesserText: bu?bu.textContent:'',
+    mancheState: {
+      currentSeq: mancheState.currentSeq,
+      started: mancheState.started,
+      wordsPhase: mancheState.wordsPhase,
+      timeLeft: mancheState.timeLeft,
+      turn: mancheState.turn,
+      cluesGiven: mancheState.cluesGiven,
+      scoreA: mancheState.scoreA,
+      scoreB: mancheState.scoreB,
+      // les mots partent toujours masques : un spectateur ne doit pas pouvoir
+      // souffler la reponse dans le tchat.
+      sequences: (mancheState.sequences||[]).map(s=>Object.assign({},s,{
+        words:(s.words||[]).map(w=>'*'.repeat(w.length))
+      }))
+    }
+  };
+}
+
+function relayerAuxSpectateurs(data){
+  const specs=spectateursActifs();
+  for(const s of specs){ try{ s.conn.send(data); }catch(e){} }
+}
+function spectateursActifs(){
+  return (window._spectators||[]).filter(s=>s && s.pseudo!=='__scan__' && s.conn && s.conn.open);
+}
+function battementSpectateurs(){
+  if(isSpectator || !isHost) return;
+  const specs=spectateursActifs();
+  if(!specs.length) return;
+  const snap=snapshotSpectateur('spectateSnapshot');
+  for(const s of specs){ try{ s.conn.send(snap); }catch(e){} }
+}
+setInterval(battementSpectateurs, 2500);
+
+let _specFleches=-1;
+function appliquerSnapshotSpectateur(data, complet){
+  if(!isSpectator || !data || !data.mancheState) return;
+  const m=data.mancheState;
+
+  gameMode=data.gameMode||gameMode;
+  if(data.teamA && data.teamA.length) teamA=data.teamA;
+  if(data.teamB && data.teamB.length) teamB=data.teamB;
+
+  mancheState.currentSeq=m.currentSeq||0;
+  mancheState.wordsPhase=!!m.wordsPhase;
+  mancheState.turn=m.turn||'giver';
+  mancheState.cluesGiven=m.cluesGiven||0;
+  mancheState.scoreA=m.scoreA||0;
+  mancheState.scoreB=m.scoreB||0;
+  if(Array.isArray(m.sequences) && m.sequences.length) mancheState.sequences=m.sequences;
+
+  // Timer : on ne corrige que si la derive depasse une seconde.
+  if(typeof m.timeLeft==='number' && Math.abs(mancheState.timeLeft-m.timeLeft)>1){
+    mancheState.timeLeft=m.timeLeft;
+    const td=document.getElementById('timerDisplay');
+    if(td) td.textContent=formatTimer(m.timeLeft);
+  }
+
+  const seq=getCurrentSeq();
+  if(!seq || !mancheState.wordsPhase){
+    if(!mancheState.wordsPhase && complet){
+      showScreen('screenLobby');
+      const st=document.getElementById('lobbyStatus');
+      if(st){ st.textContent='\u{1F441} Spectateur \u2014 en attente du d\u00e9marrage\u2026'; st.style.color='#6a7aaa'; }
+    }
+    return;
+  }
+
+  const actuel=document.querySelector('.screen.active');
+  if(!actuel || actuel.id!=='screenManche') showScreen('screenManche');
+
+  updateMancheHUD();
+
+  const frame=document.getElementById('wordFrame');
+  if(frame) frame.classList.add('visible');
+  updateWordDisplay(seq,{animate:false});
+
+  if(Array.isArray(data.spheresState)){
+    for(let i=0;i<data.spheresState.length;i++){
+      const s=document.getElementById('sphere'+i);
+      if(!s) continue;
+      s.classList.toggle('lit', !!data.spheresState[i].lit);
+      s.classList.toggle('lost', !!data.spheresState[i].lost);
+    }
+  }
+
+  // Fleches : on ne les rejoue que si le compte a change, sinon le battement
+  // ferait sonner l'effet toutes les 2,5 secondes.
+  if(gameMode==='duo'){
+    const aw=document.getElementById('arrowsWrap');
+    if(aw) aw.classList.add('active');
+    if(_specFleches!==mancheState.cluesGiven){
+      _specFleches=mancheState.cluesGiven;
+      resetArrows();
+      for(let i=0;i<mancheState.cluesGiven && i<3;i++){
+        const l=document.getElementById(['arrowL2','arrowL1','arrowL0'][i]);
+        const r=document.getElementById(['arrowR2','arrowR1','arrowR0'][i]);
+        if(l) l.classList.add('used');
+        if(r) r.classList.add('used');
+      }
+    }
+  }
+
+  // Les bulles ne sont reprises qu'a l'arrivee : ensuite les messages live
+  // font foi, sinon le battement effacerait ce qui vient d'etre dit.
+  if(complet){
+    if(data.bubbleGiverText) applyDireBubble('giver', data.bubbleGiverText, false);
+    if(data.bubbleGuesserText) applyDireBubble('guesser', data.bubbleGuesserText, false);
+  }
+
+  refreshPlayerPodium();
+  refreshDireInputState();
+
+  if(m.started && !mancheState.timerInterval){
+    const td=document.getElementById('timerDisplay');
+    if(td) td.textContent=formatTimer(mancheState.timeLeft);
+    startTimerFromCurrent();
+  }
 }
 
 // ══════════════════════════════════════════
