@@ -1587,7 +1587,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.9.1 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.9.2 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -3092,6 +3092,8 @@ function startSequence(idx){
   mancheState.turn='giver'; // giver commence toujours
   _finSeqFaite=-1;
   _timerDemande=false;
+  _sanctionEnCours=false;
+  _dernierPasse=0;
   const panRecap=document.getElementById('wordRecapPanel');
   if(panRecap) panRecap.classList.remove('visible','hiding');
 
@@ -3250,7 +3252,11 @@ function consumeArrow(clueNum){
 
 function duoSkipWord(){
   const seq=mancheState.sequences[mancheState.currentSeq];
+  if(!seq) return;
   const wi=seq.currentWordIdx;
+  // Deja traite : ne pas le recompter, sinon skipsCount gonfle et la manche
+  // se termine en marquant perdus des mots qui n'ont jamais ete joues.
+  if(seq.found[wi]) return;
   if(seq.skipped) seq.skipped[wi]=true;
   seq.found[wi]=true;
   seq.skipsCount=(seq.skipsCount||0)+1;
@@ -3743,6 +3749,15 @@ function onCorrectAnswer(fromNetwork){
 function onPassWord(fromNetwork){
   if(gameMode!=='duo' && !mancheState.started && !fromNetwork) return;
   if(!fromNetwork && !isLocalGiver()) return;
+  if(!fromNetwork){
+    // Une faute est en train de retirer le mot : ne pas en passer un second.
+    if(_sanctionEnCours) return;
+    // Deux clics rapides sautaient DEUX mots (le second sur le mot suivant,
+    // deja affiche). On verrouille le temps de l'animation.
+    const _t=Date.now();
+    if(_t-_dernierPasse<800) return;
+    _dernierPasse=_t;
+  }
   const seq=mancheState.sequences[mancheState.currentSeq];
 
   // Démarrer le chrono si c'est la première action
@@ -6368,6 +6383,7 @@ function appliquerFaute(verdict, fromNetwork){
   flashArbitrage('FAUTE — '+verdict.label, true);
 
   const wiFaute=seq.currentWordIdx;
+  _sanctionEnCours=true;   // pendant ces 900 ms, PASSER doit rester inerte
   if(!fromNetwork){
     sendData({ type:'arbitrage', seqIdx:mancheState.currentSeq,
                wordIdx:wiFaute, code:verdict.code, label:verdict.label });
@@ -6381,6 +6397,7 @@ function appliquerFaute(verdict, fromNetwork){
 // Le mot est définitivement perdu, dans les DEUX modes.
 // v1 : applyFault ne faisait strictement rien en mode qualif.
 function perdreMotCourant(motif, wordIdx){
+  _sanctionEnCours=false;
   const seq=getCurrentSeq();
   if(!seq) return;
 
@@ -6436,6 +6453,9 @@ function snapshotManche(){
 // Sequence deja cloturee (idempotence) et demande de chrono arrivee trop tot.
 let _finSeqFaite=-1;
 let _timerDemande=false;
+// Sanction en vol (les 900 ms d'une faute) et anti double-clic sur PASSER.
+let _sanctionEnCours=false;
+let _dernierPasse=0;
 
 let _etatTimer=null;
 function diffuserEtat(){
