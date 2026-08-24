@@ -1509,6 +1509,12 @@
     letter-spacing:2px; text-transform:uppercase; cursor:pointer; transition:all .25s;
   }
   .spectator-quit:hover{ background:rgba(196,30,30,.5); border-color:#fff; }
+
+  .spectate-note{
+    margin-top:10px; padding:8px 4px; text-align:center;
+    font-family:'Rajdhani',sans-serif; font-size:.78rem; letter-spacing:1px;
+    color:#5c5c5c; border-top:1px solid rgba(255,255,255,.05);
+  }
 </style>
 </head>
 <body>
@@ -1595,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.10.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.10.1 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -2438,32 +2444,9 @@ function tryMatchmaking(){
           }
 
           try{
-            c.send({
-              type:'spectatePong',
-              hostPseudo:myPseudo,
-              players:players,
-              gameMode:gameMode,
-              teamA:teamA, teamB:teamB,
-              currentScreen:document.querySelector('.screen.active')?.id||'screenManche',
-              bubbleGiverText,
-              bubbleGuesserText,
-              spheresState,
-              mancheState:{
-                currentSeq:mancheState.currentSeq,
-                started:mancheState.started,
-                wordsPhase:mancheState.wordsPhase,
-                timeLeft:mancheState.timeLeft, // TIMER ACTUEL (pas la valeur max)
-                turn:mancheState.turn,
-                cluesGiven:mancheState.cluesGiven,
-                scoreA:mancheState.scoreA,
-                scoreB:mancheState.scoreB,
-                sequences:mancheState.sequences ? mancheState.sequences.map(s=>({
-                  ...s,
-                  // Masquer les mots pour le spectateur
-                  words:s.words ? s.words.map(w=>'*'.repeat(w.length)) : []
-                })) : []
-              }
-            });
+            // Meme instantane que le battement periodique : le scanner et le
+            // spectateur voient donc exactement les memes champs.
+            c.send(snapshotSpectateur('spectatePong'));
           }catch(e){}
 
           // Le scanner de la liste des parties n'est pas un spectateur : il
@@ -6618,13 +6601,17 @@ async function scanSpectateRooms(){
           if(data.type==='spectatePong'){
             // Une room peut repondre deux fois : on ne la liste qu une seule fois.
             if(_spectateAvailableGames.some(g=>g.roomId===roomId)) return;
+            const ms=data.mancheState||{};
             _spectateAvailableGames.push({
               roomId,
               hostPseudo:data.hostPseudo,
               players:data.players||[],
               gameMode:data.gameMode||'duo',
-              started:data.mancheState?data.mancheState.started:false,
-              wordsPhase:data.mancheState?data.mancheState.wordsPhase:false
+              // partieEnCours reste vrai entre les tours, contrairement a started.
+              enJeu: (data.partieEnCours===true) || !!ms.wordsPhase || !!ms.started,
+              currentSeq: ms.currentSeq||0,
+              scoreA: ms.scoreA||0,
+              scoreB: ms.scoreB||0
             });
             renderSpectateList();
             try{c.close()}catch(e){}
@@ -6642,24 +6629,38 @@ async function scanSpectateRooms(){
 
 function renderSpectateList(){
   const list=document.getElementById('spectateList');
-  if(_spectateAvailableGames.length===0){
-    list.innerHTML='<div class="spectate-empty">Aucune partie en cours.<br>Lancez une partie et revenez ici !</div>';
+  // On ne liste que les parties REELLEMENT en cours. Un salon qui attend un
+  // adversaire n'a rien a observer. Et on ne se fie plus a mancheState.started,
+  // qui retombe a faux entre deux tours : une vraie partie s'affichait alors
+  // "en attente".
+  const enJeu=_spectateAvailableGames.filter(g=>g.enJeu);
+  const attente=_spectateAvailableGames.length-enJeu.length;
+  const note=attente
+    ? '<div class="spectate-note">'+attente+' salon'+(attente>1?'s':'')+' en attente d\u2019un adversaire</div>'
+    : '';
+
+  if(!enJeu.length){
+    list.innerHTML='<div class="spectate-empty">Aucune partie en cours.<br>Reviens quand un duel aura commenc\u00e9 !</div>'+note;
     return;
   }
-  list.innerHTML=_spectateAvailableGames.map(g=>{
-    const players=g.players.map(p=>p.pseudo||'?').filter(p=>p&&p!=='__scan__');
-    const playerNames=players.length>0?players.join(' vs '):'Joueurs inconnus';
-    const statusClass=g.started?'in-game':'waiting';
-    const statusText=g.started?'⏱ En jeu':'⏳ En attente';
-    const icon=g.gameMode==='duo'?'👥':'🎮';
-    return `<div class="spectate-game" onclick="joinAsSpectator('${g.roomId}')">
-      <div class="spectate-game-icon">${icon}</div>
-      <div class="spectate-game-info">
-        <div class="spectate-game-players">${playerNames}</div>
-        <div class="spectate-game-status ${statusClass}">${statusText} — ${g.gameMode==='duo'?'Duel':'Qualif'}</div>
-      </div>
-    </div>`;
-  }).join('');
+
+  list.innerHTML=enJeu.map(g=>{
+    const noms=(g.players||[]).map(p=>p.pseudo||'?').filter(p=>p&&p!=='__scan__');
+    const titre=noms.length?noms.join(' vs '):'Joueurs inconnus';
+    const total=g.gameMode==='duo'?2:4;
+    const tour=(g.currentSeq||0)+1;
+    const score=(g.scoreA||0)+' \u2013 '+(g.scoreB||0);
+    const icon=g.gameMode==='duo'?'\u{1F465}':'\u{1F3AE}';
+    return '<div class="spectate-game" onclick="joinAsSpectator(\''+g.roomId+'\')">'+
+      '<div class="spectate-game-icon">'+icon+'</div>'+
+      '<div class="spectate-game-info">'+
+        '<div class="spectate-game-players">'+escapeHtml(titre)+'</div>'+
+        '<div class="spectate-game-status in-game">\u23F1 '+
+          (g.gameMode==='duo'?'Duel':'Qualif')+' \u2014 tour '+tour+'/'+total+' \u2014 '+score+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('')+note;
 }
 
 function joinAsSpectator(roomId){
@@ -7322,6 +7323,7 @@ function snapshotSpectateur(type){
     type: type||'spectateSnapshot',
     hostPseudo: myPseudo,
     gameMode: gameMode,
+    partieEnCours: partieEnCours,
     teamA: teamA, teamB: teamB,
     players: [{pseudo:myPseudo}].concat(conns.map(p=>({pseudo:p.pseudo}))),
     currentScreen: act?act.id:'screenManche',
