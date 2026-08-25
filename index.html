@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.11.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.11.1 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -5289,7 +5289,6 @@ const SYNONYMES_STRICTS = [
   ['voyage','periple','excursion','equipee','peregrination'],
 
   // ── École et savoir ──
-  ['classe','salle','cours','division'],
   ['regle','loi','norme','principe','precepte','reglement'],
   ['recreation','pause','detente','recre'],
   ['histoire','recit','conte','fable','anecdote','relation'],
@@ -5471,9 +5470,7 @@ const SYNONYMES_STRICTS = [
   ['fumee','vapeur','buee'],
   ['braise','tison','charbon'],
   ['eclair','foudre','fulguration'],
-  ['verglas','givre'],
   ['canicule','fournaise','touffeur'],
-  ['glacon','glace'],
   ['grele','grelon'],
   ['givre','gel','frimas'],
   ['planete','astre','monde'],
@@ -5524,7 +5521,6 @@ const SYNONYMES_STRICTS = [
   ['escrime','fleuret','sabre'],
   ['hockey','crosse'],
   ['volley','volleyball'],
-  ['patinoire','glace'],
   ['tremplin','plongeoir'],
   ['trophee','coupe','recompense'],
   ['statue','sculpture','effigie','buste'],
@@ -5898,6 +5894,32 @@ for(const [eng,fr] of Object.entries(ENGLISH_TRANSLATIONS)){
   _fr2en.get(nf).add(ne);
 }
 
+// ── Paires retirees de la table ──
+// Un synonyme doit etre INTERCHANGEABLE. Ces paires ne l'etaient pas :
+//   - hyperonymes  : "salle" pour CLASSE, "etoile" pour SOLEIL
+//   - homonymes    : "canard" (le journal) alors que CANARD est un animal du
+//                    jeu, "caisse" (la voiture) contre la boite, etc.
+//   - associations : "patinoire" pour GLACE
+const SYNONYMES_EXCLUS = [
+  ['ballon','bulle'],['ballon','sphere'],['pelote','bulle'],['pelote','sphere'],['sphere','bulle'],
+  ['musique','chanson'],['musique','refrain'],
+  ['stade','enceinte'],['arene','enceinte'],['enceinte','terrain'],
+  ['rang','queue'],['duo','duel'],
+  ['ventre','buffet'],['estomac','buffet'],['tete','citron'],['jambe','flute'],
+  ['ecole','boite'],['voiture','caisse'],['cafe','jus'],['biere','mousse'],
+  ['marin','mousse'],['navigateur','mousse'],['arbre','essence'],
+  ['devoir','tache'],['affiche','placard'],
+  ['journal','canard'],['quotidien','canard'],['canard','feuille'],
+  ['journal','feuille'],['quotidien','feuille'],
+  ['peinture','croute'],['tableau','croute'],['toile','croute'],
+  ['dispute','prise'],['querelle','prise'],['conquete','prise'],
+  ['fauteuil','crapaud'],['chaise','escabeau'],['tabouret','escabeau'],
+  ['soleil','etoile'],['lune','satellite'],
+  ['cartable','serviette'],['bureau','secretaire'],['badge','macaron'],
+  ['grimoire','livre'],['tambour','caisse'],['tambourin','caisse'],
+  ['agenda','calendrier'],
+];
+
 // Index synonymes stricts (règle de l'interdit)
 const _synStrict=new Map();
 for(const group of SYNONYMES_STRICTS){
@@ -5909,6 +5931,11 @@ for(const group of SYNONYMES_STRICTS){
       if(nw!==nw2) _synStrict.get(nw).add(nw2);
     }
   }
+}
+for(const [a,b] of SYNONYMES_EXCLUS){
+  const na=normLetters(a), nb=normLetters(b);
+  if(_synStrict.has(na)) _synStrict.get(na).delete(nb);
+  if(_synStrict.has(nb)) _synStrict.get(nb).delete(na);
 }
 
 // Index large : la table SYNONYM_GROUPS d'origine, qui mélange synonymes,
