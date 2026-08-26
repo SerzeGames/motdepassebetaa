@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.14.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.14.1 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -3281,6 +3281,9 @@ function startSequence(idx){
     mancheState.timerInterval=null;
   }
   if(mancheState.audio30s){try{mancheState.audio30s.pause()}catch(e){}}
+  if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
+  mancheState.audio30s=null;
+  mancheState.audioBed=null;
 
   // Show sequence overlay
   const seqOv=document.getElementById('seqOverlay');
@@ -3383,13 +3386,16 @@ function consumeArrow(clueNum){
   playGameSound('son/ChronoDisplay.wav',0.7);
 }
 
+// Renvoie true si le mot a effectivement ete retire, false sinon. L'appelant
+// en a besoin : sans ca, onPassWord jouait le son et prevenait l'adversaire
+// meme quand rien ne bougeait a l'ecran.
 function duoSkipWord(){
   const seq=mancheState.sequences[mancheState.currentSeq];
-  if(!seq) return;
+  if(!seq) return false;
   const wi=seq.currentWordIdx;
   // Deja traite : ne pas le recompter, sinon skipsCount gonfle et la manche
   // se termine en marquant perdus des mots qui n'ont jamais ete joues.
-  if(seq.found[wi]) return;
+  if(seq.found[wi]) return false;
   if(seq.skipped) seq.skipped[wi]=true;
   seq.found[wi]=true;
   seq.skipsCount=(seq.skipsCount||0)+1;
@@ -3420,13 +3426,13 @@ function duoSkipWord(){
     if(mancheState.audioBed){try{mancheState.audioBed.pause()}catch(e){}}
     refreshDireInputState();
     setTimeout(()=>{ endSequence(); },1500);
-    return;
+    return true;
   }
 
   const totalHandled=seq.lightsLit+(seq.skipsCount||0);
   if(totalHandled>=5){
     setTimeout(()=>{ endSequence(); },1000);
-    return;
+    return true;
   }
 
   seq.currentWordIdx=(wi+1)%seq.words.length;
@@ -3438,6 +3444,7 @@ function duoSkipWord(){
   }else{
     endSequence();
   }
+  return true;
 }
 
 function goToNextWord(seq){
@@ -3769,6 +3776,13 @@ function startTimerFromCurrent(){
   if(mancheState.timerInterval) return;
   mancheState.started=true;
 
+  // Meme menage que startTimer : sans lui, le spectateur entendait la musique
+  // d'attente ET celle de la manche en meme temps.
+  if(mancheState.audioBed){
+    try{mancheState.audioBed.pause();mancheState.audioBed.currentTime=0;}catch(e){}
+    mancheState.audioBed=null;
+  }
+
   // Pas de musique 1m30 au démarrage car déjà en cours côté joueurs — on lance en sourdine
   if(!mancheState.audio30s){
     const sndFile=gameMode==='duo'?'son/1m30.wav':'son/30secondes.wav';
@@ -3894,21 +3908,25 @@ function onPassWord(fromNetwork){
     _dernierPasse=_t;
   }
   const seq=mancheState.sequences[mancheState.currentSeq];
+  if(!seq) return;
+  // Rien a passer : le mot courant est deja traite (fin de manche en cours,
+  // resynchronisation...). On sortait quand meme APRES avoir joue le son et
+  // prevenu l'adversaire, d'ou le "j'entends passer mais le mot ne bouge pas".
+  if(seq.found[seq.currentWordIdx]) return;
 
   // Démarrer le chrono si c'est la première action
   tryStartTimerAfterFirstClue();
 
-  playGameSound('son/passer.wav',0.7);
-
   if(gameMode==='duo'){
-    // Sauvegarder l'index avant duoSkipWord car il le modifie
     const wi=seq.currentWordIdx;
-    duoSkipWord();
-    if(!fromNetwork){
+    const passe=duoSkipWord();      // c'est duoSkipWord qui joue le son
+    if(passe && !fromNetwork){
       sendData({type:'duoSkip',seqIdx:mancheState.currentSeq,wordIdx:wi});
     }
     return;
   }
+
+  playGameSound('son/passer.wav',0.7);
 
   // Mode qualif : passer = on peut y revenir
   const max=seq.words.length;
