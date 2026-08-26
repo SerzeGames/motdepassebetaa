@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.13.1 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.14.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -2159,7 +2159,7 @@ function onData(data,fromConn){
   const rp=conns.find(p=>p.conn===fromConn);
   if(data.type==='pseudo'){
     if(data.proto!==PROTOCOL){ versionIncompatible(data.proto); return; }
-    if(rp){rp.pseudo=data.pseudo;rp.pseudoRecu=true;if(data.id)rp.id=data.id}
+    if(rp){rp.pseudo=nettoyerPseudo(data.pseudo);rp.pseudoRecu=true;if(data.id)rp.id=data.id}
     rebuildLobbyList();
     if(isHost)broadcastRoster();
   }
@@ -2174,7 +2174,7 @@ function onData(data,fromConn){
   }
   else if(data.type==='roster'){
     if(data.mode) gameMode=data.mode;
-    lobbyPlayers=data.players.map(p=>({id:p.id,pseudo:p.pseudo,isHost:p.isHost,isMe:(peer&&p.id===peer.id)}));
+    lobbyPlayers=data.players.map(p=>({id:p.id,pseudo:nettoyerPseudo(p.pseudo),isHost:p.isHost,isMe:(peer&&p.id===peer.id)}));
     for(const p of data.players){if(peer&&p.id===peer.id)continue;const ex=conns.find(c=>c.id===p.id);if(ex)ex.pseudo=p.pseudo}
     updateLobbyUI();
   }
@@ -2314,7 +2314,7 @@ function onData(data,fromConn){
 
 // ── Start search ──
 function startSearch(){
-  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  myPseudo=nettoyerPseudo(document.getElementById('pseudoInput').value);
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
   const bf=document.getElementById('btnPlayFriend'); if(bf) bf.disabled=true;
@@ -3488,7 +3488,9 @@ function applyDireBubble(role,text,pop){
   const id=role==='giver'?'bubbleGiver':'bubbleGuesser';
   const el=document.getElementById(id);
   if(!el) return;
-  el.textContent=text||'';
+  // Filtre a la RECEPTION : un client modifie ne peut rien imposer a l'ecran
+  // de son adversaire.
+  el.textContent=nettoyerTexte(text||'');
   if(pop){
     el.classList.remove('bubble-pop');
     void el.offsetWidth; // force reflow
@@ -4133,10 +4135,13 @@ const FAUTES = {
   SYNONYME     : { label:'Synonyme direct interdit' },
   SIGLE        : { label:'Sigle ou marque interdit' },
   PHRASE       : { label:'Phrase déguisée' },
+  LANGAGE      : { label:'Langage interdit' },
 };
 
 // Codes "saisie" : rejet sans sanction, sauf REGLES.sanctionSaisieInvalide.
-const CODES_SAISIE = new Set(['VIDE','MULTI_MOTS','CHIFFRE','CARACTERES','TROP_LONG','HORS_LEXIQUE']);
+// LANGAGE est un refus de saisie : on n'affiche rien et on ne punit pas le
+// mot, sinon un faux positif couterait un point a un joueur honnete.
+const CODES_SAISIE = new Set(['VIDE','MULTI_MOTS','CHIFFRE','CARACTERES','TROP_LONG','HORS_LEXIQUE','LANGAGE']);
 
 function arbFail(code){
   const f = FAUTES[code] || { label:'Interdit' };
@@ -6258,7 +6263,9 @@ function isRime(clue,secretWord){
 // ── Set de mots acceptés comme indices (jeu + synonymes + traductions + mots courants) ──
 const _allowedClueWords=new Set();
 (function(){
-  for(const arr of [WORDS_EASY,WORDS_MEDIUM,WORDS_HARD])
+  // WORDS_DUO inclus : sans lui, les 366 mots ajoutes restaient inconnus du
+  // lexique, ce qui faussait le filtre de langage et la detection des phrases.
+  for(const arr of [WORDS_EASY,WORDS_MEDIUM,WORDS_HARD,WORDS_DUO])
     for(const w of arr) _allowedClueWords.add(normLetters(w));
   for(const group of SYNONYM_GROUPS)
     for(const w of group) _allowedClueWords.add(normLetters(w));
@@ -6592,6 +6599,7 @@ const _allowedClueWords=new Set();
 const _frenchSplitWords=new Set();
 (function(){
   for(const w of _allowedClueWords) _frenchSplitWords.add(w);
+  for(const w of WORDS_DUO) _frenchSplitWords.add(normLetters(w));
   const petits='le la les un une des du au aux mon ton son ma ta sa mes tes ses ce cet cette ces '+
     'de en pour par sur sous dans avec sans vers chez entre contre depuis que qui quoi dont ou '+
     'je tu il elle on nous vous ils elles me te se lui leur y moi toi soi '+
@@ -6602,6 +6610,80 @@ const _frenchSplitWords=new Set();
     'voit vois dit dis sait sais peut peux veut veux doit dois tient vient prend met vu';
   for(const w of petits.split(/\s+/)) _frenchSplitWords.add(normLetters(w));
 })();
+
+// ══════════════════════════════════════════
+// FILTRE DE LANGAGE
+// ══════════════════════════════════════════
+// Un filtre pose uniquement a l'emission ne sert a rien : n'importe qui peut
+// ouvrir la console et envoyer ce qu'il veut. On filtre donc AUSSI a la
+// reception, avant tout affichage. C'est la seule protection reelle en P2P.
+
+// Racines sans ambiguite : cherchees n'importe ou dans le mot.
+const INJURES_FORTES = ('encul salope salopard salaud connard connasse conasse batard '+
+  'filsdeput pouffiasse poufiasse chibre bitte couille burne zboub teub '+
+  'penis vagin sperme gouine negro bougnoule youpin putain tagueule tgueule chiotte '+
+  'enfoire ducon roubignole sodomi masturb branlette branleur suceur merdique '+
+  'merdeux abruti cretin debile trisomi mongolien pedophile').split(' ');
+
+// Racines presentes dans trop de mots honnetes pour etre cherchees en
+// sous-chaine : NIQUE est dans CHRONIQUE, MECANIQUE, UNIQUE et PIQUENIQUE ;
+// NICHON dans CORNICHON ; NTM dans le mot anglais OINTMENT. On exige donc le
+// mot entier.
+const INJURES_EXACTES = new Set(('nique niquer niquez niques niquee niquetamere tamere '+
+  'nichon nichons ntm pd pds tg tgl fdp ptn mrd').split(' '));
+
+// Racines ambigues : "pute" est dans DISPUTE, "cul" dans CALCUL, "con" dans
+// CONCOMBRE. On ne bloque qu'en bord de mot, et jamais si le mot est un vrai
+// mot francais connu du lexique.
+const INJURES_AMBIGUES = ['pute','cul','con','bite','chatte','pede','tapette','viol','merde','chier','pisse'];
+const LANGAGE_BLANC = new Set(('depute deputes deputer recul reculer reculs habite habiter cohabite '+
+  'debite debiter arbitre arbitrer orbite culotte culture cultiver culinaire masculin particule '+
+  'ridicule molecule minuscule majuscule vehicule testicule article conte contes compte '+
+  'concombre concours confiture conseil content contre control controle second seconde '+
+  'violon violet violette violence violoncelle chataigne chatain chateau glacon '+
+  'pedestre pedale pedaler pedalier pediatre pedagogie pedagogue pedicure pedigree '+
+  'pedoncule encyclopedie orthopedie').split(' '));
+
+function normaliserLangage(s){
+  return String(s||'')
+    .replace(/[œŒ]/g,'oe').replace(/[æÆ]/g,'ae')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase()
+    .replace(/[0@]/g,'o').replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/4/g,'a')
+    .replace(/[5$]/g,'s').replace(/7/g,'t').replace(/8/g,'b')
+    .replace(/[^a-z]/g,'');
+}
+
+function contientInjure(texte){
+  const n=normaliserLangage(texte);
+  if(n.length<2) return false;
+  // Forme aux repetitions ecrasees : "saloooope" devient "salope". On cherche
+  // les racines dans les deux formes, mais on interroge le lexique avec la
+  // forme non ecrasee, sinon CONNEXION deviendrait "conexion" et en sortirait.
+  const nr=n.replace(/(.)\1+/g,'$1');
+  if(INJURES_EXACTES.has(n) || INJURES_EXACTES.has(nr)) return true;
+  for(const r of INJURES_FORTES) if(n.indexOf(r)>=0 || nr.indexOf(r)>=0) return true;
+  if(LANGAGE_BLANC.has(n)) return false;
+  if(typeof _allowedClueWords!=='undefined' && _allowedClueWords.has(n)) return false;
+  for(const r of INJURES_AMBIGUES){
+    for(const forme of [n,nr]){
+      const i=forme.indexOf(r);
+      if(i>=0 && (i===0 || i+r.length===forme.length)) return true;   // en bord de mot
+    }
+  }
+  return false;
+}
+
+// Remplacement a l'affichage : meme un client modifie ne peut rien imposer.
+function nettoyerTexte(texte){
+  if(!texte) return texte;
+  return contientInjure(texte) ? '\u2022\u2022\u2022' : texte;
+}
+function nettoyerPseudo(p){
+  const v=String(p||'').trim();
+  if(!v) return 'Joueur';
+  return contientInjure(v) ? 'Joueur' : v;
+}
 
 // ── Lexique : "est-ce un vrai mot ?", séparé de "est-ce légal ?" ──
 const ARB_FLEXIONS=['issements','issement','ellement','ations','atrices','ateurs','aient','ation',
@@ -6668,6 +6750,8 @@ function arbitrerIndice(saisie, motSecret){
   if(/[0-9]/.test(raw))             return arbFail('CHIFFRE');
   if(/[^a-zA-ZÀ-ÿŒœ]/.test(raw))    return arbFail('CARACTERES');
 
+  if(contientInjure(raw)) return arbFail('LANGAGE');
+
   const c=normLetters(raw), w=normLetters(motSecret);
   if(!c)            return arbFail('VIDE');
   if(c.length===1)  return arbFail('EPELLATION');
@@ -6700,6 +6784,12 @@ function arbitrerReponse(saisie){
   if(!raw)                          return arbFail('VIDE');
   if(raw.length>REGLES.longueurMax) return arbFail('TROP_LONG');
   if(/[0-9]/.test(raw))             return arbFail('CHIFFRE');
+  // Les reponses n'etaient pas validees du tout : un "?" ou une phrase collee
+  // passaient et s'affichaient chez l'adversaire.
+  if(/[^a-zA-ZÀ-ÿŒœ\s-]/.test(raw)) return arbFail('CARACTERES');
+  if(contientInjure(raw))           return arbFail('LANGAGE');
+  const premier=raw.split(/\s+/)[0];
+  if(looksLikeGluedPhrase(normLetters(premier))) return arbFail('PHRASE');
   return { ok:true, code:null, label:'', grave:false };
 }
 
@@ -7274,7 +7364,7 @@ function copyFriendCode(){
 }
 
 function startFriendCreate(){
-  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  myPseudo=nettoyerPseudo(document.getElementById('pseudoInput').value);
   gameMode=friendMode;
   closeFriendModal();
   document.getElementById('btnPlay').disabled=true;
@@ -7337,7 +7427,7 @@ function startFriendJoin(){
     document.getElementById('friendJoinStatus').textContent='Entrez un code valide';
     return;
   }
-  myPseudo=document.getElementById('pseudoInput').value.trim()||'Joueur';
+  myPseudo=nettoyerPseudo(document.getElementById('pseudoInput').value);
   closeFriendModal();
   document.getElementById('btnPlay').disabled=true;
   document.getElementById('btnPlayDuo').disabled=true;
@@ -7577,7 +7667,7 @@ let triClassement='victoires';
 
 function pseudoCourant(){
   const i=document.getElementById('pseudoInput');
-  return (i && i.value.trim()) || 'Joueur';
+  return nettoyerPseudo(i && i.value.trim());
 }
 function majEntreeClassement(pseudo,st){
   const k=String(pseudo||'').trim().toLowerCase();
@@ -7967,10 +8057,11 @@ function chatRenderMessage(m,animate){
     const div=document.createElement('div');
     div.className='shoutbox-msg';
     if(!animate) div.style.animation='none';
+    // Filtre a la RECEPTION, comme pour les bulles de jeu.
     div.innerHTML=
       '<div class="shoutbox-msg-avatar"><img src="images/Bonhomme.png" alt=""></div>'+
-      '<div class="shoutbox-msg-body"><span class="shoutbox-msg-pseudo">'+escapeHtml(m.pseudo)+'</span>'+
-      '<span class="shoutbox-msg-text">'+escapeHtml(m.text)+'</span></div>'+
+      '<div class="shoutbox-msg-body"><span class="shoutbox-msg-pseudo">'+escapeHtml(nettoyerPseudo(m.pseudo))+'</span>'+
+      '<span class="shoutbox-msg-text">'+escapeHtml(nettoyerTexte(m.text))+'</span></div>'+
       '<span class="shoutbox-msg-time">'+timeStr+'</span>';
     box.appendChild(div);
   }
@@ -8035,6 +8126,11 @@ function chatSendMessage(){
   const inp=document.getElementById('shoutboxInput');
   const text=inp.value.trim();
   if(!text) return;
+  if(contientInjure(text)){
+    inp.value='';
+    chatAddMessage(null,'Message refus\u00e9 : langage interdit',true);
+    return;
+  }
   const pseudo=chatGetPseudo();
   inp.value='';
   chatAddMessage(pseudo,text);
