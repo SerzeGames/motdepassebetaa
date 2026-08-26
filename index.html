@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.11.1 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.12.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -2008,7 +2008,11 @@ function versionIncompatible(recu){
 }
 
 const LOBBY_PREFIX='motdepasse-';
-const NUM_ROOMS=10;
+const NUM_ROOMS=16;
+// Salons dont on sait qu'ils hebergent deja une partie : on ne les resonde
+// pas, et on n'essaie pas d'y heberger la notre.
+let _roomsOccupees=new Set();
+function marquerRoomOccupee(id){ if(id) _roomsOccupees.add(id); }
 const MAX_PLAYERS=4;
 
 let gameMode='qualif';
@@ -2157,6 +2161,7 @@ function onData(data,fromConn){
     if(isHost)broadcastRoster();
   }
   else if(data.type==='roomBusy'){
+    if(fromConn && fromConn.peer) marquerRoomOccupee(fromConn.peer);
     // Cette room heberge deja une partie : on se retire sans repasser par le
     // menu et on relance la recherche sur les autres rooms.
     conns=conns.filter(q=>q.conn!==fromConn);
@@ -2313,6 +2318,7 @@ function startSearch(){
   showScreen('screenLobby');
   document.getElementById('lobbyStatus').textContent='Connexion...';
   partieEnCours=false;connected=false;conns=[];lobbyPlayers=[];
+  _roomsOccupees=new Set();
   tryMatchmaking();
 }
 
@@ -2334,49 +2340,86 @@ function tryMatchmaking(){
 
   function attemptJoinRooms(){
     if(_mmAborted||connected) return;
-    let joined=false;
+    let joined=false, sondes=0;
     console.log('[MM] Scanning rooms...');
 
     for(let i=0;i<NUM_ROOMS;i++){
       const roomId=prefix+'room-'+i;
+      if(_roomsOccupees.has(roomId)) continue;   // partie deja en cours dedans
+      sondes++;
       let c;
       try{ c=peer.connect(roomId,{reliable:true}); }catch(e){ continue; }
 
       c.on('open',()=>{
         if(joined||connected){try{c.close()}catch(e){}return}
-        joined=true;connected=true;isHost=false;
+        // On se PRESENTE sans s'engager. Le salon repond soit en nous
+        // acceptant, soit par un roomBusy. L'ancienne version retenait le
+        // premier salon qui s'ouvrait, sans savoir s'il avait de la place.
+        try{ c.send(msgPseudo()); }catch(e){}
+      });
 
-        const rp={id:c.peer,conn:c,pseudo:'Hôte',isRoomHost:true,_listenersAttached:true};
-        conns.push(rp);
-        console.log('[MM] Joined room:',roomId);
-
-        c.on('data',d=>onData(d,c));
-        c.on('close',()=>{
-          conns=conns.filter(p=>p.conn!==c);
-          if(!connected)return;
-          connected=false;
-          document.getElementById('lobbyStatus').textContent='Hôte déconnecté...';
-          setTimeout(backToMenu,2000);
-        });
-
-        c.send(msgPseudo());
-        rebuildLobbyList();
-        document.getElementById('lobbyStatus').textContent='Connecté ! En attente de joueurs...';
+      c.on('data',d=>{
+        if(d && d.type==='roomBusy'){
+          marquerRoomOccupee(roomId);
+          try{c.close()}catch(e){}
+          const el=document.getElementById('lobbyStatus');
+          if(el){
+            const n=_roomsOccupees.size;
+            el.textContent=n+' partie'+(n>1?'s':'')+' en cours \u2014 recherche d\u2019un adversaire libre\u2026';
+          }
+          return;
+        }
+        if(!joined && !connected){
+          joined=true; connected=true; isHost=false;
+          const rp={id:c.peer,conn:c,pseudo:'H\u00f4te',isRoomHost:true,_listenersAttached:true};
+          conns.push(rp);
+          console.log('[MM] Joined room:',roomId);
+          c.on('close',()=>{
+            conns=conns.filter(q=>q.conn!==c);
+            if(!connected)return;
+            connected=false;
+            document.getElementById('lobbyStatus').textContent='H\u00f4te d\u00e9connect\u00e9...';
+            setTimeout(backToMenu,2000);
+          });
+          rebuildLobbyList();
+          document.getElementById('lobbyStatus').textContent='Connect\u00e9 ! En attente de joueurs...';
+        }
+        if(conns.some(q=>q.conn===c)) onData(d,c);
+        else { try{c.close()}catch(e){} }
       });
 
       c.on('error',()=>{});
-      setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},1500);
+      setTimeout(()=>{if(!joined&&c.open)try{c.close()}catch(e){}},2500);
     }
 
-    // Si aucune room trouvée après 2s → devenir hôte
+    // Tous les salons connus sont occupes : on ouvre le notre sans attendre.
+    if(sondes===0){ becomeHostWithRetry(); return; }
+
+    // Personne ne nous a accepte : on devient hote.
     const jitterMs=Math.floor(Math.random()*800);
-    setTimeout(()=>{if(!joined&&!connected&&!_mmAborted) becomeHostWithRetry()}, 2000+jitterMs);
+    setTimeout(()=>{if(!connected&&!_mmAborted) becomeHostWithRetry()}, 2500+jitterMs);
   }
 
   function becomeHostWithRetry(){
     if(connected||_mmAborted) return;
-    const roomIndex=Math.floor(Math.random()*NUM_ROOMS);
-    const roomId=prefix+'room-'+roomIndex;
+    // Premier salon qu'on ne sait pas occupe, en partant d'un point aleatoire
+    // pour que deux joueurs simultanes ne visent pas systematiquement le meme.
+    let roomId=null;
+    const depart=Math.floor(Math.random()*NUM_ROOMS);
+    for(let k=0;k<NUM_ROOMS;k++){
+      const cand=prefix+'room-'+((depart+k)%NUM_ROOMS);
+      if(!_roomsOccupees.has(cand)){ roomId=cand; break; }
+    }
+    if(!roomId){
+      // Saturation reelle : tous les salons hebergent une partie.
+      const el=document.getElementById('lobbyStatus');
+      if(el){
+        el.textContent='Tous les salons sont occup\u00e9s \u2014 nouvel essai dans un instant\u2026';
+        el.style.color='#ffcc44';
+      }
+      setTimeout(()=>{ if(!connected&&!_mmAborted){ _roomsOccupees=new Set(); attemptJoinRooms(); } },4000);
+      return;
+    }
     console.log('[MM] Becoming host:',roomId);
 
     peer.destroy();
@@ -2514,19 +2557,28 @@ function tryMatchmaking(){
     peer.on('error',err=>{
       console.warn('[MM] Host error:',err);
       if(err.type==='unavailable-id'){
-        // Room déjà prise → réessayer avec un autre index
-        setTimeout(()=>{if(!connected&&!_mmAborted) becomeHostWithRetry()},1000+Math.random()*1000);
+        // Quelqu'un occupe deja ce salon : on le note et on prend le suivant,
+        // au lieu de retirer au hasard indefiniment.
+        marquerRoomOccupee(roomId);
+        setTimeout(()=>{if(!connected&&!_mmAborted) becomeHostWithRetry()},250+Math.random()*350);
       }
     });
   }
 
   let _relances=0;
   window._mmRelance=()=>{
-    if(_mmAborted || connected || _relances>=3) return;
+    // Autant de relances que de salons : chacune en elimine un, donc on
+    // converge au lieu d'abandonner au bout de trois essais.
+    if(_mmAborted || connected) return;
     _relances++;
+    // Trois salons occupes d'affilee : inutile d'insister, on ouvre le notre.
+    if(_relances>3){ becomeHostWithRetry(); return; }
     const el=document.getElementById('lobbyStatus');
-    if(el) el.textContent='Salon occupé — recherche d\u2019un autre adversaire\u2026';
-    setTimeout(()=>{ if(!connected && !_mmAborted) attemptJoinRooms(); }, 400+Math.random()*600);
+    if(el){
+      const n=_roomsOccupees.size;
+      el.textContent=n+' partie'+(n>1?'s':'')+' en cours \u2014 recherche d\u2019un adversaire libre\u2026';
+    }
+    setTimeout(()=>{ if(!connected && !_mmAborted) attemptJoinRooms(); }, 250+Math.random()*350);
   };
 
   // Cleanup si le joueur quitte le lobby
@@ -4102,13 +4154,41 @@ function arbSuffixe(a,b){
   return n;
 }
 
-// "Pas de mot qui commence pareil". Seuil 3 lettres sur les mots courts,
-// 4 au-delà : sur CONSTELLATION, "con" est une coïncidence, pas un début.
+// "Pas de mot qui commence pareil". La regle de l'emission porte sur le SON.
+// Faute de phonetique, on travaille sur l'orthographe : 4 lettres communes
+// suffisent, 3 sur les mots courts. Mais a 3 lettres il faut se mefier de la
+// nasalisation, qui change tout : FRAISE se dit /frez/ et FRAMBOISE /frabwaz/,
+// le "m" nasalise la voyelle et les deux debuts ne sonnent pas pareil. Idem
+// pour CHAT face a CHAMBRE, CHAMPION, CHANCE ou CHANSON.
+const ARB_VOYELLES='aeiouy';
+function arbNasalise(mot,i){
+  // mot[i] est un m ou un n suivi d'une consonne (ou de la fin) : la voyelle
+  // qui precede est nasalisee.
+  if(i>=mot.length) return false;
+  const ch=mot[i];
+  if(ch!=='m' && ch!=='n') return false;
+  const suiv=mot[i+1];
+  return !suiv || ARB_VOYELLES.indexOf(suiv)<0;
+}
+function arbDebutDiverge(c,w,n){
+  // Nasalisation d'un cote seulement, juste apres le prefixe commun.
+  if(arbNasalise(c,n)!==arbNasalise(w,n)) return true;
+  // Le prefixe se termine par m/n : nasalise si une consonne suit, pas si
+  // c'est une voyelle. CANARD /kanar/ contre CANTINE /kantin/.
+  const dernier=c[n-1];
+  if(dernier==='m' || dernier==='n'){
+    const a=c[n], b=w[n];
+    if(a && b && (ARB_VOYELLES.indexOf(a)>=0)!==(ARB_VOYELLES.indexOf(b)>=0)) return true;
+  }
+  return false;
+}
 function sameFirst3(clue,secretWord){
   const c=normLetters(clue), w=normLetters(secretWord);
   if(c.length<3 || w.length<3) return false;
   const n=arbPrefixe(c,w);
-  return n>=4 || (n>=3 && w.length<=6);
+  if(n>=4) return true;
+  if(n<3 || w.length>6) return false;
+  return !arbDebutDiverge(c,w,n);
 }
 
 // Racine approximative : rapproche chanteur / chanter / chant.
@@ -6862,7 +6942,7 @@ async function scanSpectateRooms(){
 
   // Scanner les rooms
   const prefixes=['motdepasse-','motdepasse-duo-'];
-  const NUM=10;
+  const NUM=NUM_ROOMS;
 
   for(const prefix of prefixes){
     for(let i=0;i<NUM;i++){
