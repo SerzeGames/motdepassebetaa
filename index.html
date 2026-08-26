@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.12.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.13.1 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -2129,6 +2129,9 @@ function broadcastRoster(){
     if(c) sendTo(c,{type:'pseudoUpdate',id:p.id,pseudo:p.pseudo});
   }
   rebuildLobbyList();
+  // Tant qu'un joueur n'a pas annonce son nom, on ne construit pas les
+  // equipes : elles seraient baties sur un pseudo provisoire.
+  if(conns.some(q=>!q.pseudoRecu)) return;
   const need=maxPlayersForMode();
   if(players.length>=need){
     setTimeout(()=>{
@@ -2156,7 +2159,7 @@ function onData(data,fromConn){
   const rp=conns.find(p=>p.conn===fromConn);
   if(data.type==='pseudo'){
     if(data.proto!==PROTOCOL){ versionIncompatible(data.proto); return; }
-    if(rp){rp.pseudo=data.pseudo;if(data.id)rp.id=data.id}
+    if(rp){rp.pseudo=data.pseudo;rp.pseudoRecu=true;if(data.id)rp.id=data.id}
     rebuildLobbyList();
     if(isHost)broadcastRoster();
   }
@@ -2444,7 +2447,7 @@ function tryMatchmaking(){
           peer.on('error',err=>{ if(err.type!=='peer-unavailable') console.warn('Peer error:',err); });
           peer.on('open',()=>{ attemptJoinRooms(); });
         }
-      },6000);
+      },12000);   // la fusion deterministe agit bien avant ; ceci n'est qu'un filet
     });
 
     peer.on('connection',c=>{
@@ -2526,7 +2529,7 @@ function tryMatchmaking(){
           return false;
         }
 
-        const rp={id:conn.peer,conn:conn,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
+        const rp={id:conn.peer,conn:conn,pseudo:'Joueur',pseudoRecu:false,isRoomHost:false,_listenersAttached:false};
         conns.push(rp);
 
         const setup=()=>{
@@ -2582,7 +2585,8 @@ function tryMatchmaking(){
   };
 
   // Cleanup si le joueur quitte le lobby
-  window._mmCleanup=()=>{ _mmAborted=true; window._mmRelance=null; };
+  window._mmScan=attemptJoinRooms;
+  window._mmCleanup=()=>{ _mmAborted=true; window._mmRelance=null; window._mmScan=null; };
 }
 
 // ── Game start ──
@@ -2620,6 +2624,15 @@ function onGameStart(){
     }else{
       lobbyPlayers.forEach((p,i)=>{(i%2===0?teamA:teamB).push(p.pseudo)});
     }
+  }
+
+  // Filet de securite : si notre pseudo ne figure dans aucune equipe, c'est
+  // qu'il a ete renomme apres coup. On se recale sur notre position plutot
+  // que de rester spectateur de notre propre partie.
+  if(gameMode==='duo' && teamA.length && teamB.length
+     && !pseudoMatch(myPseudo,teamA[0]) && !pseudoMatch(myPseudo,teamB[0])){
+    console.warn('[roster] pseudo recale :',myPseudo,'->',isHost?teamA[0]:teamB[0]);
+    myPseudo = isHost ? teamA[0] : teamB[0];
   }
 
   // Transition to interdits screen
@@ -5998,6 +6011,39 @@ const SYNONYMES_EXCLUS = [
   ['cartable','serviette'],['bureau','secretaire'],['badge','macaron'],
   ['grimoire','livre'],['tambour','caisse'],['tambourin','caisse'],
   ['agenda','calendrier'],
+
+  // ── Categories et homonymes ──
+  // Un mot qui designe plusieurs choses differentes n'est pas un synonyme.
+  // ASTRE couvre etoile, soleil, lune, satellite et planete ; FAUVE couvre
+  // lion, tigre, guepard et panthere ; COUPE veut dire verre, trophee ou
+  // coiffure selon le contexte.
+  ['astre','etoile'],['astre','soleil'],['astre','lune'],['astre','satellite'],['astre','planete'],
+  ['monde','planete'],
+  ['fauve','lion'],['fauve','tigre'],['fauve','guepard'],['fauve','panthere'],
+  ['felin','chat'],['felin','guepard'],['felin','panthere'],['felin','matou'],
+  ['siege','chaise'],['siege','tabouret'],['siege','escabeau'],['siege','fauteuil'],['siege','crapaud'],
+  ['coupe','verre'],['coupe','gobelet'],['coupe','chope'],['coupe','godet'],['coupe','timbale'],['coupe','coiffure'],
+  ['chef','tete'],['chef','crane'],['chef','caboche'],['chef','ciboulot'],['chef','citron'],['chef','tronche'],
+  ['engin','outil'],['engin','instrument'],['engin','ustensile'],['engin','appareil'],['engin','machine'],['engin','dispositif'],
+  ['galerie','couloir'],['galerie','passage'],['galerie','tunnel'],['galerie','corridor'],['galerie','boyau'],['galerie','souterrain'],
+  ['zinc','avion'],['zinc','appareil'],['zinc','aeronef'],['zinc','coucou'],
+  ['flamme','amour'],['flamme','tendresse'],['flamme','affection'],['flamme','passion'],['flamme','idylle'],
+  ['foyer','famille'],['foyer','parente'],['foyer','clan'],['foyer','maisonnee'],['foyer','smala'],['foyer','tribu'],
+  ['onde','eau'],['onde','mer'],['onde','ocean'],['onde','flots'],['onde','large'],
+  ['velodrome','stade'],['velodrome','arene'],['velodrome','enceinte'],['velodrome','terrain'],
+  ['embarcadere','gare'],['embarcadere','station'],['embarcadere','terminus'],['embarcadere','halte'],
+  ['poupon','poupee'],['poupon','figurine'],['poupon','baigneur'],
+  ['pachyderme','elephant'],['pachyderme','hippopotame'],['pachyderme','rhinoceros'],
+  ['crustace','homard'],['cetace','dauphin'],['cetace','baleine'],['cetace','rorqual'],
+  ['arachnide','araignee'],['arachnide','scorpion'],['arachnide','aragne'],
+  ['batracien','grenouille'],['batracien','crapaud'],['batracien','rainette'],
+  ['gasteropode','escargot'],['gasteropode','colimacon'],['gasteropode','limacon'],
+  ['volaille','poule'],['volaille','poulet'],['volaille','chapon'],['volaille','gallinace'],
+  ['placard','affiche'],['placard','poster'],['placard','panneau'],
+  ['ecrin','caisse'],['ecrin','carton'],
+  ['bovin','vache'],['bovin','boeuf'],['bovin','taureau'],['bovin','genisse'],['bovin','bison'],
+  ['becane','ordinateur'],['becane','machine'],['appareil','avion'],
+  ['tronche','citron'],['abdomen','buffet'],
 ];
 
 // Index synonymes stricts (règle de l'interdit)
@@ -6017,6 +6063,7 @@ for(const [a,b] of SYNONYMES_EXCLUS){
   if(_synStrict.has(na)) _synStrict.get(na).delete(nb);
   if(_synStrict.has(nb)) _synStrict.get(nb).delete(na);
 }
+
 
 // Index large : la table SYNONYM_GROUPS d'origine, qui mélange synonymes,
 // co-hyponymes et associations. Ne sert que si REGLES.synonymeLarge est vrai.
@@ -6147,7 +6194,6 @@ const FAMILLES_IRREGULIERES = [
   // animaux
   ['cheval','equestre','equide','hippique','cavalier'],
   ['chien','canin','cynophile'],
-  ['vache','bovin'],
   ['porc','porcin'],
   ['mouton','ovin'],
   ['oiseau','aviaire','ornithologie'],
@@ -7262,7 +7308,7 @@ function startFriendCreate(){
       setTimeout(()=>{try{c.close()}catch(e){}},120);
       return;
     }
-    const rp={id:c.peer,conn:c,pseudo:'Joueur',isRoomHost:false,_listenersAttached:false};
+    const rp={id:c.peer,conn:c,pseudo:'Joueur',pseudoRecu:false,isRoomHost:false,_listenersAttached:false};
     conns.push(rp);
     const setup=()=>{
       if(rp._listenersAttached)return;
@@ -7812,6 +7858,67 @@ function appliquerSnapshotSpectateur(data, complet){
     startTimerFromCurrent();
   }
 }
+
+// ══════════════════════════════════════════
+// FUSION DES SALONS EN ATTENTE
+// ══════════════════════════════════════════
+// Deux joueurs qui lancent la recherche a la meme seconde ne se voient pas :
+// aucun salon n'existe encore quand ils scannent, donc chacun cree le sien et
+// ils s'attendent cote a cote. Un hote reste donc a l'affut : toutes les 3 s,
+// il regarde s'il existe un salon LIBRE d'indice INFERIEUR au sien, et va le
+// rejoindre. Comme seul le plus grand indice bouge, il n'y a pas de
+// chasse-croise et la convergence est garantie.
+function indexDeMonSalon(){
+  if(!peer || !peer.id) return -1;
+  const m=/room-(\d+)$/.exec(peer.id);
+  return m ? parseInt(m[1],10) : -1;   // -1 pour un salon "entre amis"
+}
+function prefixeSalon(){
+  return gameMode==='duo' ? LOBBY_PREFIX+'duo-' : LOBBY_PREFIX;
+}
+function rejoindreDepuisHote(){
+  try{ peer.destroy(); }catch(e){}
+  isHost=false; connected=false; conns=[]; lobbyPlayers=[];
+  peer=new Peer(prefixeSalon()+'p-'+Math.random().toString(36).substr(2,8));
+  peer.on('error',err=>{ if(err.type!=='peer-unavailable') console.warn('[MM]',err); });
+  peer.on('open',()=>{ if(typeof window._mmScan==='function') window._mmScan(); });
+}
+let _fusionEnCours=false;
+function fusionnerSalons(){
+  if(_fusionEnCours || isSpectator || !isHost || partieEnCours) return;
+  if(conns.length>0) return;                 // quelqu'un est deja avec nous
+  const mon=indexDeMonSalon();
+  if(mon<=0) return;                         // salon 0, ou partie entre amis
+  const prefixe=prefixeSalon();
+  let trouve=false;
+  for(let i=0;i<mon;i++){
+    const cible=prefixe+'room-'+i;
+    if(_roomsOccupees.has(cible)) continue;
+    let c;
+    try{ c=peer.connect(cible,{reliable:true}); }catch(e){ continue; }
+    // On sonde en spectateur : l'hote nous repond sans nous inscrire comme
+    // joueur, donc rien n'est casse si on ne migre pas.
+    c.on('open',()=>{ try{ c.send({type:'spectatePing',pseudo:'__scan__'}); }catch(e){} });
+    c.on('data',d=>{
+      if(trouve || !d || d.type!=='spectatePong') return;
+      try{ c.close(); }catch(e){}
+      if(d.partieEnCours){ marquerRoomOccupee(cible); return; }
+      const dedans=(d.players||[]).filter(q=>q&&q.pseudo&&q.pseudo!=='__scan__').length;
+      if(dedans>=maxPlayersForMode()) return;   // deja complet
+      trouve=true; _fusionEnCours=true;
+      console.log('[MM] Fusion : on rejoint',cible);
+      rejoindreDepuisHote();
+      setTimeout(()=>{ _fusionEnCours=false; },4000);
+    });
+    c.on('error',()=>{});
+    setTimeout(()=>{ try{ if(c.open) c.close(); }catch(e){} },1800);
+  }
+}
+// Cadence desynchronisee : si tous les hotes sondaient au meme rythme, ils
+// viseraient le meme salon en meme temps et se gêneraient mutuellement.
+(function boucleFusion(){
+  setTimeout(()=>{ fusionnerSalons(); boucleFusion(); }, 2200+Math.random()*2600);
+})();
 
 // ══════════════════════════════════════════
 // SHOUTBOX — Tchat global PeerJS
