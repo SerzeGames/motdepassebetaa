@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.14.1 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.14.2 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -6287,6 +6287,12 @@ const _allowedClueWords=new Set();
     for(const w of arr) _allowedClueWords.add(normLetters(w));
   for(const group of SYNONYM_GROUPS)
     for(const w of group) _allowedClueWords.add(normLetters(w));
+  // Les tables ecrites pour l'arbitrage sont aussi des mots francais valides.
+  // Sans elles, 1407 mots restaient inconnus : PLANCHER etait alors pris pour
+  // une phrase collee ("plan"+"cher") faute d'etre reconnu comme un vrai mot.
+  for(const g of SYNONYMES_STRICTS)      for(const w of g) _allowedClueWords.add(normLetters(w));
+  for(const g of FAMILLES_IRREGULIERES)  for(const w of g) _allowedClueWords.add(normLetters(w));
+  for(const g of HOMOPHONES)             for(const w of g) _allowedClueWords.add(normLetters(w));
   for(const eng of Object.keys(ENGLISH_TRANSLATIONS)) _allowedClueWords.add(normLetters(eng));
   // Mots français courants utilisables comme indices (~4000+ mots)
   const extra=(
@@ -6618,6 +6624,13 @@ const _frenchSplitWords=new Set();
 (function(){
   for(const w of _allowedClueWords) _frenchSplitWords.add(w);
   for(const w of WORDS_DUO) _frenchSplitWords.add(normLetters(w));
+  // Mots tres courants qui manquaient au decoupage : sans eux, "enhaut" ou
+  // "pourmanger" passaient pour des mots uniques.
+  const courants='haut beau belle bien mal manger boire dormir aller venir envers endroit '+
+    'dessus dessous cote milieu fond bord coin gauche droite avant apres devant derriere '+
+    'dedans dehors loin pres vite chaud froid vrai faux neuf propre sale plein vide meme '+
+    'autre encore jamais parfois vraiment doute suite';
+  for(const w of courants.split(' ')) _frenchSplitWords.add(normLetters(w));
   const petits='le la les un une des du au aux mon ton son ma ta sa mes tes ses ce cet cette ces '+
     'de en pour par sur sous dans avec sans vers chez entre contre depuis que qui quoi dont ou '+
     'je tu il elle on nous vous ils elles me te se lui leur y moi toi soi '+
@@ -6737,21 +6750,32 @@ function estDansLexique(norm){
 // v1 : 2 parties d'1 lettre mini, donc "chateau" = "chat"+"eau" -> faute.
 // v2 : parties de 4 lettres mini, mot de 8+, et mémoïsation (la version
 // récursive nue était exponentielle sur 20 caractères).
+// Petits mots outils : ce sont eux qui servent a coller des locutions
+// ("endessous", "audessus", "toutdesuite"). Le seuil de 4 lettres par morceau
+// les laissait passer, alors qu'ils sont le signe le plus net d'une phrase.
+const PETITS_MOTS_COLLES = new Set(('en au aux du de des la le les un une par sur sous avec sans '+
+  'pour dans chez vers plus moins tres trop non pas ne ce cet cette mon ma mes ton ta tes son ses '+
+  'qui que quoi dont ou et si a y me te se lui leur nous vous tout toute tous a la').split(' '));
+
 const _splitCache=new Map();
 function _arbSplit(str,minParts,minLen){
   if(str.length===0) return minParts<=0;
   const key=str+'|'+minParts;
   if(_splitCache.has(key)) return _splitCache.get(key);
   let res=false;
-  for(let len=minLen; len<=str.length; len++){
-    if(_frenchSplitWords.has(str.slice(0,len)) && _arbSplit(str.slice(len),minParts-1,minLen)){
-      res=true; break;
-    }
+  for(let len=2; len<=str.length; len++){
+    const part=str.slice(0,len);
+    const valide = (len>=minLen && _frenchSplitWords.has(part)) || PETITS_MOTS_COLLES.has(part);
+    if(valide && _arbSplit(str.slice(len),minParts-1,minLen)){ res=true; break; }
   }
   _splitCache.set(key,res);
   return res;
 }
 function looksLikeGluedPhrase(norm){
+  // Seuil a 8, et pas moins : a 6, SURFACE ("sur"+"face") et ENTIER etaient
+  // pris pour des phrases. Le lexique n'est pas assez complet pour descendre
+  // plus bas sans punir des joueurs honnetes. Consequence assumee : les
+  // locutions courtes comme "enhaut" ou "enbas" passent encore.
   if(norm.length<8) return false;
   if(_allowedClueWords.has(norm)) return false;
   return _arbSplit(norm,2,4);
