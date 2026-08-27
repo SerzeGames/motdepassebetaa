@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.14.2 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.15.0 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -6139,12 +6139,31 @@ function arbDerivation(court,long){
 // PORTE) et la simple dérivation (marine / MARIN = même famille).
 // Le mot contenu doit faire 4 lettres minimum, sinon "bateau" serait refusé
 // pour EAU alors que c'est une association parfaitement légitime.
+// Prefixes qui construisent de vrais composes : PARAPLUIE contient PLUIE.
+const ARB_PREFIXES=['para','anti','auto','contre','sous','sur','pre','post','re','des','dis',
+  'in','im','mi','demi','extra','inter','multi','super','ultra','mini','maxi','non','semi',
+  'tele','micro','macro','poly','mono','bi','tri','entre','avant','arriere','porte','mal','bien'];
+
+// Une inclusion n'est significative qu'au debut du mot, ou en fin quand ce qui
+// precede a lui-meme un sens. Sinon elle est fortuite : OURS se trouve dans
+// COURSE, DISCOURS, TOUJOURS et VELOURS sans le moindre rapport, et CHAT dans
+// ACHAT. Ces indices etaient tous refuses a tort.
+function inclusionSignifiante(court,long){
+  const i=long.indexOf(court);
+  if(i<0) return false;
+  if(i===0) return true;                            // PORTEMANTEAU / PORTE
+  if(i+court.length!==long.length) return false;    // au milieu : fortuit
+  const reste=long.slice(0,i);                      // en fin : le reste doit signifier
+  if(reste.length>=3 && _frenchSplitWords.has(reste)) return true;   // PORTEFEUILLE / FEUILLE
+  return ARB_PREFIXES.indexOf(reste)>=0;            // PARAPLUIE / PLUIE
+}
+
 function arbInclusion(c,w){
   if(c===w) return null;
-  if(c.length>=4 && w.includes(c)){
+  if(c.length>=4 && inclusionSignifiante(c,w)){
     return arbDerivation(c,w) ? 'MEME_FAMILLE' : 'DECOUPAGE';
   }
-  if(w.length>=4 && c.includes(w)){
+  if(w.length>=4 && inclusionSignifiante(w,c)){
     return arbDerivation(w,c) ? 'MEME_FAMILLE' : 'COMPOSE';
   }
   return null;
@@ -6257,9 +6276,9 @@ function isSameFamily(clue,secretWord){
   if(familleIrreguliere(c,w)) return true;
   const rc=arbRacine(c), rw=arbRacine(w);
   if(rc.length>=4 && rc===rw) return true;
-  const n=arbPrefixe(c,w);
-  if(n>=5) return true;
-  if(n>=4 && n>=Math.min(c.length,w.length)-1) return true;
+  // Un long prefixe commun ne fait pas une famille : REQUISITOIRE et REQUIN
+  // partagent cinq lettres sans aucun lien, TORTURE et TORTUE aussi. Ces cas
+  // restent refuses, mais par la regle du meme debut, qui est la vraie raison.
   return false;
 }
 
@@ -6626,6 +6645,7 @@ const _frenchSplitWords=new Set();
   for(const w of WORDS_DUO) _frenchSplitWords.add(normLetters(w));
   // Mots tres courants qui manquaient au decoupage : sans eux, "enhaut" ou
   // "pourmanger" passaient pour des mots uniques.
+  for(const w of ['aujourdhui','quelquun','presquile','entracte']) _allowedClueWords.add(w);
   const courants='haut beau belle bien mal manger boire dormir aller venir envers endroit '+
     'dessus dessous cote milieu fond bord coin gauche droite avant apres devant derriere '+
     'dedans dehors loin pres vite chaud froid vrai faux neuf propre sale plein vide meme '+
@@ -6790,7 +6810,10 @@ function arbitrerIndice(saisie, motSecret){
   if(raw.length>REGLES.longueurMax) return arbFail('TROP_LONG');
   if(/\s/.test(raw))                return arbFail('MULTI_MOTS');
   if(/[0-9]/.test(raw))             return arbFail('CHIFFRE');
-  if(/[^a-zA-ZÀ-ÿŒœ]/.test(raw))    return arbFail('CARACTERES');
+  // Une apostrophe interne est toleree si le mot existe : AUJOURD'HUI est un
+  // seul mot. Les traits d'union restent refuses, ce sont des mots composes.
+  if(/[^a-zA-ZÀ-ÿŒœ']/.test(raw))   return arbFail('CARACTERES');
+  if(raw.indexOf("'")>=0 && !_allowedClueWords.has(normLetters(raw))) return arbFail('CARACTERES');
 
   if(contientInjure(raw)) return arbFail('LANGAGE');
 
