@@ -1601,7 +1601,7 @@
       <div class="classement-note">Statistiques enregistr&eacute;es dans ton navigateur. Le classement se compl&egrave;te avec les joueurs crois&eacute;s dans le tchat.</div>
     </div>
 
-    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.15.0 BÊTA</span></div>
+    <div class="footer">Jeu gratuit et non officiel à gains virtuels d'après le jeu télévisé "Mot de passe" diffusé sur France 2<br>et produit par FremantleMedia Productions — Musiques : Lewis Flinn<br><span style="color:#666;font-size:0.6rem;letter-spacing:2px">VERSION 0.15.1 BÊTA</span></div>
   </div>
 </div>
 </div>
@@ -3913,6 +3913,8 @@ function onPassWord(fromNetwork){
   // resynchronisation...). On sortait quand meme APRES avoir joue le son et
   // prevenu l'adversaire, d'ou le "j'entends passer mais le mot ne bouge pas".
   if(seq.found[seq.currentWordIdx]) return;
+
+  if(!fromNetwork) _actionLocaleA=Date.now();
 
   // Démarrer le chrono si c'est la première action
   tryStartTimerAfterFirstClue();
@@ -6936,6 +6938,7 @@ function appliquerFaute(verdict, fromNetwork){
   flashArbitrage('FAUTE — '+verdict.label, true);
 
   const wiFaute=seq.currentWordIdx;
+  if(!fromNetwork) _actionLocaleA=Date.now();
   _sanctionEnCours=true;   // pendant ces 900 ms, PASSER et le champ sont inertes
   refreshDireInputState();
   if(!fromNetwork){
@@ -7017,6 +7020,8 @@ let _timerDemande=false;
 // Sanction en vol (les 900 ms d'une faute) et anti double-clic sur PASSER.
 let _sanctionEnCours=false;
 let _dernierPasse=0;
+// Horodatage de la derniere action jouee ICI (passe, bonne reponse, faute).
+let _actionLocaleA=0;
 
 let _etatTimer=null;
 function diffuserEtat(){
@@ -7028,6 +7033,14 @@ function appliquerEtatManche(data){
   if(isHost || data.seqIdx!==mancheState.currentSeq) return;
   const seq=mancheState.sequences[data.seqIdx];
   if(!seq) return;
+
+  // L'instantane de l'hote peut etre PARTI AVANT que notre action locale ne lui
+  // parvienne : l'appliquer nous ramenait sur le mot qu'on venait de passer.
+  // On se donne donc une fenetre de grace, le temps de l'aller-retour. Passe
+  // ce delai, on applique meme en arriere : c'est alors une vraie
+  // desynchronisation, et le filet doit pouvoir la reparer.
+  if(Date.now()-_actionLocaleA < 1200) return;
+
   const avant=seq.found.join('')+'|'+seq.currentWordIdx;
   seq.found=data.found.slice();
   seq.skipped=data.skipped.slice();
@@ -7667,6 +7680,7 @@ document.getElementById('direGuesser').addEventListener('keydown',e=>{
       }
     }
     if(matchedIdx>=0){
+      _actionLocaleA=Date.now();
       seq.currentWordIdx=matchedIdx;
       onCorrectAnswer();
       mancheState.cluesGiven=0;
